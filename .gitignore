@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Test results & coverage
+TestResults/
+*.coverage
+*.cobertura.xml
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# OS
+Thumbs.db
+.DS_Store
