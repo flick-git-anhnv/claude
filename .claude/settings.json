@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(git *)",
+      "Bash(python *)",
+      "Bash(pip *)",
+      "Bash(node *)",
+      "Glob",
+      "Grep",
+      "Read",
+      "WebSearch",
+      "WebFetch"
+    ]
+  }
+}

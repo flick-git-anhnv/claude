@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>AI Agent Team — 16 Vai Trò</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+header {
+  padding: 12px 20px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+header h1 { font-size: 16px; font-weight: 600; color: #f0f6fc; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #8b949e;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.tab.active { background: #21262d; border-color: #30363d; color: #f0f6fc; }
+.tab:hover:not(.active) { color: #e6edf3; }
+
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ORG CHART */
+#orgView {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+}
+#orgCanvas {
+  position: relative;
+  width: 1080px;
+  min-height: 620px;
+  margin: 0 auto;
+}
+#svgLines {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+.agent-node {
+  position: absolute;
+  width: 130px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  transform: translate(-50%, 0);
+  user-select: none;
+  z-index: 2;
+}
+.agent-node:hover { transform: translate(-50%, -2px); box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+.agent-node.selected { box-shadow: 0 0 0 2px #fff, 0 6px 20px rgba(0,0,0,0.5); }
+.agent-node .node-name { font-size: 12px; font-weight: 600; line-height: 1.3; }
+.agent-node .node-level { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+
+/* Level colors */
+.l1 { background: rgba(255,215,0,0.12); border-color: #FFD700; }
+.l1 .node-name { color: #FFD700; }
+.l2 { background: rgba(255,140,0,0.12); border-color: #FF8C00; }
+.l2 .node-name { color: #FF9F40; }
+.l3 { background: rgba(74,144,217,0.12); border-color: #4A90D9; }
+.l3 .node-name { color: #79B8FF; }
+.l4 { background: rgba(92,184,92,0.12); border-color: #5CB85C; }
+.l4 .node-name { color: #7EE787; }
+.l5 { background: rgba(155,89,182,0.12); border-color: #9B59B6; }
+.l5 .node-name { color: #D2A8FF; }
+.utility { background: rgba(232,184,75,0.12); border-color: #e8b84b; border-style: dashed; }
+.utility .node-name { color: #e8b84b; }
+
+.agent-node.highlighted { animation: pulse 0.6s ease; }
+.agent-node.dimmed { opacity: 0.25; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+  100% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+}
+
+/* SIDE PANEL */
+#sidePanel {
+  width: 290px;
+  background: #161b22;
+  border-left: 1px solid #30363d;
+  padding: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#sidePanel .panel-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #8b949e; }
+#agentDetail { flex: 1; }
+#agentDetail .detail-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+#agentDetail .detail-level { font-size: 11px; color: #8b949e; margin-bottom: 12px; }
+#agentDetail .detail-section { margin-bottom: 12px; }
+#agentDetail .detail-section h4 { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+#agentDetail .detail-section p { font-size: 12px; line-height: 1.5; color: #c9d1d9; }
+.tool-badge {
+  display: inline-block;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 10px;
+  color: #8b949e;
+  margin: 2px;
+}
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.model-opus  { background: rgba(255,215,0,0.1);  border: 1px solid #FFD700; color: #FFD700; }
+.model-sonnet{ background: rgba(88,166,255,0.1); border: 1px solid #58a6ff; color: #79b8ff; }
+.placeholder-text { font-size: 12px; color: #484f58; text-align: center; margin-top: 40px; line-height: 1.8; }
+
+/* WORKFLOW VIEW */
+#workflowView {
+  flex: 1;
+  display: none;
+  flex-direction: row;
+  overflow: hidden;
+}
+.workflow-left {
+  width: 200px;
+  background: #161b22;
+  border-right: 1px solid #30363d;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.workflow-left h3 { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.wf-group-label {
+  font-size: 10px;
+  color: #484f58;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 8px;
+  margin-bottom: 2px;
+  padding-left: 2px;
+}
+.flow-btn {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  background: #21262d;
+  color: #c9d1d9;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.15s;
+  line-height: 1.3;
+}
+.flow-btn:hover { border-color: #58a6ff; color: #f0f6fc; }
+.flow-btn.active { border-color: #58a6ff; background: #1c2b3a; color: #79b8ff; }
+.flow-btn .flow-id { font-size: 10px; opacity: 0.6; display: block; margin-bottom: 1px; }
+
+.workflow-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.workflow-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.workflow-header h2 { font-size: 14px; font-weight: 600; }
+.play-btn {
+  padding: 6px 16px;
+  background: #238636;
+  border: 1px solid #2ea043;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.play-btn:hover { background: #2ea043; }
+.play-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.workflow-steps {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  opacity: 0.3;
+  transition: opacity 0.4s;
+  border-bottom: 1px solid #21262d;
+}
+.step.active { opacity: 1; }
+.step.done { opacity: 0.7; }
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #21262d;
+  border: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #8b949e;
+}
+.step.active .step-num { background: #58a6ff; border-color: #58a6ff; color: #fff; }
+.step.done .step-num { background: #238636; border-color: #2ea043; color: #fff; }
+.step-content { flex: 1; }
+.step-agents {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+.agent-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+}
+.step-note {
+  display: inline-block;
+  font-size: 10px;
+  color: #58a6ff;
+  background: rgba(88,166,255,0.08);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
+.arrow-icon { color: #58a6ff; font-size: 14px; }
+.step-msg { font-size: 12px; color: #8b949e; }
+
+/* LEGEND */
+.legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid #30363d;
+  margin-top: auto;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8b949e; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI Agent Team <span style="font-size:11px;color:#8b949e;font-weight:400">16 vai trò</span></h1>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('org')">Org Chart</div>
+    <div class="tab" onclick="switchTab('workflow')">Workflow Flows</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ORG CHART TAB -->
+  <div id="orgView">
+    <div id="orgCanvas">
+      <svg id="svgLines"></svg>
+    </div>
+  </div>
+  <div id="sidePanel">
+    <div class="panel-title">Agent Detail</div>
+    <div id="agentDetail">
+      <div class="placeholder-text">Click vào một agent<br>để xem thông tin chi tiết</div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#FFD700"></div>L1 Executive</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FF8C00"></div>L2 Management</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4A90D9"></div>L3 Lead</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#5CB85C"></div>L4 Senior IC</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9B59B6"></div>L5 Junior IC</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e8b84b;border-radius:2px"></div>Utility</div>
+    </div>
+  </div>
+
+  <!-- WORKFLOW TAB -->
+  <div id="workflowView">
+    <div class="workflow-left">
+      <h3>Chọn Workflow</h3>
+
+      <div class="wf-group-label">Feature / Sprint</div>
+      <button class="flow-btn active" onclick="loadWorkflow('feature', this)">
+        <span class="flow-id">WF-FEATURE</span>Tính năng mới
+      </button>
+      <button class="flow-btn" onclick="loadWorkflow('sprint', this)">
+        <span class="flow-id">WF-SPRINT</span>Sprint Planning
+      </button>
+
+      <div class="wf-group-label">Bug / Fix</div>
+      <button class="flow-btn" onclick="loadWorkflow('bugfix', this)">
+        <span class="flow-id">WF-BUGFIX</span>Bug fix thường
+      </button>
+      <button class="flow-btn" onclick="loadWorkflow('hotfix', this)">
+        <span class="flow-id">WF-HOTFIX</span>Hotfix khẩn
+      </button>
+      <button class="flow-btn" onclick="loadWorkflow('incident', this)">
+        <span class="flow-id">WF-INCIDENT</span>SEV1 Production
+      </button>
+
+      <div class="wf-group-label">Kỹ thuật</div>
+      <button class="flow-btn" onclick="loadWorkflow('review', this)">
+        <span class="flow-id">WF-REVIEW-STD</span>Code Review
+      </button>
+      <button class="flow-btn" onclick="loadWorkflow('refactor', this)">
+        <span class="flow-id">WF-REFACTOR</span>Refactor / Tech Debt
+      </button>
+
+      <div class="wf-group-label">Tài liệu</div>
+      <button class="flow-btn" onclick="loadWorkflow('docs', this)">
+        <span class="flow-id">WF-DOCS</span>Viết tài liệu
+      </button>
+      <button class="flow-btn" onclick="loadWorkflow('convert', this)">
+        <span class="flow-id">WF-CONVERT</span>MD → DOCX/PDF
+      </button>
+
+      <div class="wf-group-label">Khác</div>
+      <button class="flow-btn" onclick="loadWorkflow('conflict', this)">
+        <span class="flow-id">Scenario</span>PM vs TL Conflict
+      </button>
+    </div>
+    <div class="workflow-main">
+      <div class="workflow-header">
+        <h2 id="workflowTitle">Tính năng mới (end-to-end)</h2>
+        <button class="play-btn" id="playBtn" onclick="playWorkflow()">▶ Play</button>
+      </div>
+      <div class="workflow-steps" id="workflowSteps"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const AGENTS = [
+  {
+    id: 'cto', name: 'CTO', fullName: 'Chief Technology Officer',
+    level: 1, x: 540, y: 30,
+    parent: null,
+    colorClass: 'l1', color: '#FFD700',
+    levelLabel: 'L1 · Executive',
+    model: 'claude-opus-4-7', modelTier: 'opus',
+    description: 'Người đứng đầu phòng phần mềm. Phê duyệt kiến trúc lớn, quyết định công nghệ chiến lược, release production tính năng quan trọng.',
+    when: 'Kiến trúc lớn, quyết định công nghệ chiến lược, release quan trọng. Không gọi cho task hằng ngày.',
+    tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch']
+  },
+  {
+    id: 'engineering-manager', name: 'Engineering\nManager', fullName: 'Engineering Manager',
+    level: 2, x: 310, y: 155,
+    parent: 'cto',
+    colorClass: 'l2', color: '#FF8C00',
+    levelLabel: 'L2 · Management',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Quản lý nhân sự và resource của các team kỹ thuật. Phân bổ team, quyết định ưu tiên cross-team, đánh giá hiệu suất, duyệt PR critical.',
+    when: 'Phân bổ team cho dự án, ưu tiên cross-team, approve deploy production tính năng lớn.',
+    tools: ['Read', 'Glob', 'Grep', 'Edit']
+  },
+  {
+    id: 'product-manager', name: 'Product\nManager', fullName: 'Product Manager',
+    level: 2, x: 770, y: 155,
+    parent: 'cto',
+    colorClass: 'l2', color: '#FF8C00',
+    levelLabel: 'L2 · Management',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Phụ trách yêu cầu sản phẩm, viết PRD, ưu tiên backlog, đại diện tiếng nói của người dùng và khách hàng.',
+    when: 'Định nghĩa tính năng mới, làm rõ scope, quyết định trade-off business vs technical.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch']
+  },
+  {
+    id: 'tech-lead', name: 'Tech Lead', fullName: 'Tech Lead',
+    level: 3, x: 100, y: 295,
+    parent: 'engineering-manager',
+    colorClass: 'l3', color: '#4A90D9',
+    levelLabel: 'L3 · Lead',
+    model: 'claude-opus-4-7', modelTier: 'opus',
+    description: 'Thiết kế kỹ thuật cho tính năng, chia task, code review cuối cùng, mentor developer. Review test plan từ góc độ coverage và testability.',
+    when: 'Thiết kế API, chọn pattern, review PR quan trọng, chia feature lớn thành task nhỏ, review test plan.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'qa-lead', name: 'QA Lead', fullName: 'QA Lead',
+    level: 3, x: 265, y: 295,
+    parent: 'engineering-manager',
+    colorClass: 'l3', color: '#4A90D9',
+    levelLabel: 'L3 · Lead',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Định nghĩa chiến lược test, viết test plan tổng thể, quyết định automation framework, ký duyệt release từ góc độ chất lượng. Sign-off P0/P1 bug fix.',
+    when: 'Lập kế hoạch test cho feature lớn, đánh giá rủi ro chất lượng, sign-off P0/P1 trong WF-BUGFIX. QA Lead có quyền VETO release.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'devops-lead', name: 'DevOps Lead', fullName: 'DevOps Lead',
+    level: 3, x: 430, y: 295,
+    parent: 'engineering-manager',
+    colorClass: 'l3', color: '#4A90D9',
+    levelLabel: 'L3 · Lead',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Quản lý hạ tầng, CI/CD, monitoring, security pipeline. Approve deploy staging VÀ production (2 bước riêng biệt).',
+    when: 'Thiết kế pipeline, scale hạ tầng, xử lý sự cố production, approve staging và production deploy.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'project-manager', name: 'Project\nManager', fullName: 'Project Manager / Scrum Master',
+    level: 3, x: 595, y: 295,
+    parent: 'engineering-manager',
+    colorClass: 'l3', color: '#4A90D9',
+    levelLabel: 'L3 · Lead',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Lên kế hoạch sprint, theo dõi tiến độ, gỡ blocker, tổ chức ceremony (standup, planning, retro). Báo cáo trạng thái lên EM.',
+    when: 'Chia nhỏ kế hoạch, theo dõi timeline, báo cáo trạng thái dự án.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep']
+  },
+  {
+    id: 'business-analyst', name: 'Business\nAnalyst', fullName: 'Business Analyst',
+    level: 4, x: 770, y: 295,
+    parent: 'product-manager',
+    colorClass: 'l4', color: '#5CB85C',
+    levelLabel: 'L4 · Senior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Phân tích yêu cầu chi tiết, viết user story, acceptance criteria, vẽ flow nghiệp vụ, kết nối PM và team kỹ thuật.',
+    when: 'PRD đã có nhưng cần đào sâu chi tiết, edge case, làm rõ nghiệp vụ.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep']
+  },
+  {
+    id: 'ui-ux-designer', name: 'UI/UX\nDesigner', fullName: 'UI/UX Designer',
+    level: 4, x: 940, y: 295,
+    parent: 'product-manager',
+    colorClass: 'l4', color: '#5CB85C',
+    levelLabel: 'L4 · Senior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Thiết kế giao diện, wireframe, prototype, design system. Đảm bảo tính nhất quán và trải nghiệm người dùng tốt.',
+    when: 'Mockup tính năng mới, đánh giá UX, đảm bảo nhất quán với design system.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebFetch']
+  },
+  {
+    id: 'senior-developer', name: 'Senior Dev', fullName: 'Senior Developer',
+    level: 4, x: 60, y: 445,
+    parent: 'tech-lead',
+    colorClass: 'l4', color: '#5CB85C',
+    levelLabel: 'L4 · Senior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Lập trình viên giàu kinh nghiệm, đảm nhận task khó, thiết kế chi tiết, mentor junior, review code junior. Người thực thi WF-HOTFIX và WF-REFACTOR.',
+    when: 'Code phần phức tạp (auth, payment, optimization), peer review, mentor junior, hotfix và refactor.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'junior-developer', name: 'Junior Dev', fullName: 'Junior Developer',
+    level: 5, x: 185, y: 445,
+    parent: 'tech-lead',
+    colorClass: 'l5', color: '#9B59B6',
+    levelLabel: 'L5 · Junior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Lập trình viên đang phát triển, đảm nhận task vừa sức, học hỏi qua mentor và code review.',
+    when: 'Code tính năng CRUD đơn giản, fix bug nhỏ, thực thi task theo hướng dẫn của Senior/Tech Lead.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'qa-engineer', name: 'QA Engineer', fullName: 'QA Engineer',
+    level: 5, x: 320, y: 445,
+    parent: 'qa-lead',
+    colorClass: 'l5', color: '#9B59B6',
+    levelLabel: 'L5 · Junior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Viết test case chi tiết, chạy manual test, viết automation script, log bug. Thực hiện smoke test trong WF-HOTFIX. Regression test trong WF-REFACTOR.',
+    when: 'Test tính năng cụ thể, viết test plan chi tiết, reproduce bug, smoke test hotfix, regression test refactor.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'devops-engineer', name: 'DevOps Eng', fullName: 'DevOps Engineer',
+    level: 5, x: 480, y: 445,
+    parent: 'devops-lead',
+    colorClass: 'l5', color: '#9B59B6',
+    levelLabel: 'L5 · Junior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Viết IaC (Terraform), CI/CD pipeline, setup monitor, run deploy. Deploy staging và production sau khi được DevOps Lead approve.',
+    when: 'Tạo môi trường, viết pipeline, troubleshoot deployment, setup alert, chạy lệnh deploy.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
+  },
+  {
+    id: 'documentation-writer', name: 'Doc Writer', fullName: 'Documentation Writer',
+    level: 4, x: 640, y: 445,
+    parent: 'engineering-manager',
+    colorClass: 'l4', color: '#5CB85C',
+    levelLabel: 'L4 · Senior IC',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Viết tài liệu hướng dẫn sử dụng từ ứng dụng đang chạy thật, chụp screenshot từng trạng thái, xuất DOCX+PDF theo brand KZTEK. Chuyển đổi file .md sang DOCX/PDF. CHỈ kích hoạt khi user yêu cầu rõ ràng.',
+    when: 'WF-DOCS: user yêu cầu viết tài liệu hướng dẫn cho tính năng/hệ thống. WF-CONVERT: chuyển đổi file .md sang DOCX+PDF. KHÔNG tự động kích hoạt trong các workflow khác.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebFetch', 'Bash']
+  },
+  {
+    id: 'task-planner', name: 'Task Planner', fullName: 'Task Planner',
+    level: 0, x: 780, y: 575,
+    parent: null,
+    colorClass: 'utility', color: '#e8b84b',
+    levelLabel: 'Utility · System',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Tạo và quản lý plan file (.claude/plans/PLAN-*.md) cho mỗi task. Tự động kiểm tra plan hiện có khi task đang dở. Cập nhật tiến độ (⬜→✅) sau mỗi bước hoàn thành. KHÔNG tự thực hiện task — chỉ quản lý plan.',
+    when: 'Tự động gọi trước mọi workflow mới để tạo/kiểm tra plan file. Gọi thủ công khi muốn xem tiến độ task, cập nhật plan, hoặc tìm task đang dở.',
+    tools: ['Read', 'Write', 'Edit', 'Glob']
+  },
+  {
+    id: 'md-optimizer', name: 'MD Optimizer', fullName: 'MD Optimizer',
+    level: 0, x: 930, y: 575,
+    parent: null,
+    colorClass: 'utility', color: '#e8b84b',
+    levelLabel: 'Utility · System',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
+    description: 'Phân tích file agent.md hoặc skill.md qua 5 bước: INGEST → RESEARCH (tra cứu GitHub/web) → ANALYZE (ưu/nhược điểm có nguồn) → PROPOSE (before/after) → APPLY (chỉ sau khi user xác nhận). KHÔNG tự ghi file trước khi được phép.',
+    when: 'Khi user muốn review, tối ưu, hoặc nâng cấp một agent definition (.claude/agents/*.md) hoặc skill definition (.claude/commands/*.md). Dispatcher gọi sau khi tạo agent/skill mới.',
+    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch']
+  }
+];
+
+const AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.id, a]));
+
+// ─── WORKFLOWS ────────────────────────────────────────────────────────────────
+const WORKFLOWS = {
+  feature: {
+    title: 'WF-FEATURE — Tính năng mới (end-to-end, 15 bước)',
+    steps: [
+      { from: null, to: 'product-manager', msg: 'Stakeholder gửi yêu cầu tính năng mới' },
+      { from: 'product-manager', to: 'product-manager', msg: 'Viết PRD (vấn đề, mục tiêu, metric, non-goals)' },
+      { from: 'product-manager', to: 'business-analyst', msg: 'Giao bóc tách user story + acceptance criteria' },
+      { from: 'business-analyst', to: 'product-manager', msg: 'Trả lại US + AC đầy đủ + câu hỏi mở' },
+      { from: 'product-manager', to: 'ui-ux-designer', msg: 'Yêu cầu mockup + user flow + design spec' },
+      { from: 'ui-ux-designer', to: 'product-manager', msg: 'Trả lại DESIGN-*.md + wireframe + hand-off spec' },
+      { from: 'product-manager', to: 'engineering-manager', msg: 'Trình bộ tài liệu để estimate & phân bổ team' },
+      { from: 'engineering-manager', to: 'cto', msg: 'Thông báo nếu liên quan kiến trúc lớn / bảo mật', note: 'Nếu cần' },
+      { from: 'cto', to: 'engineering-manager', msg: 'Approve kiến trúc + ghi ADR', note: 'Nếu cần' },
+      { from: 'engineering-manager', to: 'tech-lead', msg: 'Giao thiết kế kỹ thuật + RESOURCE-*.md' },
+      { from: 'tech-lead', to: 'project-manager', msg: 'Cung cấp TDD-*.md + task breakdown + estimate' },
+      { from: 'project-manager', to: 'project-manager', msg: 'Lên SPRINT-N-PLAN.md, tạo task board' },
+      { from: 'tech-lead', to: 'senior-developer', msg: 'Giao task phức tạp (core logic, auth, optimization)' },
+      { from: 'tech-lead', to: 'junior-developer', msg: 'Giao task vừa sức (UI / CRUD / helper)' },
+      { from: 'junior-developer', to: 'senior-developer', msg: 'Hỏi khi bị block (context + đã thử + câu hỏi)' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'PR ready → review (có unit + integration test)' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'Code review cuối cùng → merge' },
+      { from: 'tech-lead', to: 'qa-lead', msg: 'Báo feature ready, gửi TDD để QA plan' },
+      { from: 'qa-lead', to: 'tech-lead', msg: 'Review TEST-PLAN-*.md (coverage + testability)' },
+      { from: 'qa-lead', to: 'qa-engineer', msg: 'Giao viết TC-*.md + thực thi test' },
+      { from: 'qa-engineer', to: 'senior-developer', msg: 'Log bug tìm thấy (BUG-*.md)' },
+      { from: 'senior-developer', to: 'qa-engineer', msg: 'Fix + push → verify lại' },
+      { from: 'qa-lead', to: 'engineering-manager', msg: 'QA sign-off: 0 P0/P1 open' },
+      { from: 'engineering-manager', to: 'devops-lead', msg: 'Approve deploy production' },
+      { from: 'devops-lead', to: 'devops-engineer', msg: 'Deploy lên staging' },
+      { from: 'devops-lead', to: 'devops-lead', msg: 'Approve staging, verify smoke test', note: 'Staging gate' },
+      { from: 'devops-lead', to: 'devops-engineer', msg: 'Approve + deploy production (checklist đầy đủ)' },
+      { from: 'devops-engineer', to: 'devops-lead', msg: 'Deploy success, monitor 30 phút OK' },
+      { from: 'devops-lead', to: 'engineering-manager', msg: '✓ Confirm released — DEPLOY-*.md đã ký' },
+    ]
+  },
+
+  bugfix: {
+    title: 'WF-BUGFIX — Bug fix thường (P0–P3)',
+    steps: [
+      { from: null, to: 'qa-engineer', msg: 'User / monitor báo bug — QA Engineer tiếp nhận' },
+      { from: 'qa-engineer', to: 'qa-engineer', msg: 'Reproduce bug 2–3 lần, tạo BUG-*.md với bằng chứng' },
+      { from: 'qa-engineer', to: 'senior-developer', msg: 'Giao bug report (root cause hypothesis + reproducer)' },
+      { from: 'senior-developer', to: 'senior-developer', msg: 'Viết fix, tạo PR với mô tả đầy đủ' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'PR ready → review' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'Review PR → approve hoặc request changes' },
+      { from: 'tech-lead', to: 'qa-engineer', msg: 'PR approved → verify fix trên staging' },
+      { from: 'qa-engineer', to: 'qa-engineer', msg: 'Verify fix + regression test vùng bị ảnh hưởng' },
+      { from: 'qa-engineer', to: 'qa-lead', msg: 'Xin sign-off (bắt buộc nếu bug P0/P1)', note: 'P0/P1 only' },
+      { from: 'qa-lead', to: 'devops-engineer', msg: 'Sign-off → deploy fix', note: 'P0/P1 only' },
+      { from: 'qa-engineer', to: 'devops-engineer', msg: 'Verify pass → deploy fix (P2/P3 không cần QA Lead)', note: 'P2/P3' },
+      { from: 'devops-engineer', to: 'devops-lead', msg: 'Deploy thành công, confirm với DevOps Lead' },
+    ]
+  },
+
+  hotfix: {
+    title: 'WF-HOTFIX — Hotfix khẩn (không phải SEV1/SEV2)',
+    steps: [
+      { from: null, to: 'senior-developer', msg: 'Bug P1/P2 cần fix nhanh — scope hẹp (≤10 dòng code)', note: 'Trigger' },
+      { from: 'senior-developer', to: 'senior-developer', msg: 'Viết fix khẩn trong ≤2h, tạo PR với mô tả rõ' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'PR ready → review nhanh' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'Review nhanh (≤30 phút) — focus correctness + safety' },
+      { from: 'tech-lead', to: 'qa-engineer', msg: 'Approved → smoke test tối thiểu' },
+      { from: 'qa-engineer', to: 'qa-engineer', msg: 'Smoke test path bị ảnh hưởng (không cần full regression)' },
+      { from: 'qa-engineer', to: 'devops-lead', msg: 'Smoke test pass → xin approve deploy' },
+      { from: 'devops-lead', to: 'devops-lead', msg: 'Approve + deploy production trực tiếp', note: 'Không cần staging' },
+      { from: 'devops-lead', to: 'tech-lead', msg: '✓ Hotfix deployed — confirm với Tech Lead' },
+    ]
+  },
+
+  incident: {
+    title: 'WF-INCIDENT — SEV1 Production (Incident Response)',
+    steps: [
+      { from: null, to: 'devops-engineer', msg: '⚡ Alert: API 500 rate 80% — SEV1 triggered' },
+      { from: 'devops-engineer', to: 'devops-engineer', msg: 'ACK trong 5 phút, mở #incident-channel' },
+      { from: 'devops-engineer', to: 'devops-lead', msg: 'Page DevOps Lead ngay' },
+      { from: 'devops-lead', to: 'engineering-manager', msg: 'Page Engineering Manager (SEV1 — skip chain)', note: 'Skip chain' },
+      { from: 'devops-lead', to: 'cto', msg: 'Page CTO (SEV1 — skip chain of command)', note: 'Skip chain' },
+      { from: 'devops-lead', to: 'tech-lead', msg: 'Cần Tech Lead support — vào incident channel' },
+      { from: 'tech-lead', to: 'senior-developer', msg: 'Kéo Senior Dev vào — investigate root cause' },
+      { from: 'senior-developer', to: 'senior-developer', msg: 'Investigate, tìm root cause' },
+      { from: 'devops-lead', to: 'devops-engineer', msg: 'Quyết định rollback về version trước', note: 'Mitigate first' },
+      { from: 'devops-engineer', to: 'devops-lead', msg: 'Rollback OK — alert dừng, đã mitigate' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'Tìm ra root cause, đề xuất hotfix' },
+      { from: 'tech-lead', to: 'senior-developer', msg: 'Review hướng fix → approve viết code' },
+      { from: 'senior-developer', to: 'qa-engineer', msg: 'Fix done → cần test gấp trên staging' },
+      { from: 'qa-engineer', to: 'qa-lead', msg: 'Smoke test pass → xin QA sign-off' },
+      { from: 'qa-lead', to: 'devops-lead', msg: 'Sign-off hotfix' },
+      { from: 'devops-lead', to: 'devops-engineer', msg: 'Deploy hotfix production' },
+      { from: 'devops-engineer', to: 'devops-lead', msg: 'Deploy OK ✓ — monitor' },
+      { from: 'devops-lead', to: 'engineering-manager', msg: 'Incident resolved' },
+      { from: 'devops-lead', to: 'devops-lead', msg: '📋 Viết POST-MORTEM-*.md trong 48h', note: 'Bắt buộc' },
+    ]
+  },
+
+  review: {
+    title: 'WF-REVIEW-STD — Code Review (Junior → Senior → Tech Lead)',
+    steps: [
+      { from: 'junior-developer', to: 'junior-developer', msg: 'Tự self-check: có test? có doc? code clean?' },
+      { from: 'junior-developer', to: 'senior-developer', msg: 'Tag Senior Dev review PR' },
+      { from: 'senior-developer', to: 'senior-developer', msg: 'Review: logic, security, performance, pattern, SOLID' },
+      { from: 'senior-developer', to: 'junior-developer', msg: 'Comment + request changes (tinh thần xây dựng)' },
+      { from: 'junior-developer', to: 'junior-developer', msg: 'Fix theo comment — học từ feedback' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'Senior approve → tag Tech Lead review cuối' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'Review cuối: architecture, coupling, convention, security' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'PR thường: merge. PR critical: escalate lên EM', note: 'Tùy loại PR' },
+      { from: 'engineering-manager', to: 'engineering-manager', msg: 'Review business risk + approve (chỉ PR critical)', note: 'Critical only' },
+    ]
+  },
+
+  refactor: {
+    title: 'WF-REFACTOR — Refactor / Tech Debt',
+    steps: [
+      { from: null, to: 'senior-developer', msg: 'Phát hiện tech debt cần giải quyết', note: 'Trigger' },
+      { from: 'senior-developer', to: 'senior-developer', msg: 'Đề xuất: phạm vi refactor, tác động, rủi ro, estimate' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'Trình đề xuất refactor để review' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'Review đề xuất — approve hoặc điều chỉnh scope' },
+      { from: 'tech-lead', to: 'engineering-manager', msg: 'Xin approve đưa vào sprint (không refactor giữa sprint)', note: 'EM approve' },
+      { from: 'engineering-manager', to: 'tech-lead', msg: 'Approve → đưa vào sprint backlog' },
+      { from: 'tech-lead', to: 'senior-developer', msg: 'Giao thực hiện refactor (test coverage ≥80% trước khi bắt đầu)' },
+      { from: 'senior-developer', to: 'senior-developer', msg: 'Refactor — đảm bảo coverage không giảm, các test cũ vẫn pass' },
+      { from: 'senior-developer', to: 'tech-lead', msg: 'PR ready + coverage report' },
+      { from: 'tech-lead', to: 'tech-lead', msg: 'Code review cuối cùng' },
+      { from: 'tech-lead', to: 'qa-engineer', msg: 'Approved → regression test phần bị ảnh hưởng' },
+      { from: 'qa-engineer', to: 'qa-engineer', msg: 'Regression test đầy đủ (không phải smoke test)' },
+      { from: 'qa-engineer', to: 'engineering-manager', msg: 'Regression pass → xin approve merge' },
+      { from: 'engineering-manager', to: 'engineering-manager', msg: 'Approve merge — refactor có thể ảnh hưởng rộng' },
+    ]
+  },
+
+  sprint: {
+    title: 'WF-SPRINT — Sprint Planning (Chuẩn)',
+    steps: [
+      { from: 'project-manager', to: 'product-manager', msg: 'Mời PM chuẩn bị backlog ưu tiên (P0→P3) trước buổi họp' },
+      { from: 'product-manager', to: 'business-analyst', msg: 'Đảm bảo top stories có AC rõ ràng (Given/When/Then)' },
+      { from: 'business-analyst', to: 'product-manager', msg: 'Xác nhận AC đã đủ điều kiện để estimate' },
+      { from: 'project-manager', to: 'tech-lead', msg: 'Mời Tech Lead chuẩn bị pre-estimate kỹ thuật' },
+      { from: 'product-manager', to: 'project-manager', msg: '📋 Trình bày top 10 story ưu tiên (meeting)' },
+      { from: 'tech-lead', to: 'product-manager', msg: 'Hỏi làm rõ scope và constraint kỹ thuật' },
+      { from: 'business-analyst', to: 'product-manager', msg: 'Làm rõ acceptance criteria theo yêu cầu' },
+      { from: 'tech-lead', to: 'project-manager', msg: 'Estimate từng story (story points)' },
+      { from: 'qa-lead', to: 'tech-lead', msg: 'Yêu cầu testability rõ ràng cho mỗi story' },
+      { from: 'project-manager', to: 'project-manager', msg: 'Chốt SPRINT-N-PLAN.md theo velocity team' },
+      { from: 'tech-lead', to: 'project-manager', msg: 'Assign task cụ thể cho Senior/Junior Dev' },
+      { from: 'qa-lead', to: 'project-manager', msg: 'Assign test task cho QA Engineer' },
+    ]
+  },
+
+  conflict: {
+    title: 'Scenario — PM vs Tech Lead Conflict (Escalation)',
+    steps: [
+      { from: 'product-manager', to: 'tech-lead', msg: '"Feature X cần xong trong 1 tuần"' },
+      { from: 'tech-lead', to: 'product-manager', msg: '"Không khả thi — cần 3 tuần vì phải refactor module Y"' },
+      { from: 'product-manager', to: 'tech-lead', msg: '"Bỏ refactor, làm hack nhanh thôi"' },
+      { from: 'tech-lead', to: 'product-manager', msg: '"Hack sẽ tạo tech debt nghiêm trọng — ảnh hưởng feature sau"' },
+      { from: 'tech-lead', to: 'engineering-manager', msg: 'Escalate — conflict không giải quyết được trong 1 ngày', note: 'Escalate' },
+      { from: 'product-manager', to: 'engineering-manager', msg: 'Đồng thời escalate từ phía PM', note: 'Escalate' },
+      { from: 'engineering-manager', to: 'engineering-manager', msg: 'Nghe cả 2 phía, đánh giá trade-off business vs tech' },
+      { from: 'engineering-manager', to: 'product-manager', msg: 'Quyết định: cắt scope feature X, giữ refactor' },
+      { from: 'engineering-manager', to: 'tech-lead', msg: 'Thông báo quyết định + lý do' },
+      { from: 'product-manager', to: 'cto', msg: 'Nếu vẫn không đồng ý → escalate lên CTO (qua EM)', note: 'Nếu cần' },
+      { from: 'cto', to: 'engineering-manager', msg: 'Quyết định cuối cùng — các bên phải tuân thủ' },
+    ]
+  },
+
+  docs: {
+    title: 'WF-DOCS — Viết tài liệu hướng dẫn sử dụng',
+    steps: [
+      { from: null, to: 'product-manager', msg: 'User yêu cầu tài liệu hướng dẫn cho tính năng/hệ thống cụ thể', note: 'Trigger' },
+      { from: 'product-manager', to: 'product-manager', msg: 'Xác nhận scope: tính năng nào, đối tượng người đọc, môi trường chụp màn hình' },
+      { from: 'product-manager', to: 'documentation-writer', msg: 'Giao brief: scope rõ ràng, user persona, staging/local đang chạy' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Đọc brand KZTEK → kiểm kê 100% Form/Screen → lập Screen Inventory' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Khởi động ứng dụng thật → xác nhận đang chạy (HTTP 200 / .exe chạy OK)' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Chụp screenshot từng trạng thái (default/filled/btn/success/error/dialog)' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Viết Markdown + chèn ảnh ngay tại chỗ → chạy md_to_docx_kztek.py → xuất PDF' },
+      { from: 'documentation-writer', to: 'product-manager', msg: 'Trả tài liệu hoàn chỉnh (MANUAL-*.md + .docx + .pdf + screenshots/)' },
+    ]
+  },
+
+  convert: {
+    title: 'WF-CONVERT — Chuyển đổi .md → DOCX + PDF',
+    steps: [
+      { from: null, to: 'documentation-writer', msg: 'User yêu cầu chuyển file .md sang DOCX/PDF', note: 'Trigger' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Xác nhận danh sách file nguồn và thư mục output' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Kiểm tra: file output không bị lock, set PYTHONIOENCODING=utf-8' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Chạy scripts/md_to_docx_kztek.py (--batch nếu nhiều file)' },
+      { from: 'documentation-writer', to: 'documentation-writer', msg: 'Báo cáo kết quả: danh sách .docx + .pdf đã tạo, lỗi nếu có' },
+    ]
+  }
+};
+
+// ─── ORG CHART RENDER ─────────────────────────────────────────────────────────
+function renderOrgChart() {
+  const canvas = document.getElementById('orgCanvas');
+  const svg = document.getElementById('svgLines');
+  const NODE_H = 52;
+
+  const maxY = Math.max(...AGENTS.map(a => a.y)) + NODE_H + 40;
+  canvas.style.height = (maxY + 60) + 'px';
+  svg.setAttribute('viewBox', `0 0 1080 ${maxY + 60}`);
+  svg.style.height = (maxY + 60) + 'px';
+
+  let linesHTML = '';
+  AGENTS.forEach(agent => {
+    if (!agent.parent) return;
+    const parent = AGENT_MAP[agent.parent];
+    const x1 = parent.x, y1 = parent.y + NODE_H;
+    const x2 = agent.x, y2 = agent.y;
+    const midY = (y1 + y2) / 2;
+    linesHTML += `<path d="M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}"
+      stroke="#30363d" stroke-width="1.5" fill="none"
+      id="line-${agent.id}" class="edge-line"/>`;
+  });
+  svg.innerHTML = linesHTML;
+
+  AGENTS.forEach(agent => {
+    const div = document.createElement('div');
+    div.className = `agent-node ${agent.colorClass}`;
+    div.id = `node-${agent.id}`;
+    div.style.left = agent.x + 'px';
+    div.style.top = agent.y + 'px';
+    div.innerHTML = `<div class="node-name">${agent.name.replace('\n', '<br>')}</div><div class="node-level">${agent.levelLabel.split('·')[0].trim()}</div>`;
+    div.onclick = () => selectAgent(agent.id);
+    canvas.appendChild(div);
+  });
+}
+
+function selectAgent(id) {
+  document.querySelectorAll('.agent-node').forEach(n => n.classList.remove('selected'));
+  document.getElementById(`node-${id}`).classList.add('selected');
+
+  const a = AGENT_MAP[id];
+  const toolBadges = a.tools.map(t => `<span class="tool-badge">${t}</span>`).join('');
+  const modelClass = a.modelTier === 'opus' ? 'model-opus' : 'model-sonnet';
+  const modelLabel = a.modelTier === 'opus' ? '◆ Opus 4.7' : '◇ Sonnet 4.6';
+
+  document.getElementById('agentDetail').innerHTML = `
+    <div class="detail-name" style="color:${a.color}">${a.fullName}</div>
+    <div class="detail-level">${a.levelLabel}</div>
+    <div class="detail-section">
+      <h4>Vai trò</h4>
+      <p>${a.description}</p>
+    </div>
+    <div class="detail-section">
+      <h4>Khi nào gọi</h4>
+      <p>${a.when}</p>
+    </div>
+    <div class="detail-section">
+      <h4>Model AI</h4>
+      <span class="model-badge ${modelClass}">${modelLabel}</span>
+    </div>
+    <div class="detail-section">
+      <h4>Tools</h4>
+      <div>${toolBadges}</div>
+    </div>
+  `;
+}
+
+// ─── WORKFLOW RENDER ──────────────────────────────────────────────────────────
+let currentFlow = 'feature';
+let playInterval = null;
+let currentStep = -1;
+
+function getChipHTML(agentId) {
+  if (!agentId) return `<span class="agent-chip" style="background:rgba(88,166,255,0.1);border-color:#58a6ff;color:#58a6ff">Stakeholder</span>`;
+  const a = AGENT_MAP[agentId];
+  return `<span class="agent-chip" style="background:${a.color}18;border-color:${a.color};color:${a.color}">${a.name.replace('\n', ' ')}</span>`;
+}
+
+function loadWorkflow(id, btnEl) {
+  stopPlay();
+  currentFlow = id;
+  currentStep = -1;
+
+  document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  const wf = WORKFLOWS[id];
+  document.getElementById('workflowTitle').textContent = wf.title;
+
+  const container = document.getElementById('workflowSteps');
+  container.innerHTML = wf.steps.map((step, i) => {
+    const fromChip = getChipHTML(step.from);
+    const toChip = getChipHTML(step.to);
+    const arrow = step.from && step.from !== step.to ? `<span class="arrow-icon">→</span>${toChip}` : '';
+    const noteHTML = step.note ? `<span class="step-note">${step.note}</span>` : '';
+    return `
+      <div class="step" id="step-${i}">
+        <div class="step-num">${i + 1}</div>
+        <div class="step-content">
+          <div class="step-agents">${fromChip}${arrow}${noteHTML}</div>
+          <div class="step-msg">${step.msg}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('playBtn').disabled = false;
+  document.getElementById('playBtn').textContent = '▶ Play';
+}
+
+function playWorkflow() {
+  const btn = document.getElementById('playBtn');
+  if (playInterval) { stopPlay(); return; }
+  if (currentStep >= WORKFLOWS[currentFlow].steps.length - 1) {
+    currentStep = -1;
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'done'));
+  }
+  btn.textContent = '⏹ Stop';
+  playInterval = setInterval(() => {
+    if (currentStep >= 0) {
+      document.getElementById(`step-${currentStep}`).classList.remove('active');
+      document.getElementById(`step-${currentStep}`).classList.add('done');
+    }
+    currentStep++;
+    const steps = WORKFLOWS[currentFlow].steps;
+    if (currentStep >= steps.length) { stopPlay(); return; }
+    const stepEl = document.getElementById(`step-${currentStep}`);
+    stepEl.classList.add('active');
+    stepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 900);
+}
+
+function stopPlay() {
+  if (playInterval) { clearInterval(playInterval); playInterval = null; }
+  const btn = document.getElementById('playBtn');
+  if (btn) btn.textContent = currentStep >= WORKFLOWS[currentFlow].steps.length - 1 ? '↺ Replay' : '▶ Play';
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  if (tab === 'org') {
+    document.getElementById('orgView').style.display = 'block';
+    document.getElementById('sidePanel').style.display = 'flex';
+    document.getElementById('workflowView').style.display = 'none';
+  } else {
+    document.getElementById('orgView').style.display = 'none';
+    document.getElementById('sidePanel').style.display = 'none';
+    document.getElementById('workflowView').style.display = 'flex';
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderOrgChart();
+document.getElementById('workflowView').style.display = 'flex';
+loadWorkflow('feature', document.querySelector('.flow-btn'));
+document.getElementById('workflowView').style.display = 'none';
+</script>
+</body>
+</html>
