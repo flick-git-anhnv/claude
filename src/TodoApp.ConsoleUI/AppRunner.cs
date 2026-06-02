@@ -22,10 +22,8 @@ public sealed class AppRunner
     {
         AnsiConsole.Initialize();
 
-        // Initialize — load dữ liệu
-        var initResult = _service.Initialize();
+        _service.Initialize();
 
-        // Hiển thị cảnh báo nếu có vấn đề storage khi khởi động
         if (_repo is not null)
         {
             if (_repo.CorruptionDetected)
@@ -47,14 +45,30 @@ public sealed class AppRunner
 
             switch (action)
             {
-                case "create": createScreen.Show(); break;
-                case "edit":   editScreen.Show(selectedIndex); break;
-                case "delete": deleteScreen.Show(selectedIndex); break;
-                case "toggle": toggleScreen.Show(selectedIndex); break;
+                case "create":
+                    createScreen.Show();
+                    break;
+
+                case "edit":
+                case "delete":
+                case "toggle":
+                    // Resolve Guid dùng filter hiện tại — tránh BUG-002
+                    var targetItem = _service.GetByDisplayIndex(selectedIndex, mainScreen.CurrentFilter);
+                    if (targetItem is null)
+                    {
+                        ToastNotification.ShowAndWait(ToastKind.Error, Messages.TaskNotFound);
+                        break;
+                    }
+                    if (action == "edit")   editScreen.Show(targetItem.Id);
+                    if (action == "delete") deleteScreen.Show(targetItem.Id);
+                    if (action == "toggle") toggleScreen.Show(targetItem.Id);
+                    break;
+
                 case "filter":
                     var newFilter = filterScreen.Show(mainScreen.CurrentFilter);
                     mainScreen.SetFilter(newFilter);
                     break;
+
                 case "quit":
                     Console.Clear();
                     AnsiConsole.WriteLine(AnsiColors.Green, "  Tạm biệt! Dữ liệu đã được lưu.");

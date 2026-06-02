@@ -13,9 +13,9 @@ public sealed class DeleteScreen
         _service = service;
     }
 
-    public void Show(int displayIndex)
+    public void Show(Guid id)
     {
-        var item = _service.GetByDisplayIndex(displayIndex, TaskFilter.All);
+        var item = _service.GetTasks(TaskFilter.All).FirstOrDefault(t => t.Id == id);
         if (item is null)
         {
             ToastNotification.ShowAndWait(ToastKind.Error, Messages.TaskNotFound);
@@ -25,7 +25,7 @@ public sealed class DeleteScreen
         AppHeader.Render("Xóa công việc");
         AnsiConsole.WriteLine(AnsiColors.Red, $"  Sắp xóa: \"{item.Title}\"");
         Console.WriteLine();
-        // Enter mặc định = N (an toàn, DESIGN §12.4 / TDD §8 BR7)
+        // Enter mặc định = N (an toàn, TDD §8 BR7)
         Console.Write(Messages.ConfirmDelete);
 
         if (!ConsoleInput.ReadYesNo(defaultYes: false))

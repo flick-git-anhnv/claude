@@ -13,9 +13,9 @@ public sealed class ToggleScreen
         _service = service;
     }
 
-    public void Show(int displayIndex)
+    public void Show(Guid id)
     {
-        var item = _service.GetByDisplayIndex(displayIndex, TaskFilter.All);
+        var item = _service.GetTasks(TaskFilter.All).FirstOrDefault(t => t.Id == id);
         if (item is null)
         {
             ToastNotification.ShowAndWait(ToastKind.Error, Messages.TaskNotFound);

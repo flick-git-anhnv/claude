@@ -14,9 +14,9 @@ public sealed class EditScreen
         _service = service;
     }
 
-    public void Show(int displayIndex)
+    public void Show(Guid id)
     {
-        var item = _service.GetByDisplayIndex(displayIndex, TaskFilter.All);
+        var item = _service.GetTasks(TaskFilter.All).FirstOrDefault(t => t.Id == id);
         if (item is null)
         {
             ToastNotification.ShowAndWait(ToastKind.Error, Messages.TaskNotFound);
@@ -67,22 +67,32 @@ public sealed class EditScreen
             3 => Priority.Medium,
             4 => Priority.High,
             1 => Priority.None,
-            _ => item.Priority   // giữ nguyên nếu invalid
+            _ => item.Priority
         };
 
-        // Ngày hạn
+        // Ngày hạn (nhập "-" hoặc "clear" để xóa)
         var dueCurrent = item.DueDate?.ToString("yyyy-MM-dd") ?? "(không)";
-        Console.Write($"  Ngày hạn [{dueCurrent}] yyyy-MM-dd (Enter giữ nguyên): ");
+        AnsiConsole.WriteLine(AnsiColors.DarkGray,
+            $"  Ngày hạn [{dueCurrent}] yyyy-MM-dd | Enter=giữ | \"-\"=xóa: ");
+        Console.Write("  > ");
         var dueInput = Console.ReadLine()?.Trim();
         DateOnly? newDue = item.DueDate;
         if (!string.IsNullOrEmpty(dueInput))
         {
-            if (DateOnly.TryParseExact(dueInput, "yyyy-MM-dd",
+            if (dueInput == "-" || dueInput.Equals("clear", StringComparison.OrdinalIgnoreCase))
+            {
+                newDue = null;
+            }
+            else if (DateOnly.TryParseExact(dueInput, "yyyy-MM-dd",
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out var d))
+            {
                 newDue = d;
+            }
             else
+            {
                 AnsiConsole.WriteLine(AnsiColors.Yellow, $"  Ngày không hợp lệ — giữ nguyên [{dueCurrent}].");
+            }
         }
 
         var result = _service.Update(item.Id, new UpdateTodoRequest(newTitle, newDesc, newPriority, newDue));
