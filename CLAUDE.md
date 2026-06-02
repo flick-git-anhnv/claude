@@ -5,6 +5,18 @@
 
 ---
 
+## ⚡ KHỞI ĐỘNG — BẮT BUỘC ĐỌC TRƯỚC TIÊN
+
+```
+Read: .claude/shared/CORE.md
+```
+
+File `CORE.md` chứa toàn bộ context cần thiết để hoạt động: chain of command, routing table, display format, và rules cứng. **Dispatcher và mọi agent PHẢI đọc file này một lần khi bắt đầu session.** Không cần đọc lại trong cùng session.
+
+> File này là tài liệu gốc đầy đủ dành cho người đọc và tham chiếu. Agents dùng `.claude/shared/CORE.md` — không cần đọc lại toàn bộ file này mỗi lần.
+
+---
+
 ## 0. NGUYÊN TẮC CỐT LÕI (ĐỌC TRƯỚC KHI LÀM BẤT CỨ ĐIỀU GÌ)
 
 Claude Code hoạt động như **Dispatcher** — không phải như một AI tự do.
@@ -53,7 +65,7 @@ CTO  (L1 - Executive)
 | Loại yêu cầu | Workflow ID | Agent chain bắt buộc |
 |---|---|---|
 | Tính năng mới | WF-FEATURE | PM → BA → UX → EM → [CTO] → PJM → TL → SD/JD → TL (review) → QA → QAL → DOE → DOL |
-| Bug fix thường | WF-BUGFIX | QAE/SD → SD (fix) → TL (review) → QAE (verify) → DOE |
+| Bug fix thường | WF-BUGFIX | QAE hoặc SD (triage) → SD (fix) → TL (review) → QAE (verify) → DOE |
 | Production incident SEV1/SEV2 | WF-INCIDENT | DOE → DOL → EM + CTO → SD (fix) → TL → QAE → DOL |
 | Code review PR thường | WF-REVIEW-STD | SD → TL → merge |
 | Code review PR critical | WF-REVIEW-CRIT | SD → TL → EM → [CTO] → merge |
@@ -552,35 +564,7 @@ tests/                      ← Senior Developer + Junior Developer + QA Enginee
 ```
 
 
-> Chi tiết artifact bắt buộc của từng agent: xem `.claude/agents/[agent-name].md`
-
-> Artifact bắt buộc của Product Manager: xem `.claude/agents/product-manager.md`
-
-> Artifact bắt buộc của Business Analyst: xem `.claude/agents/business-analyst.md`
-
-> Artifact bắt buộc của UI/UX Designer: xem `.claude/agents/ui-ux-designer.md`
-
-> Artifact bắt buộc của Engineering Manager: xem `.claude/agents/engineering-manager.md`
-
-> Artifact bắt buộc của CTO: xem `.claude/agents/cto.md`
-
-> Artifact bắt buộc của Project Manager: xem `.claude/agents/project-manager.md`
-
-> Artifact bắt buộc của Tech Lead: xem `.claude/agents/tech-lead.md`
-
-> Artifact bắt buộc của Senior Developer: xem `.claude/agents/senior-developer.md`
-
-> Artifact bắt buộc của Junior Developer: xem `.claude/agents/junior-developer.md`
-
-> Artifact bắt buộc của QA Lead: xem `.claude/agents/qa-lead.md`
-
-> Artifact bắt buộc của QA Engineer: xem `.claude/agents/qa-engineer.md`
-
-> Artifact bắt buộc của DevOps Lead: xem `.claude/agents/devops-lead.md`
-
-> Artifact bắt buộc của DevOps Engineer: xem `.claude/agents/devops-engineer.md`
-
-> Artifact bắt buộc của Documentation Writer: xem `.claude/agents/documentation-writer.md`
+> Chi tiết artifact bắt buộc của từng agent: xem file tương ứng trong `.claude/agents/[agent-name].md`
 
 ---
 
