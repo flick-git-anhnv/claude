@@ -3,8 +3,8 @@ task: todo-app-csharp
 workflow: WF-FEATURE
 priority: P2
 created: 2026-06-02
-updated: 2026-06-02T21:55
-status: in-progress
+updated: 2026-06-02T22:30
+status: completed
 ---
 
 # PLAN: Xây dựng ứng dụng To-Do App C#
@@ -48,7 +48,7 @@ PM → BA → UX → EM → PJM → TL → SD → JD → TL (review) → QAE →
 | 4.1 | Thực thi test plan, log bug | QA Engineer | ✅ | docs/test-cases/TC-todo-app-csharp.md + .docx | 56 TC: 50P/2F/4B. BUG-001 P3 + BUG-002 P2 — cả 2 đã fix |
 | 4.2 | Sign-off chất lượng, veto nếu còn P0/P1 | QA Lead | ✅ | docs/test-plans/TEST-PLAN-todo-app-csharp.md + .docx | CONDITIONAL SIGN-OFF — 0 P0/P1, AC-08 conditional |
 | 4.3 | Deploy lên staging | DevOps Engineer | ✅ | src/TodoApp.ConsoleUI/README.md + .docx; publish/win-x64/TodoApp.ConsoleUI.exe (~64.6MB); docs/devops/DEPLOY-todo-app-csharp.md + .docx | Build Release 0 error 0 warning; 54/54 tests pass |
-| 4.4 | Approve staging, verify smoke test, deploy production, monitor | DevOps Lead | ⬜ | docs/devops/DEPLOY-todo-app-csharp.md | |
+| 4.4 | Approve staging, verify smoke test, deploy production, monitor | DevOps Lead | ✅ | docs/devops/DEPLOY-todo-app-csharp.md (updated+signed), git tag v1.0.0 | 54/54 pass, PE32+ binary valid, APPROVED |
 
 ---
 
@@ -75,3 +75,4 @@ PM → BA → UX → EM → PJM → TL → SD → JD → TL (review) → QAE →
 | 2026-06-02 | Bước 2.3 hoàn thành | Tech Lead tạo TDD-todo-app-csharp.md (+docx+pdf). Quyết định OQ1=Console App, OQ2=JSON file, OQ4=%LOCALAPPDATA%. Layered architecture, interface contracts, task breakdown Sprint 1 (SD ~28h / JD ~19h) |
 | 2026-06-02 | Bước 3.3 hoàn thành | Tech Lead code review S1-T018: APPROVE. Build 0 warning, 54 tests pass, Application coverage 93.97% (>80%). Fix 1 Suggestion (comment thừa). Tạo code-graph/CODE-GRAPH.md+pdf. Chuyển QA Engineer (4.1) |
 | 2026-06-02 | Bước 4.3 hoàn thành | DevOps Engineer: Build Release self-contained exe PASS (64.6MB). Tạo README.md + DEPLOY-todo-app-csharp.md (+docx). Chuyển DevOps Lead (4.4) |
+| 2026-06-02 | Bước 4.4 hoàn thành | DevOps Lead: APPROVED. Binary PE32+ valid (67.7MB), 54/54 tests pass, 0 errors. Git tag v1.0.0 tạo thành công. DEPLOY doc signed-off. WF-FEATURE COMPLETED. |
