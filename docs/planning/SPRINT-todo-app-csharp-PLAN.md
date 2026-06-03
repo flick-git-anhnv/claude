@@ -491,6 +491,6 @@ DỰ BÁO:
 
 ## Lịch sử cập nhật
 
-| Ngày | Phiên bản | Nội dung thay đổi |
-|------|-----------|-------------------|
-| 2026-06-02 | v1.0 | Khởi tạo Sprint Plan — 3 sprints, 14 ngày |
+| Ngày | Phiên bản | Nội dung thay đổi | Agent/Vai trò |
+|------|-----------|-------------------|---------------|
+| 2026-06-02 | v1.0 | Khởi tạo Sprint Plan — 3 sprints, 14 ngày | Project Manager |

@@ -693,6 +693,7 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 | Thêm / sửa / xóa kiến trúc lớn | `docs/architecture/ADR-*.md` — tạo ADR mới hoặc cập nhật trạng thái |
 | Thêm / sửa / xóa deployment / infra | `docs/devops/DEPLOY-*.md` hoặc `docs/devops/INFRA-*.md` |
 | Sửa lỗi ảnh hưởng AC | `docs/user-stories/US-*.md` và `docs/test-cases/TC-*.md` |
+| Bắt đầu / hoàn thành / thay đổi trạng thái bất kỳ task trong sprint | `docs/planning/SPRINT-*.md` — cột Status trong backlog + task board + header trạng thái sprint |
 
 ### 15.2 Quy trình bắt buộc
 
@@ -719,6 +720,67 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 ```
 
 > **Lưu ý:** Nếu không có tài liệu nào cần cập nhật (ví dụ: refactor nội bộ không thay đổi behavior), developer phải ghi rõ lý do trong PR. Không được để trống mục này.
+
+### 15.4 BẮT BUỘC: Cập nhật trạng thái Sprint khi task thay đổi
+
+> **Quy tắc cứng:** Bất kỳ khi nào một task trong sprint thay đổi trạng thái — bắt đầu thực hiện, hoàn thành, bị block, hoặc skip — agent thực hiện PHẢI cập nhật file `docs/planning/SPRINT-*.md` ngay trong cùng session. **KHÔNG đánh dấu task hoàn thành trước khi sprint doc được cập nhật.**
+
+#### Trigger — Khi nào bắt buộc cập nhật sprint doc
+
+| Sự kiện | Cần cập nhật |
+|---------|-------------|
+| Bắt đầu thực hiện một task (Todo → In Progress) | ✅ BẮT BUỘC |
+| Hoàn thành một task (In Progress → Done) | ✅ BẮT BUỘC |
+| Task bị block (→ Blocked) | ✅ BẮT BUỘC |
+| Task được bỏ qua có lý do (→ Skipped) | ✅ BẮT BUỘC |
+| Sprint bắt đầu (status: Planning → Active) | ✅ BẮT BUỘC |
+| Sprint hoàn thành (status: Active → Completed) | ✅ BẮT BUỘC |
+| Sprint Review / Retrospective xong | ✅ BẮT BUỘC |
+| Thêm task mới vào sprint backlog giữa chừng | ✅ BẮT BUỘC |
+
+#### Các vị trí cần cập nhật trong file `SPRINT-*.md`
+
+```
+1. Header frontmatter   → trường `updated:` (cập nhật ngày hiện tại)
+2. Header trạng thái    → dòng "## Trạng thái: [Planning / Active / Completed]"
+3. Bảng backlog         → cột `Status` của task tương ứng
+4. Task board           → di chuyển task sang cột đúng (TODO/IN PROGRESS/REVIEW/DONE)
+5. Burn-down / SP       → cập nhật SP đã burn nếu task Done
+6. Lịch sử cập nhật     → thêm dòng mới vào bảng cuối file
+```
+
+#### Status mapping bắt buộc (backlog table ↔ task board)
+
+| Trạng thái | Giá trị cột Status (backlog) | Cột task board |
+|-----------|------------------------------|---------------|
+| Chưa bắt đầu | `Todo` | TODO |
+| Đang làm | `In Progress` | IN PROGRESS |
+| Chờ review | `Review` | REVIEW |
+| Hoàn thành | `Done` | DONE |
+| Bị block | `Blocked 🛑` | TODO (giữ nguyên, ghi chú blocker) |
+| Bỏ qua | `Skipped ⏭️` | DONE (ghi lý do) |
+
+#### Ai chịu trách nhiệm cập nhật
+
+| Tình huống | Người cập nhật |
+|-----------|---------------|
+| Developer bắt đầu / hoàn thành task | Developer tự cập nhật ngay |
+| Agent trong workflow hoàn thành step liên quan đến task sprint | Agent đó cập nhật trước khi handoff |
+| Dispatcher sau mỗi bước workflow | Dispatcher kiểm tra và cập nhật nếu bước đó map với task sprint |
+| Blocker phát sinh | Project Manager hoặc người phát hiện cập nhật |
+| Sprint kết thúc (Review done) | Project Manager cập nhật status sprint → Completed |
+
+#### Format dòng thêm vào "Lịch sử cập nhật"
+
+```
+| YYYY-MM-DD | v[N.M] | [Task ID] — [mô tả thay đổi trạng thái]: Todo → Done / Sprint Active / Sprint Completed | [Tên agent/vai trò] |
+```
+
+**Ví dụ:**
+```
+| 2026-06-03 | v1.1 | S1-T001 Done, S1-T002 In Progress | Senior Developer |
+| 2026-06-11 | v1.2 | Sprint 1 hoàn thành — tất cả task Done, status: Completed | Project Manager |
+```
 
 ---
 
