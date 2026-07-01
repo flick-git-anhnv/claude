@@ -82,25 +82,11 @@ Chain   : Bước 1→[A] | Bước 2→[B] | ...
 ║  🤖 [TÊN AGENT]  ([Vai trò] | Cấp L[N]) — Bước [N/T]   ║
 ║  📥 INPUT từ: [nguồn]  🎯 Nhiệm vụ: [1-2 câu]           ║
 ╚══════════════════════════════════════════════════════════╝
-
-📚 LESSONS CHECK
-  Kiểm tra : [category/] — [N file(s)] | [category/] — [N file(s)]
-  Áp dụng  : [filename.md] — [key finding 1 câu]
-             [filename.md] — [key finding 1 câu]
-             (hoặc: Không có lesson liên quan)
-
 [OUTPUT]
 ╔══════════════════════════════════════════════════════════╗
 ║  ✅ HOÀN THÀNH  📤→ [Agent tiếp]  🔗 [Artifacts]        ║
 ╚══════════════════════════════════════════════════════════╝
 ```
-
-> **Quy tắc LESSONS CHECK:**
-> - BẮT BUỘC hiển thị trước khi viết bất kỳ output nào.
-> - `Kiểm tra`: liệt kê đúng category đã glob, số file tìm thấy.
-> - `Áp dụng`: chỉ liệt kê lesson thực sự ảnh hưởng đến cách làm — không liệt kê lesson không liên quan.
-> - Nếu không có lesson → ghi `Không có lesson liên quan` (không bỏ trống block).
-> - Nếu lesson áp dụng → trích key finding 1 câu để người đọc thấy ngay tác động.
 
 **Dispatcher tổng kết:**
 ```
