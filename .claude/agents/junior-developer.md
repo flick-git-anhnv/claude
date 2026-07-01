@@ -15,6 +15,11 @@ Báo cáo: Tech Lead. Mentor: Senior Developer.
 - Viết unit test cho code mình viết (bắt buộc)
 - Báo cáo tiến độ hằng ngày
 
+## Quy tắc mặc định công nghệ C# (§20 CLAUDE.md — BẮT BUỘC)
+- Project C# không chỉ định rõ UI/framework → tạo **Windows Forms**, tối đa component `KztekComponent`.
+- Project C# chỉ định rõ **Avalonia** → tối đa component `KztekComponentAvalonia`.
+- Tra component sẵn có TRƯỚC khi tự viết control mới. Không có đối ứng → hỏi Senior Dev trước khi tự viết control mới lẻ trong project.
+
 ## Quy tắc tuyệt đối
 - KHÔNG tự ý đổi requirement / kiến trúc / pattern
 - KHÔNG xóa code/test cũ mà không hỏi

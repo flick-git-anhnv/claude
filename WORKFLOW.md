@@ -22,6 +22,7 @@ sequenceDiagram
     participant DOL as DevOps Lead
     participant DO as DevOps Engineer
     participant CTO as CTO
+    participant UXR as UX/UI Reviewer
 
     U->>PM: "Cần đăng nhập bằng Google"
     PM->>PM: Viết PRD (vì sao, mục tiêu, metric)
@@ -52,6 +53,10 @@ sequenceDiagram
     QA->>SD: Log bug "không handle khi user reject scope"
     SD->>QA: Fix + push
     QA->>QA: Verify, regression pass
+    Note over TL,UXR: Feature có UI login button mới → chèn UX/UI Reviewer TRƯỚC sign-off
+    TL->>UXR: Yêu cầu kiểm tra trực quan (đã đổi/thêm giao diện)
+    UXR->>UXR: Chạy app thật, chụp screenshot, đánh giá C1-C7
+    UXR->>QAL: Report — Pass / issue cần fix
     QAL->>EM: Sign-off chất lượng
     EM->>DOL: Yêu cầu deploy production
     DOL->>DO: Deploy production
@@ -65,6 +70,7 @@ sequenceDiagram
 - CTO can thiệp vì liên quan đến bảo mật (OAuth), nhưng chỉ approve ở mức kiến trúc.
 - Junior hỏi Senior (mentor), Senior báo lên Tech Lead.
 - QA có quyền VETO. Không sign-off thì không deploy.
+- UX/UI Reviewer chèn vào TRƯỚC QA Lead sign-off vì feature có UI login button mới — bỏ qua bước này nếu feature chỉ đổi backend/logic.
 
 ---
 
@@ -256,6 +262,7 @@ sequenceDiagram
     participant TL as Tech Lead
     participant QA as QA Engineer
     participant DO as DevOps Engineer
+    participant UXR as UX/UI Reviewer
 
     U->>Disp: "Sửa màu và typo nút Đăng nhập"
     Disp->>Disp: Đánh giá: P3, UI thay đổi nhỏ, không đổi Logic
@@ -271,7 +278,12 @@ sequenceDiagram
     
     TL->>TL: Review nhanh (Chỉ check giao diện/Typo)
     TL->>TL: Merge PR
-    
+
+    Note over TL,UXR: Fast-Track đổi màu + typo UI → BẮT BUỘC UX/UI Reviewer trước khi QA
+    TL->>UXR: Kiểm tra trực quan nhanh (đã đổi giao diện)
+    UXR->>UXR: Chụp screenshot nút Đăng nhập, so màu (#F05922) + đúng chữ
+    UXR->>TL: Pass — đúng màu, đúng chính tả
+
     TL->>QA: Báo cáo Smoke Test
     QA->>QA: Mở app, check đúng nút Đăng nhập
     QA->>DO: Pass Smoke Test, cho phép Deploy
@@ -279,6 +291,54 @@ sequenceDiagram
     DO->>DO: Deploy Staging/Production
     DO->>U: Báo cáo hoàn thành Fast-Track
 ```
+
+---
+
+## Ví dụ 8: WF-MIGRATE — Chuyển đổi Framework (Code Migrator)
+
+**Tình huống:** Người dùng yêu cầu "Chuyển project IPGSUseCam từ WinForms sang Avalonia, chạy được cả Windows và Linux".
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant Disp as Dispatcher
+    participant CM as Code Migrator
+    participant SD as Senior Developer
+    participant JD as Junior Developer
+    participant QA as QA Engineer
+    participant QAL as QA Lead
+
+    U->>Disp: "Chuyển WinForms → Avalonia, chạy được Windows + Linux"
+    Disp->>Disp: Yêu cầu rõ ràng migrate framework → kích hoạt WF-MIGRATE
+    Disp->>CM: Giao task (Opus)
+
+    CM->>CM: Lessons Check (avalonia/ + csharp-winforms/ + dotnet-general/)
+    CM->>CM: Cấp 0 — Glob/Grep đếm N file nguồn, M control/timer/event
+    CM->>CM: Cấp 1-2 — Lập bảng inventory chi tiết (khớp N/M)
+    CM->>CM: G2 — Lập 3 bảng mapping (component, pattern, kiểu dữ liệu)
+    CM->>CM: §2A(c) — Rà toàn bộ dependency, đánh giá Linux-OK
+    CM->>CM: Lập plan có nhóm song song
+    CM->>U: Trình plan + inventory + mapping — xin duyệt
+    U->>CM: Duyệt plan
+
+    CM->>SD: Giao task UI/logic phức tạp (Sonnet)
+    CM->>JD: Giao task CRUD/UI đơn giản (Sonnet)
+    SD->>CM: Nộp artifact + build sạch (win-x64 + linux-x64)
+    JD->>CM: Nộp artifact + build sạch
+
+    CM->>CM: Review (correctness > behavior parity > security > style)
+    CM->>CM: G6 — Đối chiếu 100% inventory + re-check dependency lần cuối
+    CM->>CM: Publish thử linux-x64 — BẮT BUỘC pass
+    CM->>QA: Smoke test path chính, đối chiếu behavior parity
+    QA->>QAL: Sign-off (P0/P1 phải sạch)
+    QAL->>U: Migration hoàn thành — báo cáo inventory/dependency đầy đủ
+```
+
+**Bài học từ ví dụ này:**
+- Code Migrator KHÔNG tự code hàng loạt — chỉ khảo sát/lập plan/review (Opus), giao việc code thực tế cho Senior/Junior Dev (Sonnet).
+- Inventory PHẢI khớp số đếm thực tế (Cấp 0) — không liệt kê mẫu, tránh bỏ sót tính năng.
+- Dependency PHẢI được rà lại lần cuối ở G6 (không chỉ 1 lần ở đầu) — bắt các package Senior/Junior Dev thêm giữa đường.
+- Workflow này KHÔNG tự động kích hoạt — chỉ khi user yêu cầu rõ ràng chuyển đổi framework/ngôn ngữ.
 
 ---
 
@@ -294,3 +354,5 @@ sequenceDiagram
 | 6 | Junior được phép sai, không được lặp | Mentoring |
 | 7 | Tài liệu hóa quyết định | Mọi quyết định lớn |
 | 8 | Khách hàng là trung tâm | Khi có tranh cãi nội bộ |
+| 9 | UX/UI Reviewer bắt buộc khi đổi giao diện | Trước QA sign-off, nếu code sửa/thêm UI (feature, bugfix, hotfix, fast-track, refactor) |
+| 10 | Code Migrator chỉ dùng khi được yêu cầu | Không tự động chạy trong bất kỳ workflow nào khác; Opus chỉ dùng ở giai đoạn lập plan/review |

@@ -13,6 +13,15 @@ Phối hợp: QA Engineer (functional), Senior Developer (fix UI bug).
 
 ---
 
+## Được gọi khi (Dispatcher trigger — BẮT BUỘC)
+
+> Sau khi Senior/Junior Developer hoàn thành code có **chỉnh sửa, làm mới, hoặc thêm giao diện** (UI mới, đổi layout, đổi component, đổi style) trong bất kỳ workflow nào (WF-FEATURE, WF-BUGFIX, WF-HOTFIX, WF-FASTTRACK, WF-REFACTOR), Dispatcher PHẢI chèn bước UX/UI Reviewer **trước bước QA sign-off / DevOps deploy**: chạy ứng dụng thật, chụp screenshot, đánh giá theo 7 tiêu chí (C1–C7), rồi mới cho QA/DevOps tiếp tục.
+
+- Thay đổi CHỈ ở backend/logic, không đụng UI → **bỏ qua** bước này.
+- Xem chi tiết điều kiện chèn ở §2.1 và bước điều kiện trong §4 của `CLAUDE.md`.
+
+---
+
 ## ⚠️ NGUYÊN TẮC BẮT BUỘC
 
 > **TUYỆT ĐỐI KHÔNG** review bằng cách chỉ đọc code AXAML/XAML/HTML.  

@@ -7,31 +7,25 @@ Tài liệu này định nghĩa cơ cấu tổ chức, quy tắc làm việc và
 ## 1. SƠ ĐỒ TỔ CHỨC (Org Chart)
 
 ```
-                          ┌───────────────┐
-                          │      CTO      │  (Cấp cao nhất)
-                          └───────┬───────┘
-                                  │
-        ┌─────────────────────────┼─────────────────────────┐
-        │                         │                         │
-┌───────▼────────┐    ┌───────────▼──────────┐    ┌─────────▼────────┐
-│ Product Manager│    │ Engineering Manager  │    │  UI/UX Designer  │
-└───────┬────────┘    └───────────┬──────────┘    └──────────────────┘
-        │                         │
-┌───────▼────────┐    ┌───────────┼─────────────┬──────────────┐
-│Business Analyst│    │           │             │              │
-└────────────────┘    │           │             │              │
-                ┌─────▼─────┐ ┌───▼────┐ ┌──────▼─────┐ ┌──────▼──────┐
-                │ Tech Lead │ │QA Lead │ │ DevOps Lead│ │Project Mgr  │
-                └─────┬─────┘ └───┬────┘ └──────┬─────┘ └─────────────┘
-                      │           │             │
-              ┌───────┴────┐      │             │
-       ┌──────▼─────┐ ┌────▼─────┐│       ┌─────▼────────┐
-       │ Senior Dev │ │Junior Dev││       │DevOps Engineer│
-       └────────────┘ └──────────┘│       └───────────────┘
-                              ┌───▼──────┐
-                              │QA Engineer│
-                              └───────────┘
+CTO  (Cấp cao nhất)
+├── Product Manager
+│   └── Business Analyst
+├── Engineering Manager
+│   ├── Tech Lead
+│   │   ├── Senior Developer
+│   │   ├── Junior Developer
+│   │   └── Code Migrator          ← CHỈ khi user yêu cầu migrate code (Opus khi lập plan, Sonnet khi code)
+│   ├── QA Lead
+│   │   ├── QA Engineer
+│   │   └── UX/UI Reviewer         ← gọi khi code vừa sửa/thêm giao diện
+│   ├── DevOps Lead
+│   │   └── DevOps Engineer
+│   ├── Project Manager
+│   └── Documentation Writer       ← CHỈ khi user yêu cầu
+└── UI/UX Designer
 ```
+
+> **Đồng bộ bắt buộc:** Sơ đồ này PHẢI khớp với `CLAUDE.md` §1 và `.claude/shared/CORE.md` §2. Khi thêm/sửa agent → cập nhật cả 3 file trong cùng session (xem §10 CLAUDE.md).
 
 ---
 
@@ -42,8 +36,8 @@ Tài liệu này định nghĩa cơ cấu tổ chức, quy tắc làm việc và
 | L1 - Executive | CTO | Phê duyệt kiến trúc, ngân sách, chiến lược kỹ thuật |
 | L2 - Management | Engineering Manager, Product Manager | Phân bổ resource, quyết định scope, đánh giá hiệu suất |
 | L3 - Lead | Tech Lead, QA Lead, DevOps Lead, Project Manager | Phân chia task kỹ thuật, code review cuối cùng, mentor |
-| L4 - Senior IC | Senior Developer, Business Analyst, UI/UX Designer | Thiết kế giải pháp, code review, làm task khó |
-| L5 - Junior IC | Junior Developer, QA Engineer, DevOps Engineer | Thực thi task được giao, học hỏi, báo cáo tiến độ |
+| L4 - Senior IC | Senior Developer, Business Analyst, UI/UX Designer, Documentation Writer (chỉ khi user yêu cầu), Code Migrator (Opus — chỉ khi lập plan migrate, chỉ khi user yêu cầu) | Thiết kế giải pháp, code review, làm task khó |
+| L5 - Junior IC | Junior Developer, QA Engineer, DevOps Engineer, UX/UI Reviewer (gọi khi code vừa đổi/thêm giao diện) | Thực thi task được giao, học hỏi, báo cáo tiến độ |
 
 **Nguyên tắc:** Cấp dưới KHÔNG được phép tự ý quyết định ngoài phạm vi task được giao. Khi gặp vấn đề vượt thẩm quyền, PHẢI escalate lên cấp trên trực tiếp.
 
@@ -74,12 +68,18 @@ Senior/Junior Developer (code)
         ↓
 Tech Lead (code review)
         ↓
+[CÓ ĐIỀU KIỆN] UX/UI Reviewer — nếu code vừa sửa/thêm giao diện: chạy app thật, chụp screenshot, đánh giá trực quan
+        ↓
 QA Engineer (test) → QA Lead (kiểm tra cuối)
         ↓
 DevOps Engineer (deploy staging) → DevOps Lead (approve production)
         ↓
 Engineering Manager / CTO (release sign-off)
 ```
+
+> **UX/UI Reviewer:** bỏ qua bước này nếu thay đổi chỉ ở backend/logic, không đụng giao diện. Áp dụng tương tự cho luồng Bug fix, Hotfix, Fast-Track, Refactor nếu có đổi UI.
+>
+> **Code Migrator:** KHÔNG nằm trong luồng "Yêu cầu mới" ở trên. Chỉ dùng cho yêu cầu riêng "chuyển đổi framework/ngôn ngữ/UI stack" (xem `CLAUDE.md` §4 WF-MIGRATE) — Code Migrator (Opus) khảo sát + lập plan → user duyệt → Senior/Junior Developer code (Sonnet) → Code Migrator review → QA Engineer verify. KHÔNG tự động chạy trong luồng feature/bug thông thường.
 
 ### 3.2. Luồng báo cáo (Reporting Flow)
 
@@ -133,6 +133,7 @@ DevOps Engineer (Deploy thẳng lên môi trường đích)
 |---------------|-----------|--------------|------------------|
 | Yêu cầu (PRD) | Product Manager | Business Analyst, Tech Lead | CTO (nếu lớn) / Engineering Manager |
 | Thiết kế UI | UI/UX Designer | Product Manager | Engineering Manager |
+| Kiểm tra trực quan UI vừa code (nếu có đổi giao diện) | Senior/Junior Developer | UX/UI Reviewer | QA Lead |
 | Kiến trúc kỹ thuật | Tech Lead | Senior Devs | CTO |
 | Code (PR thường) | Developer | Senior Dev / Tech Lead | Tech Lead |
 | Code (PR critical) | Developer | Tech Lead | Engineering Manager hoặc CTO |
@@ -183,6 +184,8 @@ Trong Claude Code, gọi agent bằng cách:
 - "Tôi muốn thêm tính năng đăng nhập bằng Google" → Product Manager sẽ tiếp nhận đầu tiên.
 - "Code này có bug" → Senior Developer hoặc QA Engineer.
 - "Cần thiết kế kiến trúc microservice" → Tech Lead, có thể escalate lên CTO.
+- "Chuyển đổi project WinForms sang Avalonia" → Code Migrator tiếp nhận (chỉ khi yêu cầu rõ ràng, không tự động).
+- Sau khi Senior/Junior Developer code xong màn hình mới → UX/UI Reviewer tự động được gọi kiểm tra trực quan trước khi QA vào.
 
 ---
 

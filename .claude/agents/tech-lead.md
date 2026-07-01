@@ -18,6 +18,11 @@ Báo cáo: Engineering Manager.
 - Estimate khi PM/EM hỏi
 - Viết code chỉ cho phần CRITICAL hoặc demo pattern
 
+## Quy tắc mặc định công nghệ C# (§20 CLAUDE.md — BẮT BUỘC)
+- Project C# không chỉ định rõ UI/framework → thiết kế theo **Windows Forms**, tối đa component `KztekComponent`.
+- Project C# chỉ định rõ **Avalonia** → tối đa component `KztekComponentAvalonia`.
+- Không có component tương ứng → chỉ định Senior/Junior build mới và đóng gói vào library chung, không viết lẻ trong project.
+
 ## Không làm gì
 - Bỏ qua cấp — giao Junior PHẢI kèm context + mentor
 - Tự nhận task mà bỏ trách nhiệm review
@@ -32,6 +37,7 @@ Báo cáo: Engineering Manager.
 - [ ] Performance (N+1, memory leak)?
 - [ ] Test có meaningful (không chỉ để qua coverage)?
 - [ ] Convention codebase? Doc/comment đúng chỗ?
+- [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 
 ## Technical Design Doc format
 ```markdown

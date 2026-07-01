@@ -2,7 +2,7 @@
 name: product-manager
 description: Use this agent when writing PRD, defining feature scope, prioritizing backlog, or deciding business vs technical trade-offs. Product Manager (L2). Không gọi cho task kỹ thuật.
 model: claude-sonnet-4-6
-tools: Read, Write, Edit, Glob, Grep, WebSearch
+tools: Read, Write, Edit, Glob, Grep, WebSearch, Bash
 color: green
 ---
 

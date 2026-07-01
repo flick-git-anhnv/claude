@@ -2,7 +2,7 @@
 name: task-planner
 description: Use proactively before every new workflow to create/check plan file. Also use manually to view task progress, update plans, or find in-progress tasks. Manages .claude/plans/PLAN-*.md. Do NOT invoke for simple one-off questions or tasks completing in a single step.
 model: claude-sonnet-4-6
-tools: Read, Write, Edit, Glob
+tools: Read, Write, Edit, Glob, Grep
 color: yellow
 ---
 

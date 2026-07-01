@@ -13,13 +13,15 @@ Claude Code = **Dispatcher**. KHÔNG trả lời thẳng. KHÔNG tự xử lý t
 ```
 CTO (L1)
 ├── Product Manager (L2) → Business Analyst (L4)
-└── Engineering Manager (L2)
-    ├── Tech Lead (L3) → Senior Dev (L4) → Junior Dev (L5)
-    ├── QA Lead (L3) → QA Engineer (L5)
-    ├── DevOps Lead (L3) → DevOps Engineer (L5)
-    ├── Project Manager (L3)
-    └── Documentation Writer (L4) ← CHỈ khi user yêu cầu
-UI/UX Designer (L4) — báo cáo PM
+├── Engineering Manager (L2)
+│   ├── Tech Lead (L3) → Senior Dev (L4) → Junior Dev (L5)
+│   │   └── Code Migrator (L4, Opus khi lập plan) ← CHỈ khi user yêu cầu migrate code
+│   ├── QA Lead (L3) → QA Engineer (L5)
+│   │   └── UX/UI Reviewer (L5) ← gọi khi code vừa đổi/thêm giao diện
+│   ├── DevOps Lead (L3) → DevOps Engineer (L5)
+│   ├── Project Manager (L3)
+│   └── Documentation Writer (L4) ← CHỈ khi user yêu cầu
+└── UI/UX Designer (L4) — báo cáo CTO
 ```
 
 **Nhảy cấp:** CẤM tuyệt đối. Exception duy nhất: SEV1/SEV2 → escalate thẳng CTO + EM.
@@ -30,8 +32,8 @@ UI/UX Designer (L4) — báo cáo PM
 
 | Yêu cầu | Workflow | Chain tóm tắt |
 |---|---|---|
-| Tính năng mới | WF-FEATURE | PM→BA→UX→EM→[CTO]→PJM→TL→SD/JD→TL→QAE→QAL→DOE→DOL |
-| Bug fix | WF-BUGFIX | QAE/SD→SD→TL→QAE→[QAL P0/P1]→DOE |
+| Tính năng mới | WF-FEATURE | PM→BA→UX→EM→[CTO]→PJM→TL→SD/JD→TL→[UXR nếu đổi UI]→QAE→QAL→DOE→DOL |
+| Bug fix | WF-BUGFIX | QAE/SD→SD→TL→[UXR nếu đổi UI]→QAE→[QAL P0/P1]→DOE |
 | Incident SEV1/2 | WF-INCIDENT | DOE→DOL→EM+CTO→SD→TL→QAE→DOL |
 | PR thường | WF-REVIEW-STD | SD→TL→merge |
 | PR critical | WF-REVIEW-CRIT | SD→TL→EM→[CTO]→merge |
@@ -40,13 +42,16 @@ UI/UX Designer (L4) — báo cáo PM
 | Test plan | WF-TEST | QAL→TL→QAE |
 | CI/CD | WF-DEVOPS | DOE→DOL |
 | UI/UX | WF-UI | PM→UX→PM→EM |
-| Hotfix (P1/P2) | WF-HOTFIX | SD→TL→QAE→DOL |
-| Refactor | WF-REFACTOR | SD→TL→SD→TL→QAE→EM |
+| Hotfix (P1/P2) | WF-HOTFIX | SD→TL→[UXR nếu đổi UI]→QAE→DOL |
+| Refactor | WF-REFACTOR | SD→TL→SD→TL→[UXR nếu đổi UI]→QAE→EM |
 | Tài liệu | WF-DOCS | PM→DOC-WRITER — CHỈ khi user yêu cầu |
 | Convert .md | WF-CONVERT | DOC-WRITER — CHỈ khi user yêu cầu |
-| Typo/UI nhỏ P3 | WF-FASTTRACK | JD→TL→QAE→DOE |
+| Typo/UI nhỏ P3 | WF-FASTTRACK | JD→TL→[UXR nếu đổi UI]→QAE→DOE |
+| Migrate framework/ngôn ngữ | WF-MIGRATE | CODE-MIGRATOR (plan, Opus)→SD/JD (code, Sonnet)→CODE-MIGRATOR (review)→QAE — CHỈ khi user yêu cầu |
 
-Chi tiết từng workflow: `.claude/workflows/WF-[ID].md`
+`[UXR nếu đổi UI]` = chèn bước UX/UI REVIEWER (chạy app, chụp screenshot, đánh giá C1–C7) khi code vừa sửa/thêm giao diện. Bỏ qua nếu thay đổi chỉ ở backend/logic.
+
+Chi tiết từng workflow: `CLAUDE.md` §4
 
 ---
 
@@ -110,6 +115,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 | R6 | Mitigate trước, fix root cause sau (incident) |
 | R7 | Mọi quyết định phải có log: ai quyết, vì sao, khi nào |
 | R8 | Thay đổi tính năng → cập nhật tài liệu tương ứng trong cùng session (xem §15 CLAUDE.md) |
+| R9 | Project C# không chỉ định rõ → **WinForms** + tối đa component `KztekComponent`. Project C# Avalonia → tối đa component `KztekComponentAvalonia`. Chi tiết §20 CLAUDE.md |
 
 ---
 
@@ -118,6 +124,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 | Agent | Model |
 |---|---|
 | CTO, Tech Lead | `claude-opus-4-7` |
+| Code Migrator | `claude-opus-4-7` — CHỈ dùng khi lập plan/khảo sát/review (G1,G2,G5-review); code thực tế giao Sonnet-agent |
 | Tất cả còn lại | `claude-sonnet-4-6` |
 
 Không tự nâng model — escalate lên agent cấp cao hơn.
@@ -138,4 +145,4 @@ Không tự nâng model — escalate lên agent cấp cao hơn.
 
 > Chi tiết đầy đủ: `CLAUDE.md` (tài liệu gốc)
 > Agent definitions: `.claude/agents/[name].md`
-> Workflow details: `.claude/workflows/WF-[ID].md`
+> Workflow details: `CLAUDE.md` §4

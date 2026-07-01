@@ -46,15 +46,21 @@ CTO  (L1 - Executive)
 ├── Engineering Manager  (L2 - Management)
 │   ├── Tech Lead  (L3 - Lead)
 │   │   ├── Senior Developer  (L4 - Senior IC)
-│   │   └── Junior Developer  (L5 - Junior IC)
+│   │   ├── Junior Developer  (L5 - Junior IC)
+│   │   └── Code Migrator  (L4 - Senior IC, Opus khi lập plan)  ← CHỈ khi user yêu cầu migrate code
 │   ├── QA Lead  (L3 - Lead)
-│   │   └── QA Engineer  (L5 - Junior IC)
+│   │   ├── QA Engineer  (L5 - Junior IC)
+│   │   └── UX/UI Reviewer  (L5 - Junior IC)  ← gọi khi code vừa sửa/thêm giao diện
 │   ├── DevOps Lead  (L3 - Lead)
 │   │   └── DevOps Engineer  (L5 - Junior IC)
 │   ├── Project Manager  (L3 - Lead)
 │   └── Documentation Writer  (L4 - Senior IC)  ← CHỈ khi user yêu cầu
 └── UI/UX Designer  (L4 - Senior IC)
 ```
+
+> **Code Migrator:** chỉ kích hoạt khi user yêu cầu rõ ràng chuyển đổi framework/ngôn ngữ/UI stack (xem WF-MIGRATE, §4). Không tự động chạy trong WF-FEATURE/WF-BUGFIX/... KHÔNG dùng để viết tính năng mới hay fix bug thông thường.
+>
+> **UX/UI Reviewer:** tự động chèn vào workflow (WF-FEATURE, WF-BUGFIX, WF-HOTFIX, WF-FASTTRACK, WF-REFACTOR) ngay sau khi code có **chỉnh sửa, làm mới, hoặc thêm giao diện** — chạy ứng dụng thật, chụp screenshot, đánh giá trực quan trước khi chuyển cho QA sign-off / DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 
 **Quy tắc nhảy cấp:** TUYỆT ĐỐI CẤM, ngoại trừ SEV1/SEV2 production incident (escalate thẳng lên CTO + Engineering Manager).
 
@@ -64,8 +70,8 @@ CTO  (L1 - Executive)
 
 | Loại yêu cầu | Workflow ID | Agent chain bắt buộc |
 |---|---|---|
-| Tính năng mới | WF-FEATURE | PM → BA → UX → EM → [CTO] → PJM → TL → SD/JD → TL (review) → QA → QAL → DOE → DOL |
-| Bug fix thường | WF-BUGFIX | QAE hoặc SD (triage) → SD (fix) → TL (review) → QAE (verify) → DOE |
+| Tính năng mới | WF-FEATURE | PM → BA → UX → EM → [CTO] → PJM → TL → SD/JD → TL (review) → [UXR nếu đổi UI] → QA → QAL → DOE → DOL |
+| Bug fix thường | WF-BUGFIX | QAE hoặc SD (triage) → SD (fix) → TL (review) → [UXR nếu đổi UI] → QAE (verify) → DOE |
 | Production incident SEV1/SEV2 | WF-INCIDENT | DOE → DOL → EM + CTO → SD (fix) → TL → QAE → DOL |
 | Code review PR thường | WF-REVIEW-STD | SD → TL → merge |
 | Code review PR critical | WF-REVIEW-CRIT | SD → TL → EM → [CTO] → merge |
@@ -76,11 +82,14 @@ CTO  (L1 - Executive)
 | UI/UX mockup | WF-UI | PM → UX → PM (review) → EM |
 | Phân bổ resource | WF-RESOURCE | EM |
 | User story / AC | WF-STORY | BA |
-| Hotfix khẩn (không phải incident) | WF-HOTFIX | SD → TL (review nhanh) → QAE → DOL |
-| Refactor / tech debt | WF-REFACTOR | SD (đề xuất) → TL → SD (thực hiện) → TL → QAE → EM |
+| Hotfix khẩn (không phải incident) | WF-HOTFIX | SD → TL (review nhanh) → [UXR nếu đổi UI] → QAE → DOL |
+| Refactor / tech debt | WF-REFACTOR | SD (đề xuất) → TL → SD (thực hiện) → TL → [UXR nếu đổi UI] → QAE → EM |
 | Tài liệu hướng dẫn sử dụng | WF-DOCS | PM (scope) → DOC-WRITER (screenshot + DOCX + PDF) — **CHỈ khi user yêu cầu** |
 | Chuyển đổi .md → DOCX/PDF | WF-CONVERT | DOC-WRITER (chạy `scripts/md_to_docx_kztek.py`) — **CHỈ khi user yêu cầu** |
-| Sửa lỗi UI nhỏ, typo, config sai không đụng logic (P3) | WF-FASTTRACK | JD (fix) → TL (review nhanh) → QAE (smoke test) → DOE (deploy) |
+| Sửa lỗi UI nhỏ, typo, config sai không đụng logic (P3) | WF-FASTTRACK | JD (fix) → TL (review nhanh) → [UXR nếu đổi UI] → QAE (smoke test) → DOE (deploy) |
+| Chuyển đổi framework/ngôn ngữ/UI stack (migrate/port) | WF-MIGRATE | CODE-MIGRATOR (khảo sát + plan, Opus) → user duyệt → SD/JD (code, Sonnet) → CODE-MIGRATOR (review, Opus) → QAE (verify) — **CHỈ khi user yêu cầu rõ ràng** |
+
+`[UXR nếu đổi UI]` — chèn bước **UX/UI REVIEWER**: chạy app thật, chụp screenshot, đánh giá 7 tiêu chí (C1–C7) trước khi chuyển QA sign-off/DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic, không đụng giao diện.
 
 ---
 
@@ -177,6 +186,7 @@ Bước 7  → TECH LEAD            : Viết Technical Design Doc, chia task chi
 Bước 8  → SENIOR DEVELOPER     : Code phần phức tạp, mentor junior
 Bước 9  → JUNIOR DEVELOPER     : Code phần CRUD/UI đơn giản theo spec
 Bước 10 → TECH LEAD            : Code review cuối, merge decision
+Bước 10b → UX/UI REVIEWER      : [CÓ ĐIỀU KIỆN — nếu feature có chỉnh sửa/thêm giao diện] Chạy app thật, chụp screenshot, đánh giá C1–C7 trước khi QA test
 Bước 11 → QA ENGINEER          : Thực thi test plan, log bug
 Bước 12 → QA LEAD              : Sign-off chất lượng, veto nếu còn P0/P1
 Bước 13 → DEVOPS ENGINEER      : Deploy lên staging
@@ -188,6 +198,8 @@ Bước 15 → DEVOPS LEAD          : Approve và deploy production, monitor
 
 **Điều kiện bỏ qua Bước 9 (Junior Dev):** Không có task phù hợp cấp Junior, hoặc deadline quá gấp.
 
+**Điều kiện bỏ qua Bước 10b (UX/UI Reviewer):** Feature không đụng đến UI (chỉ backend/API/logic nội bộ).
+
 ---
 
 ### WF-BUGFIX — Bug fix thường
@@ -198,6 +210,7 @@ Bước 15 → DEVOPS LEAD          : Approve và deploy production, monitor
 Bước 1 → QA ENGINEER / SENIOR DEV : Reproduce bug, xác định root cause, tạo BUG report
 Bước 2 → SENIOR DEVELOPER         : Viết fix, tạo PR với mô tả rõ
 Bước 3 → TECH LEAD                : Review PR, approve hoặc request changes
+Bước 3b → UX/UI REVIEWER          : [CÓ ĐIỀU KIỆN — nếu fix có đổi giao diện] Chạy app thật, kiểm tra trực quan trước khi QA verify
 Bước 4 → QA ENGINEER              : Verify fix trên staging, regression test
 Bước 5 → QA LEAD                  : Sign-off nếu bug là P0/P1 [BỎ QUA nếu P2/P3]
 Bước 6 → DEVOPS ENGINEER          : Deploy fix lên môi trường tương ứng
@@ -321,6 +334,7 @@ Bước 3 → QA ENGINEER : Viết test case chi tiết, automation script
 ```
 Bước 1 → SENIOR DEVELOPER : Viết fix khẩn (không quá 2h), tạo PR
 Bước 2 → TECH LEAD        : Review nhanh (không quá 30 phút)
+Bước 2b → UX/UI REVIEWER  : [CÓ ĐIỀU KIỆN — nếu hotfix đổi giao diện] Kiểm tra trực quan nhanh trước smoke test
 Bước 3 → QA ENGINEER      : Smoke test tối thiểu (chỉ path bị ảnh hưởng)
 Bước 4 → DEVOPS LEAD      : Approve + deploy production
 ```
@@ -341,6 +355,7 @@ Bước 1 → SENIOR DEVELOPER     : Đề xuất phạm vi refactor, tác độ
 Bước 2 → TECH LEAD            : Review đề xuất, approve hoặc điều chỉnh scope
 Bước 3 → SENIOR DEVELOPER     : Thực hiện refactor, đảm bảo test coverage không giảm
 Bước 4 → TECH LEAD            : Code review cuối
+Bước 4b → UX/UI REVIEWER      : [CÓ ĐIỀU KIỆN — nếu refactor đổi giao diện] Kiểm tra trực quan trước regression test
 Bước 5 → QA ENGINEER          : Regression test toàn bộ phần bị ảnh hưởng
 Bước 6 → ENGINEERING MANAGER  : Approve merge (vì refactor ảnh hưởng rộng)
 ```
@@ -428,6 +443,7 @@ python scripts/md_to_docx_kztek.py docs/tech-design/TDD-x.md --no-pdf
 ```
 Bước 1 → JUNIOR DEVELOPER : Fix nhanh (≤ 1h), tạo PR
 Bước 2 → TECH LEAD        : Review nhanh (≤ 15 phút)
+Bước 2b → UX/UI REVIEWER  : [CÓ ĐIỀU KIỆN — nếu fix đổi giao diện, thường gặp ở FASTTRACK] Kiểm tra trực quan song song QA smoke test
 Bước 3 → QA ENGINEER      : Smoke test tối thiểu
 Bước 4 → DEVOPS ENGINEER  : Deploy (không cần DevOps Lead approve nếu P3)
 ```
@@ -435,6 +451,28 @@ Bước 4 → DEVOPS ENGINEER  : Deploy (không cần DevOps Lead approve nếu 
 **Điều kiện dùng WF-FASTTRACK thay vì WF-HOTFIX:**
 - WF-FASTTRACK: P3, fix ≤ 5 dòng, không đụng logic
 - WF-HOTFIX: P1/P2, scope rộng hơn nhưng vẫn < full WF-BUGFIX
+
+---
+
+### WF-MIGRATE — Chuyển đổi framework / ngôn ngữ / UI stack
+
+**Trigger:** User yêu cầu rõ ràng chuyển đổi (migrate/port) codebase sang framework, ngôn ngữ, hoặc UI stack khác (VD: WinForms → Avalonia, WPF → MAUI, jQuery → React, .NET Framework → .NET 8).
+
+> ⚠️ **CHÚ Ý:** Workflow này **KHÔNG tự động kích hoạt** trong các workflow khác (WF-FEATURE, WF-BUGFIX, ...). Dispatcher CHỈ gọi khi user đặc biệt yêu cầu migrate/port codebase. KHÔNG dùng cho viết tính năng mới hay bug fix thông thường.
+
+```
+Bước 1 → CODE MIGRATOR (Opus)     : Khảo sát source, lập bảng inventory (2 cấp) + mapping (3 bảng), lập plan có nhóm song song
+Bước 2 → USER                     : Duyệt plan — KHÔNG tự ý bắt đầu migrate khi chưa được duyệt
+Bước 3 → SENIOR/JUNIOR DEVELOPER  : Code migrate từng đơn vị theo task được giao (Sonnet) — UI/logic phức tạp → Senior, CRUD/UI đơn giản → Junior
+Bước 4 → CODE MIGRATOR (Opus)     : Review artifact (correctness > behavior parity > security > style), yêu cầu build sạch
+Bước 5 → QA ENGINEER              : Smoke test path chính, đối chiếu behavior parity với bản nguồn
+Bước 6 → QA LEAD                  : Sign-off (P0/P1 phải sạch)
+```
+
+**Nguyên tắc cứng (xem `.claude/agents/code-migrator.md` chi tiết):**
+- Model Opus CHỈ dùng cho Bước 1 và Bước 4 (lập plan/khảo sát/review) — Code Migrator KHÔNG tự viết code migrate hàng loạt.
+- Project nguồn bất khả xâm phạm — code migrate luôn vào folder/project MỚI, không sửa project cũ.
+- Behavior parity trước hết — thay đổi hành vi phải được Tech Lead duyệt.
 
 ---
 
@@ -539,6 +577,32 @@ Cấp dưới PHẢI escalate (không phải "nên") trong các trường hợp:
 
 ---
 
+## 10. BẮT BUỘC: Đồng bộ tài liệu khi thêm/sửa/xóa Agent
+
+> **Quy tắc cứng:** Mọi lần thêm agent mới, đổi vai trò/cấp bậc, hoặc xóa agent PHẢI cập nhật ĐỒNG THỜI toàn bộ các file sau trong cùng session. Thêm agent mà không cập nhật routing = agent "mồ côi" — Dispatcher không biết khi nào gọi.
+
+| File | Mục cần cập nhật |
+|---|---|
+| `CLAUDE.md` | §1 org chart, §2 bảng routing, §4 (thêm/sửa workflow nếu agent tham gia luồng), §13.1 bảng model |
+| `.claude/shared/CORE.md` | §2 chain of command, §3 bảng routing, §7 model assignment |
+| `RULES.md` | §1 org chart, §2 bảng cấp bậc, §3 luồng giao việc (nếu agent chèn vào luồng có điều kiện), §5 bảng review/approval |
+| `WORKFLOW.md` | Thêm/sửa ví dụ minh họa (mermaid) nếu agent mới tham gia luồng thực tế; cập nhật bảng "Tóm tắt nguyên tắc xuyên suốt" nếu có nguyên tắc mới |
+| `.claude/agents/[name].md` | File định nghĩa agent — nguồn sự thật về model/tools/scope |
+
+**Checklist bắt buộc trước khi coi việc thêm agent là DONE:**
+```
+- [ ] Agent có xuất hiện trong org chart (CLAUDE.md §1 + CORE.md §2 + RULES.md §1)?
+- [ ] Agent có dòng trong bảng routing (CLAUDE.md §2 + CORE.md §3), nêu rõ điều kiện kích hoạt?
+- [ ] Model của agent có trong bảng §13.1 CLAUDE.md + §7 CORE.md?
+- [ ] Nếu agent chèn có điều kiện vào workflow có sẵn (VD: chỉ khi đổi UI) → đã thêm bước điều kiện vào §4 CLAUDE.md + note tương ứng RULES.md §3?
+- [ ] Nếu agent đại diện cho một workflow mới → đã có ví dụ minh họa trong WORKFLOW.md?
+- [ ] Báo cáo trực thuộc ("Báo cáo: ...") của agent khớp với org chart ở CẢ 3 file?
+```
+
+Không được đánh dấu việc thêm agent là hoàn thành nếu còn dòng nào chưa tick.
+
+---
+
 ## 11. BẮT BUỘC: Artifact file mỗi agent phải tạo
 
 > **Quy tắc cứng:** Agent KHÔNG được đánh dấu hoàn thành (✅) nếu chưa tạo đủ file bắt buộc. Dispatcher PHẢI kiểm tra artifact trước khi chuyển sang agent tiếp theo. Thiếu file = workflow bị BLOCK.
@@ -595,6 +659,8 @@ tests/                      ← Senior Developer + Junior Developer + QA Enginee
 | WF-DEVOPS | DevOps Engineer | `docs/devops/INFRA-*.md` |
 | WF-DOCS | Documentation Writer | `docs/user-manuals/MANUAL-*.md` + `*.docx` + `*.pdf` + `screenshots/` |
 | WF-CONVERT | Documentation Writer | `[name].docx` + `[name].pdf` (cùng thư mục hoặc `exports/`) |
+| WF-MIGRATE | Code Migrator | `.claude/plans/PLAN-[migration-slug]-*.md`, `docs/architecture/[migration-slug]/ADR-*.md` (inventory + mapping) |
+| (điều kiện) UXR trong WF-FEATURE/BUGFIX/HOTFIX/FASTTRACK/REFACTOR | UX/UI Reviewer | `docs/ux-review/UX-REVIEW-*.md` + `*.docx` + `*.pdf` + `screenshots/` |
 
 ---
 
@@ -646,6 +712,8 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 | **DevOps Engineer** | `claude-sonnet-4-6` | Viết IaC, pipeline, debug deployment — cần hiểu context rộng |
 | **Project Manager** | `claude-sonnet-4-6` | Sprint tracking, blocker analysis, báo cáo có ngữ cảnh đầy đủ |
 | **Documentation Writer** | `claude-sonnet-4-6` | Viết tài liệu hướng dẫn, xử lý hình ảnh, xuất DOCX/PDF — CHỈ khi user yêu cầu |
+| **UX/UI Reviewer** | `claude-sonnet-4-6` | Chạy app thật, chụp screenshot, đánh giá trực quan — không cần suy luận kiến trúc sâu |
+| **Code Migrator** | `claude-opus-4-7` | **Ngoại lệ có ghi nhận:** suy luận kiến trúc cao khi khảo sát/lập plan/mapping/review việc migrate framework — nhưng CHỈ dùng ở giai đoạn đó (G1,G2,G5-review); viết code migrate thực tế PHẢI giao Sonnet-agent (`senior-developer`/`junior-developer`). CHỈ hoạt động khi user yêu cầu rõ ràng. |
 
 ---
 
@@ -1043,3 +1111,39 @@ Agent PHẢI thêm vào phần artifact output:
   - docs/prd/PRD-xxx.docx        ← xuất bởi md_to_docx_kztek.py ✅
   - docs/prd/PRD-xxx.pdf         ← xuất bởi md_to_docx_kztek.py ✅
 ```
+
+---
+
+## 20. BẮT BUỘC: Quy tắc mặc định công nghệ cho project C#
+
+> **Quy tắc cứng:** Áp dụng cho MỌI task tạo/sửa project C# (feature mới, bug fix, refactor, fast-track, migrate). Tech Lead, Senior Developer, Junior Developer, Code Migrator PHẢI tuân theo bảng dưới đây khi user không chỉ định rõ khác.
+
+### 20.1 Bảng quy tắc bắt buộc
+
+| Tình huống | Quy tắc bắt buộc |
+|---|---|
+| Project C# — user **không nói rõ** loại UI/framework | PHẢI tạo ứng dụng **Windows Forms (WinForms)** — KHÔNG tự chọn WPF/Avalonia/Console/khác |
+| Project C# WinForms (mặc định hoặc theo yêu cầu) | PHẢI dùng **tối đa component có sẵn từ `KztekComponent`** (`KztekComponent/Controls/*`) cho mọi UI — chỉ tự viết control mới khi `KztekComponent` không có đối ứng |
+| Project C# **Avalonia** (chỉ khi user chỉ định rõ) | PHẢI dùng **tối đa component có sẵn từ `KztekComponentAvalonia`** cho mọi UI — chỉ tự viết control mới khi library không có đối ứng |
+
+### 20.2 Quy trình bắt buộc trước khi code UI (C#)
+
+```
+1. Xác định target: user có chỉ định rõ Avalonia (hoặc stack khác) không?
+   → Không chỉ định gì  → mặc định WinForms
+   → Chỉ định Avalonia  → dùng KztekComponentAvalonia
+   → Chỉ định stack khác (WPF/MAUI/Console/class library...) → theo đúng yêu cầu, KHÔNG áp đặt WinForms
+2. Glob/Grep component tương ứng trong KztekComponent (WinForms) hoặc
+   KztekComponentAvalonia (Avalonia) TRƯỚC khi tự viết control mới.
+3. Có component sẵn → dùng ngay, KHÔNG dùng lại control chuẩn .NET (Button/TextBox/DataGridView gốc...)
+   khi đã có bản Kz tương đương (KzButton/KzTextBox/KzDataGrid...).
+4. Không có component tương ứng → tự viết, và đóng gói vào library chung
+   (KztekComponent hoặc KztekComponentAvalonia), KHÔNG viết lẻ trong project — để tái dùng sau.
+5. Senior Developer/Tech Lead review PHẢI kiểm tra mục "Component đã dùng tối đa KztekComponent*?"
+   trong Code Review Checklist trước khi approve PR có thay đổi UI.
+```
+
+### 20.3 Ngoại lệ
+
+- User chỉ định rõ framework/UI stack khác (WPF, MAUI, Blazor, Console app, class library không UI, ...) → theo đúng yêu cầu đó.
+- Migrate sang stack khác (WF-MIGRATE) → theo mapping do Code Migrator lập, không bắt buộc dùng lại đúng `KztekComponent`/`KztekComponentAvalonia` nếu stack đích không phải WinForms/Avalonia.

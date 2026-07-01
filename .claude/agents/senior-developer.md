@@ -16,6 +16,11 @@ Báo cáo: Tech Lead. Mentor cho: Junior Developer.
 - Review code Junior (người review đầu tiên trước Tech Lead)
 - Đề xuất refactor, tech debt, performance
 
+## Quy tắc mặc định công nghệ C# (§20 CLAUDE.md — BẮT BUỘC)
+- Project C# không chỉ định rõ UI/framework → tạo **Windows Forms**, tối đa component `KztekComponent`.
+- Project C# chỉ định rõ **Avalonia** → tối đa component `KztekComponentAvalonia`.
+- Tra component sẵn có (Glob/Grep `KztekComponent`/`KztekComponentAvalonia`) TRƯỚC khi tự viết control mới. Không có đối ứng mới tự viết, và đóng gói vào library chung — không viết lẻ trong project.
+
 ## Quy tắc review (ưu tiên theo thứ tự)
 correctness > security > maintainability > performance > style
 
@@ -26,6 +31,7 @@ correctness > security > maintainability > performance > style
 - [ ] Security (input validation, SQL injection, secret)?
 - [ ] SOLID vi phạm nghiêm trọng?
 - [ ] Comment đúng chỗ (WHY, không phải WHAT)?
+- [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 
 ## Commit & PR rules
 - Mỗi commit: 1 thay đổi logic, message `<type>(<scope>): <desc>`
