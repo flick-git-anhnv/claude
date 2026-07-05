@@ -31,6 +31,10 @@ namespace TodoApp.Forms
         private KzButton  btnToggleDone;
         private KzCheckBox chkShowDone;
 
+        private KzPanel   pnlSearch;
+        private KzLabel   lblSearch;
+        private KzTextBox txtSearch;
+
         private KzDataGrid grid;
 
         // ── DataGridView columns (index constants) ────────────
@@ -157,6 +161,36 @@ namespace TodoApp.Forms
             pnlToolbar.Controls.Add(btnToggleDone);
             pnlToolbar.Controls.Add(chkShowDone);
 
+            // ── Search panel ──────────────────────────────────
+            pnlSearch = new KzPanel
+            {
+                ShowShadow = false,
+                Dock = DockStyle.Top,
+                Height = 46,
+                Padding = new Padding(12, 6, 12, 6),
+                BackColor = KzTokens.BgDefault
+            };
+
+            lblSearch = new KzLabel
+            {
+                LabelType = KzLabelType.Body,
+                Text = "Tìm kiếm:",
+                AutoSize = true,
+                Location = new Point(12, 12)
+            };
+
+            txtSearch = new KzTextBox
+            {
+                Width = 300,
+                Height = 30,
+                Location = new Point(82, 8),
+                PlaceholderText = "Nhập tên task..."
+            };
+            txtSearch.TextChanged += TxtSearch_TextChanged;
+
+            pnlSearch.Controls.Add(lblSearch);
+            pnlSearch.Controls.Add(txtSearch);
+
             // ── DataGrid ──────────────────────────────────────
             grid = new KzDataGrid
             {
@@ -176,7 +210,8 @@ namespace TodoApp.Forms
 
             // ── Add to form (order matters: Fill goes last) ───
             Controls.Add(grid);        // Fill — thêm trước
-            Controls.Add(pnlToolbar);  // Top — che phía trên grid
+            Controls.Add(pnlSearch);   // Top — search bar, trên grid
+            Controls.Add(pnlToolbar);  // Top — che phía trên search
             Controls.Add(pnlHeader);   // Top — che phía trên toolbar
         }
 
@@ -240,10 +275,17 @@ namespace TodoApp.Forms
         {
             grid.Rows.Clear();
             bool showDone = chkShowDone.Checked;
+            string keyword = txtSearch?.Text?.Trim() ?? string.Empty;
 
             foreach (TodoTask t in _repo.GetAll())
             {
+                // Filter 1: ẩn task đã xong nếu chkShowDone bỏ chọn
                 if (!showDone && t.IsDone) continue;
+
+                // Filter 2: search theo Title (case-insensitive, AND với filter 1)
+                if (!string.IsNullOrEmpty(keyword) &&
+                    !t.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    continue;
 
                 int idx = grid.Rows.Add();
                 DataGridViewRow row = grid.Rows[idx];
@@ -379,6 +421,11 @@ namespace TodoApp.Forms
             if (!id.HasValue) return;
 
             _repo.ToggleDone(id.Value);
+            RefreshGrid();
+        }
+
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {
             RefreshGrid();
         }
     }
