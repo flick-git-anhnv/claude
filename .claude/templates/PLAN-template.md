@@ -39,6 +39,18 @@ Mô tả ngắn gọn task cần làm, vấn đề cần giải quyết.
 | 3.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
 | 3.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
 
+## Handoff Log (BẮT BUỘC — xem CLAUDE.md §16.5 Bước 4)
+
+> Mỗi bước chạy session/subagent riêng nên KHÔNG thấy lịch sử bước trước. Agent hoàn thành bước PHẢI thêm 1 entry dưới đây; task-planner PHẢI nhúng nguyên văn mục này vào prompt của bước kế tiếp — tránh đọc lại/nghiên cứu lại.
+
+<!-- Thêm entry mới ở cuối, KHÔNG xoá entry cũ -->
+
+### Bước [N.M] — [tên bước ngắn]
+- Đã làm: [tóm tắt 2-3 câu]
+- File/module đã đọc hoặc đổi: [đường dẫn cụ thể]
+- Quyết định quan trọng: [nếu có]
+- Bước sau cần biết: [cảnh báo/gotcha — hoặc "Không có"]
+
 ## Artifacts dự kiến
 - [ ] [artifact 1 — vd: docs/prd/PRD-xxx.md]
 - [ ] [artifact 2 — vd: src/module/feature.ts]

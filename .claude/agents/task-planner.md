@@ -52,9 +52,10 @@ KHÔNG tự thực hiện bước hoặc gọi agent thực thi trong session hi
 1. **Xác định môi trường** (1 lần/plan): system prompt có "VSCode Extension Context" hoặc working dir local (`C:\Users\...`) → **LOCAL**. Không có, chạy sandbox cloud → **WEB**. Không chắc → hỏi user.
 2. **LOCAL** → gọi `Agent` (subagent_type = agent phụ trách bước, prompt tự chứa đủ context: mô tả bước + đường dẫn plan file + artifact mong đợi).
 3. **WEB** → gọi `RemoteTrigger` (`create` lần đầu, `run` các lần sau) với body tương đương nội dung ở bước 2.
-4. Agent/trigger đó tự chịu trách nhiệm: `git commit` (format ở CLAUDE.md §16.5 Bước 3) + `git push` + `Edit` plan file (⬜/🔄→✅, artifact, **thời gian hoàn thành thực tế**).
+4. Agent/trigger đó tự chịu trách nhiệm: `git commit` (format ở CLAUDE.md §16.5 Bước 3) + `git push` + `Edit` plan file (⬜/🔄→✅, artifact, **thời gian hoàn thành thực tế**, + entry mới vào **Handoff Log** — format CLAUDE.md §16.5 Bước 4).
 5. Nhận tóm tắt ngắn (≤5 dòng) trả về — KHÔNG kéo log chi tiết vào session chính.
 6. `Read` lại plan file để xác nhận bước đã ✅ trước khi giao bước kế tiếp — không tự đoán trạng thái.
+7. **Trước khi giao bước kế tiếp:** lấy toàn bộ nội dung "## Handoff Log" hiện có trong plan file, nhúng nguyên văn vào đầu prompt của `Agent`/`RemoteTrigger` bước kế tiếp — để agent đó KHÔNG phải tự đọc lại/nghiên cứu lại những gì bước trước đã xác định.
 
 **Ngoại lệ bỏ session isolation:** plan chỉ 1 bước, bước là câu hỏi/xác nhận, hoặc user yêu cầu rõ chạy 1 session.
 

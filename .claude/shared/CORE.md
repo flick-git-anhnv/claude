@@ -119,6 +119,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 | R8 | Thay đổi tính năng → cập nhật tài liệu tương ứng trong cùng session (xem §15 CLAUDE.md) |
 | R9 | Project C# không chỉ định rõ → **WinForms** + tối đa component `KztekComponent`. Project C# Avalonia → tối đa component `KztekComponentAvalonia`. Chi tiết §20 CLAUDE.md |
 | R10 | Mỗi bước trong plan PHẢI chạy session riêng (LOCAL: Agent subagent \| WEB: RemoteTrigger), tự commit+push+cập nhật plan, không dồn hết vào session chính. Chi tiết §16.5 CLAUDE.md |
+| R11 | Mỗi bước xong PHẢI ghi "Handoff Log" vào plan file; bước sau PHẢI được nhúng Handoff Log vào prompt — KHÔNG tự đọc lại/suy luận lại điều bước trước đã xác định. Chi tiết §16.5 Bước 4 CLAUDE.md |
 
 ---
 

@@ -935,6 +935,21 @@ Với mỗi bước ⬜/🔄 kế tiếp trong plan:
 Plan: .claude/plans/PLAN-[slug]-[date].md
 ```
 
+#### Bước 4 — BẮT BUỘC: Handoff Log (tránh bước sau phải đọc lại / nghiên cứu lại)
+
+> Vì mỗi bước chạy trong subagent/trigger tách biệt (Bước 2a/2b), agent thực hiện bước N+1 KHÔNG thấy được lịch sử session của bước N. Nếu không ghi lại, bước sau sẽ phải tự đọc code, tự suy luận lại từ đầu — tốn thời gian và có thể suy luận SAI khác với bước trước.
+
+1. Ngay sau khi hoàn thành bước (cùng lúc với Bước 2a.c / 2b tương ứng), agent/trigger PHẢI `Edit` thêm 1 entry vào mục **"## Handoff Log"** của plan file (xem cấu trúc ở `PLAN-template.md`), theo format:
+   ```
+   ### Bước N.M — [tên bước ngắn]
+   - Đã làm: [tóm tắt 2-3 câu, KHÔNG chép lại toàn bộ log]
+   - File/module đã đọc hoặc đổi: [đường dẫn cụ thể]
+   - Quyết định quan trọng: [nếu có — vd: chọn cách A vì lý do X]
+   - Bước sau cần biết: [cảnh báo / gotcha / điều KHÔNG cần làm lại — nếu có, ghi rõ; nếu không có → "Không có"]
+   ```
+2. Trước khi giao bước kế tiếp cho subagent/trigger mới, `task-planner`/Dispatcher PHẢI `Read` toàn bộ mục "Handoff Log" hiện có trong plan file, và **nhúng nguyên văn nội dung đó vào đầu prompt** của bước kế tiếp — coi như "bối cảnh đã biết", không để agent mới tự đọc lại toàn bộ codebase để suy ra lại những gì bước trước đã xác định.
+3. Agent bước sau CHỈ đọc thêm file/code ngoài phạm vi Handoff Log đã cung cấp — không đọc lại phần đã được tóm tắt rõ.
+
 #### Ngoại lệ — KHÔNG áp dụng session isolation khi:
 - Plan chỉ có 1 bước duy nhất (không đáng tách session).
 - Bước là câu hỏi/xác nhận với user, không phải bước thực thi.
