@@ -14,7 +14,6 @@ namespace TodoApp.Forms
     public class EditTaskForm : Form
     {
         // ── KztekComponent controls ────────────────────────────
-        private KzPanel pnlContent;
         private KzLabel lblTitle;
         private KzLabel lblTitleInput;
         private KzLabel lblDescInput;
@@ -56,14 +55,6 @@ namespace TodoApp.Forms
             MinimizeBox = false;
             BackColor = KzTokens.BgDefault;
             Font = KzThemeHelper.GetFont(KzTokens.FontMd);
-
-            // ── Panel content ──────────────────────────────────
-            pnlContent = new KzPanel
-            {
-                ShowShadow = false,
-                Dock = DockStyle.Fill,
-                Padding = new Padding(24)
-            };
 
             // ── Heading ────────────────────────────────────────
             lblTitle = new KzLabel
@@ -137,6 +128,10 @@ namespace TodoApp.Forms
             Controls.Add(txtDescription);
             Controls.Add(btnSave);
             Controls.Add(btnCancel);
+
+            // UX: Enter = Save, Esc = Cancel
+            AcceptButton = btnSave;
+            CancelButton = btnCancel;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)

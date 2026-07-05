@@ -89,8 +89,24 @@ namespace TodoApp.Data
 
         private void Save()
         {
-            string json = JsonSerializer.Serialize(_tasks, _jsonOptions);
-            File.WriteAllText(_filePath, json);
+            try
+            {
+                string json = JsonSerializer.Serialize(_tasks, _jsonOptions);
+                // Ghi qua file tạm rồi replace để tránh corrupt nếu crash giữa chừng
+                string tmp = _filePath + ".tmp";
+                File.WriteAllText(tmp, json);
+                if (File.Exists(_filePath)) File.Delete(_filePath);
+                File.Move(tmp, _filePath);
+            }
+            catch (Exception ex)
+            {
+                // Không crash app — báo user và giữ nguyên state trong RAM
+                System.Windows.Forms.MessageBox.Show(
+                    "Không thể lưu dữ liệu: " + ex.Message,
+                    "Lỗi lưu file",
+                    System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Error);
+            }
         }
     }
 }
