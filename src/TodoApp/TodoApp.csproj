@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>TodoApp</RootNamespace>
+    <AssemblyName>TodoApp</AssemblyName>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <ApplicationIcon />
+    <StartupObject>TodoApp.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\KztekComponent\KztekComponent.csproj" />
+    <!-- Guna.UI2 là dependency bắt buộc của KztekComponent — phải reference trực tiếp vì là dll không phải NuGet -->
+    <Reference Include="Guna.UI2">
+      <HintPath>..\..\KztekComponent\refs\Guna.UI2.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
