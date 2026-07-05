@@ -63,7 +63,9 @@ Pre-0 → Glob .claude/plans/PLAN-*.md
        └── Chưa có → gọi task-planner → xin xác nhận user → chờ OK
 
 Bước 0 → Dispatcher hiển thị phân tích (xem format §5)
-Bước N → Mỗi agent theo chain (xem format §5)
+Bước N → Mỗi bước ⬜/🔄 trong plan chạy TÁCH biệt session chính (xem §16.5 CLAUDE.md):
+         LOCAL → Agent tool (subagent) | WEB → RemoteTrigger
+         → agent/trigger tự commit+push+cập nhật plan, trả tóm tắt ngắn về session chính
 Cuối   → Dispatcher tổng kết + phân tích tái sử dụng (§18 CLAUDE.md)
 ```
 
@@ -116,6 +118,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 | R7 | Mọi quyết định phải có log: ai quyết, vì sao, khi nào |
 | R8 | Thay đổi tính năng → cập nhật tài liệu tương ứng trong cùng session (xem §15 CLAUDE.md) |
 | R9 | Project C# không chỉ định rõ → **WinForms** + tối đa component `KztekComponent`. Project C# Avalonia → tối đa component `KztekComponentAvalonia`. Chi tiết §20 CLAUDE.md |
+| R10 | Mỗi bước trong plan PHẢI chạy session riêng (LOCAL: Agent subagent \| WEB: RemoteTrigger), tự commit+push+cập nhật plan, không dồn hết vào session chính. Chi tiết §16.5 CLAUDE.md |
 
 ---
 

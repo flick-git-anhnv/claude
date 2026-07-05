@@ -19,23 +19,25 @@ Mô tả ngắn gọn task cần làm, vấn đề cần giải quyết.
 
 ## Phases & Steps
 
+> **Session isolation (CLAUDE.md §16.5):** Mỗi bước ⬜/🔄 PHẢI chạy tách session — LOCAL dùng `Agent` subagent, WEB dùng `RemoteTrigger`. Agent/trigger tự commit+push+điền cột "Hoàn thành lúc".
+
 ### Phase 1: [Tên phase — vd: Phân tích & Thiết kế]
-| # | Bước | Agent | Status | Artifact | Ghi chú |
-|---|------|-------|--------|----------|---------|
-| 1.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | |
-| 1.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | |
+| # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
+|---|------|-------|--------|----------|-----------------|---------|
+| 1.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
+| 1.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
 
 ### Phase 2: [Tên phase — vd: Triển khai]
-| # | Bước | Agent | Status | Artifact | Ghi chú |
-|---|------|-------|--------|----------|---------|
-| 2.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | |
-| 2.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | |
+| # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
+|---|------|-------|--------|----------|-----------------|---------|
+| 2.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
+| 2.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
 
 ### Phase 3: [Tên phase — vd: Kiểm thử & Deploy]
-| # | Bước | Agent | Status | Artifact | Ghi chú |
-|---|------|-------|--------|----------|---------|
-| 3.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | |
-| 3.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | |
+| # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
+|---|------|-------|--------|----------|-----------------|---------|
+| 3.1 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
+| 3.2 | [mô tả bước cụ thể] | [agent] | ⬜ | - | - | |
 
 ## Artifacts dự kiến
 - [ ] [artifact 1 — vd: docs/prd/PRD-xxx.md]
