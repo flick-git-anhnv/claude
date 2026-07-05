@@ -68,7 +68,9 @@ namespace TodoApp.Forms
             {
                 ShowShadow = false,
                 Dock = DockStyle.Top,
-                Height = 72,
+                Height = 90,                   // UI-002 v2: tăng từ 72→90px để H3 label
+                                               // không bị Windows chrome hoặc KzPanel
+                                               // clip khi render ở top client area
                 BackColor = KzTokens.Navy900,
                 Padding = new Padding(20, 0, 20, 0)
             };
@@ -79,10 +81,8 @@ namespace TodoApp.Forms
                 Text = "Todo App",
                 ForeColor = KzTokens.White,
                 AutoSize = true,
-                Location = new Point(20, 22)   // UI-002: tăng từ 14→22px để đảm bảo
-                                               // hiển thị trong client area (H3 font cao ~20px,
-                                               // y=14 có thể bị clipped bởi panel padding top=0
-                                               // khi DPI scaling áp dụng margin nội bộ)
+                Location = new Point(20, 12)   // UI-002 v2: đặt y=12 (từ 22) để
+                                               // title hiển thị rõ trong panel 90px cao
             };
 
             lblSubtitle = new KzLabel
@@ -91,7 +91,7 @@ namespace TodoApp.Forms
                 Text = "Quản lý công việc của bạn",
                 ForeColor = KzTokens.Navy300,
                 AutoSize = true,
-                Location = new Point(20, 48)   // UI-002: tăng từ 42→48px (cách title ~26px vertical)
+                Location = new Point(20, 52)   // UI-002 v2: y=52 (cách title ~40px, panel 90px)
             };
 
             pnlHeader.Controls.Add(lblAppTitle);
@@ -102,8 +102,8 @@ namespace TodoApp.Forms
             {
                 ShowShadow = false,
                 Dock = DockStyle.Top,
-                Height = 56,
-                Padding = new Padding(12, 8, 12, 8),
+                Height = 60,                   // UI-001 v2: tăng từ 56→60px để nút không bị clamp
+                Padding = new Padding(12, 10, 12, 10),
                 BackColor = KzTokens.BgAlt
             };
 
@@ -111,7 +111,7 @@ namespace TodoApp.Forms
             {
                 Variant = KzButtonVariant.Primary,
                 Text = "Thêm",
-                Width = 110,   // UI-001: tăng từ 88→110px (DPI 125-150% an toàn)
+                Width = 130,   // UI-001 v2: tăng từ 110→130px (đủ rộng cho "Thêm" với mọi font render)
                 Height = 36,
                 Location = new Point(12, 10)
             };
@@ -121,9 +121,9 @@ namespace TodoApp.Forms
             {
                 Variant = KzButtonVariant.Secondary,
                 Text = "Sửa",
-                Width = 100,   // UI-001: tăng từ 80→100px
+                Width = 110,   // UI-001 v2: tăng từ 100→110px
                 Height = 36,
-                Location = new Point(130, 10),  // 12 + 110 + 8 gap
+                Location = new Point(150, 10),  // 12 + 130 + 8 gap
                 Enabled = false
             };
             btnEdit.Click += BtnEdit_Click;
@@ -132,9 +132,9 @@ namespace TodoApp.Forms
             {
                 Variant = KzButtonVariant.Danger,
                 Text = "Xoá",
-                Width = 100,   // UI-001: tăng từ 80→100px
+                Width = 110,   // UI-001 v2: tăng từ 100→110px
                 Height = 36,
-                Location = new Point(238, 10),  // 130 + 100 + 8 gap
+                Location = new Point(268, 10),  // 150 + 110 + 8 gap
                 Enabled = false
             };
             btnDelete.Click += BtnDelete_Click;
@@ -143,9 +143,9 @@ namespace TodoApp.Forms
             {
                 Variant = KzButtonVariant.Accent,
                 Text = "Đánh dấu xong",
-                Width = 170,   // UI-001: tăng từ 140→170px (đủ cho "Đánh dấu chưa xong")
+                Width = 200,   // UI-001 v2: tăng từ 170→200px (đủ cho "Đánh dấu chưa xong" 1 dòng)
                 Height = 36,
-                Location = new Point(346, 10),  // 238 + 100 + 8 gap
+                Location = new Point(386, 10),  // 268 + 110 + 8 gap
                 Enabled = false
             };
             btnToggleDone.Click += BtnToggleDone_Click;
@@ -154,7 +154,7 @@ namespace TodoApp.Forms
             {
                 Text = "Hiện task đã xong",
                 Checked = true,
-                Location = new Point(524, 14)   // 346 + 170 + 8 gap
+                Location = new Point(594, 14)   // 386 + 200 + 8 gap
             };
             chkShowDone.CheckedChanged += (s, e) => RefreshGrid();
 

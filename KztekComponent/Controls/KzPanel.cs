@@ -46,7 +46,10 @@ namespace KztekComponent.Controls
             if (_showShadow)
                 KzThemeHelper.DrawCardShadow(g, rect, KzTokens.RadiusLg, _isHovered);
 
-            using (var brush = new SolidBrush(KzTokens.White))
+            // UI-002 fix: dùng BackColor thực tế thay vì hardcode White
+            // để panel có thể render màu Navy900 / bất kỳ màu nền nào được set.
+            var fillColor = BackColor == Color.Transparent ? KzTokens.White : BackColor;
+            using (var brush = new SolidBrush(fillColor))
                 KzThemeHelper.FillRoundedRect(g, brush, rect, KzTokens.RadiusLg);
 
             using (var pen = new Pen(KzTokens.Border, 1f))
