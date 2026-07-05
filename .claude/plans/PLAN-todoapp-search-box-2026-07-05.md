@@ -1,7 +1,7 @@
 ---
 task: todoapp-search-box
 created: 2026-07-05
-updated: 2026-07-05 17:20
+updated: 2026-07-05 17:26
 status: in-progress
 workflow: WF-FASTTRACK (có UX/UI Reviewer vì đổi UI)
 priority: P3
@@ -36,7 +36,7 @@ Thêm ô tìm kiếm (KzTextBox) vào MainForm của TodoApp (WinForms). Khi use
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
 | 2.1 | Review nhanh code search box: logic filter đúng không, KzTextBox dùng đúng không, kết hợp filter không bị conflict | Tech Lead | ✅ | Review OK — không cần sửa code | 2026-07-05 17:20 | Build sạch 0 errors; giữ null-conditional làm defensive |
-| 2.2 | Chạy app thật (nếu build được) hoặc verify code; đánh giá bố cục ô search có hợp lý không (vị trí, kích thước, label); chụp screenshot nếu chạy được; đánh giá C1–C7 | UX/UI Reviewer | ⬜ | `docs/ux-review/UX-REVIEW-todoapp-search-box.md` + screenshot (nếu có) | - | Bắt buộc vì có thay đổi UI |
+| 2.2 | Chạy app thật (nếu build được) hoặc verify code; đánh giá bố cục ô search có hợp lý không (vị trí, kích thước, label); chụp screenshot nếu chạy được; đánh giá C1–C7 | UX/UI Reviewer | ✅ | `docs/ux-review/UX-REVIEW-todoapp-search-box.md` + `screenshots/2026-07-05/*.png` | 2026-07-05 17:26 | Chạy app thật, chụp 3 screenshot. Search panel PASS. 2 issue High ở toolbar (button text truncated) và header title ẩn — không do search box. |
 
 ### Phase 3: QA Smoke Test
 
@@ -55,6 +55,12 @@ Thêm ô tìm kiếm (KzTextBox) vào MainForm của TodoApp (WinForms). Khi use
 - File/module đã đọc hoặc đổi: `src/TodoApp/Forms/MainForm.cs`, `src/TodoApp/Forms/MainForm.Designer.cs` (chỉ đọc — stub), `KztekComponent/Controls/KzTextBox.cs` (xác minh PlaceholderText), `src/TodoApp/Forms/EditTaskForm.cs` (xác minh cú pháp PlaceholderText đang dùng)
 - Quyết định quan trọng: pnlSearch đặt giữa pnlToolbar và grid (Controls.Add theo thứ tự Fill→pnlSearch→pnlToolbar→pnlHeader); label "Tìm kiếm:" + txtSearch width 300 tại Location (82,8); PlaceholderText = "Nhập tên task..."
 - Bước sau cần biết: Tech Lead (2.1) kiểm tra logic AND trong RefreshGrid() — `txtSearch?.Text?.Trim()` dùng null-conditional vì txtSearch có thể null lúc form chưa init đủ. UX/UI Reviewer (2.2): pnlSearch nằm ngay dưới pnlToolbar, chiều cao 46px, nhãn "Tìm kiếm:" ở trái, txtSearch width 300 ở giữa-trái — cần đánh giá bố cục tổng thể có cân đối không.
+
+### Bước 2.2 — UX/UI Review
+- Đã làm: Chạy app thật (`dotnet run`), xác nhận PID 35548, dùng WinAPI lấy window handle → chụp 3 screenshot (mainform-full.png, mainform-search-zoom.png, mainform-header-zoom.png). Đánh giá C1-C7. Search panel PASS toàn bộ. Phát hiện 2 issue High không liên quan search box: (1) toolbar button text bị cắt nghiêm trọng do DPI scaling (UI-001), (2) header title "Todo App" không hiển thị (UI-002). Không sửa code vì issue không thuộc scope search box và cần xác nhận từ Tech Lead trước.
+- File/module đã đọc hoặc đổi: `src/TodoApp/Forms/MainForm.cs` (đọc), `docs/ux-review/UX-REVIEW-todoapp-search-box.md` (tạo mới), `docs/ux-review/screenshots/2026-07-05/*.png` (3 file)
+- Quyết định quan trọng: Không sửa code trong review lần này — issue nằm ở toolbar button width (pre-existing), không phải search box. Search box layout đạt yêu cầu.
+- Bước sau cần biết: QA Engineer (3.1) smoke test search: (1) gõ text → list lọc real-time; (2) xóa → list khôi phục đủ; (3) kết hợp chkShowDone + search → AND filter đúng; (4) case-insensitive. Lưu ý: buttons toolbar bị cắt text (T, S u, X o) là cosmetic issue, không ảnh hưởng functional test nhưng cần note. Build hiện tại 0 errors.
 
 ### Bước 2.1 — Tech Lead review
 - Đã làm: Review code MainForm.cs (search block dòng 164–192 + RefreshGrid dòng 274–306). Verify: (a) Logic AND filter đúng — showDone continue trước, keyword continue sau, hai filter độc lập AND. (b) Null-conditional `txtSearch?.Text?.Trim()` là defensive coding, thực tế RefreshGrid gọi sau InitializeComponent nên txtSearch không null, nhưng giữ nguyên để defensive — không phải bug. (c) KzTextBox API dùng đúng (PlaceholderText, Width, Height, Location, TextChanged). (d) `string.Contains(string, StringComparison.OrdinalIgnoreCase)` an toàn với Unicode/ký tự đặc biệt; Trim() không throw. Build sạch 0 errors (chỉ có 1901 CA1416 warnings từ KztekComponent, không liên quan). **KHÔNG cần sửa code.**
@@ -82,6 +88,7 @@ Không có
 | 2026-07-05 | Plan tạo mới | task-planner |
 | 2026-07-05 17:19 | Bước 1.1 Done — thêm KzTextBox search box, build sạch, commit c21e86a | Junior Developer |
 | 2026-07-05 17:20 | Bước 2.1 Done — Tech Lead review OK, không cần sửa code, build sạch | Tech Lead |
+| 2026-07-05 17:26 | Bước 2.2 Done — UX/UI Review: chạy app thật, chụp 3 screenshot, search panel PASS, phát hiện UI-001/UI-002 ở toolbar/header (không liên quan search) | UX/UI Reviewer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
