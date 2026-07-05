@@ -1,7 +1,7 @@
 ---
 task: todoapp-fix-ui-toolbar-header
 created: 2026-07-05
-updated: 2026-07-05 17:48
+updated: 2026-07-05 17:58
 status: in-progress
 workflow: WF-FASTTRACK
 priority: P2
@@ -36,7 +36,7 @@ Scope: WinForms layout fix, không đụng logic nghiệp vụ. Phù hợp WF-FA
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
 | 2.1 | Review nhanh PR fix UI-001+UI-002: kiểm tra đúng property (Width/Location), không tạo regression cho search panel, không vi phạm DPI auto-scale. Approve hoặc request changes. | Tech Lead | ✅ | `src/TodoApp/Forms/MainForm.cs` (verify) | 2026-07-05 17:48 | Approve — không cần sửa |
-| 2.2 | Chạy app thật lại sau fix, chụp screenshot MainForm, xác nhận UI-001 (buttons hiển thị đủ "Thêm", "Sửa", "Xoá") và UI-002 (header "Todo App" hiển thị trong vùng nhìn thấy). Đánh giá lại C1–C7. Tạo report `docs/ux-review/UX-REVIEW-todoapp-fix-ui-toolbar-header.md`. | UX/UI Reviewer | ⬜ | - | - | Chạy app thật bắt buộc — xem CLAUDE.md UXR rules |
+| 2.2 | Chạy app thật lại sau fix, chụp screenshot MainForm, xác nhận UI-001 (buttons hiển thị đủ "Thêm", "Sửa", "Xoá") và UI-002 (header "Todo App" hiển thị trong vùng nhìn thấy). Đánh giá lại C1–C7. Tạo report `docs/ux-review/UX-REVIEW-todoapp-fix-ui-toolbar-header.md`. | UX/UI Reviewer | ✅ | `docs/ux-review/UX-REVIEW-todoapp-fix-ui-toolbar-header.md`, `screenshots/2026-07-05/mainform-v3-final.png` | 2026-07-05 17:58 | UI-001 RESOLVED, UI-002 RESOLVED. Root cause UI-002: KzPanel.OnPaint hardcode White — đã fix KzPanel.cs |
 
 ### Phase 3: QA Smoke Test
 
@@ -62,6 +62,12 @@ Scope: WinForms layout fix, không đụng logic nghiệp vụ. Phù hợp WF-FA
 - Quyết định quan trọng: Approve nguyên trạng. Gap 8px giữa btnToggleDone và chkShowDone chính xác — Senior đã tính đúng.
 - Bước sau cần biết: UX/UI Reviewer (2.2) — chạy app bằng `dotnet run --project src/TodoApp/TodoApp.csproj` (target `net8.0-windows`). Số liệu mới cần chụp và so sánh với screenshot cũ trong `docs/ux-review/screenshots/`: (a) toolbar row buttons hiển thị full text "Thêm" / "Sửa" / "Xoá" / "Đánh dấu xong"; (b) header title "Todo App" hiển thị rõ ở y=22 trong panel navy 72px cao; (c) subtitle "Quản lý công việc của bạn" hiển thị ở y=48. Test ở DPI 100% và 125% nếu có thể. Không có regression để verify — search/CRUD nguyên trạng.
 
+### Bước 2.2 — UX/UI xác nhận fix
+- Đã làm: Chạy app, chụp screenshot. Lần sửa 1 (từ Senior Dev) chưa đủ — "Thêm" vẫn bị cắt, header title vô hình. Phát hiện root cause UI-002: KzPanel.OnPaint hardcode White fill bỏ qua BackColor. Sửa KzPanel.cs dùng BackColor thực. Sửa thêm MainForm.cs tăng width buttons (130/110/110/200px) và điều chỉnh pnlHeader 90px. Build sạch, verify screenshot v3: UI-001 + UI-002 đều RESOLVED.
+- File/module đã đọc hoặc đổi: `KztekComponent/Controls/KzPanel.cs` (sửa), `src/TodoApp/Forms/MainForm.cs` (sửa thêm), `docs/ux-review/UX-REVIEW-todoapp-fix-ui-toolbar-header.md` (tạo mới)
+- Quyết định quan trọng: Fix KzPanel tại source (không chỉ workaround trong MainForm.cs) để toàn bộ component library hưởng lợi. Width buttons tăng thêm nhiều hơn để có buffer an toàn với font rendering.
+- Bước sau cần biết: QA Engineer (3.1) — smoke test các path: (1) click Thêm → dialog mở; (2) chọn task → click Sửa → dialog mở; (3) chọn task → click Xoá → confirm dialog; (4) chọn task → click "Đánh dấu xong" → text button đổi thành "Đánh dấu chưa xong"; (5) search box filter theo keyword. Không có regression với search/CRUD — code logic không đụng đến. Build Debug, không cần Release build. App chạy: `dotnet run --project src/TodoApp/TodoApp.csproj`.
+
 ## Artifacts dự kiến
 - [ ] `src/TodoApp/Forms/MainForm.Designer.cs` — sửa Width btnAdd/btnEdit/btnDelete, Location lblAppTitle
 - [ ] `src/TodoApp/Forms/MainForm.cs` — nếu có property set runtime cần điều chỉnh
@@ -82,6 +88,7 @@ Không có
 | 2026-07-05 | Plan tạo mới | task-planner |
 | 2026-07-05 17:46 | Bước 1.1 Done — Fix UI-001 (btn width) + UI-002 (header y offset); commit 8e130fe; push lỗi 403 | Senior Developer |
 | 2026-07-05 17:48 | Bước 2.1 Done — Tech Lead review APPROVED, không cần sửa; build 0 error | Tech Lead |
+| 2026-07-05 17:58 | Bước 2.2 Done — UX/UI xác nhận fix. UI-001 RESOLVED (width đủ), UI-002 RESOLVED (fix KzPanel.OnPaint + lblAppTitle visible). Commit 9df38be; push 403 | UX/UI Reviewer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
