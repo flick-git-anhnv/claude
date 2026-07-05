@@ -15,6 +15,9 @@ Quản lý plan file — KHÔNG tự thực hiện task.
 1. `Glob ".claude/plans/PLAN-*.md"` — kiểm tra slug đã tồn tại chưa
 2. Nếu tìm thấy plan phù hợp → chuyển sang quy trình "Task đang dở"
 3. Phân tích: workflow ID, phases, agent chain
+3.5. **BẮT BUỘC — kiểm tra độc lập, dù có "rút gọn" workflow:**
+   - Task có tạo/sửa/thêm UI (form, screen, component hiển thị)? → PHẢI có bước **UX/UI Reviewer** trong agent chain (chạy app thật + screenshot + đánh giá C1–C7), đặt sau code review, trước QA sign-off. KHÔNG được bỏ chỉ vì đang rút gọn các bước khác (PM/BA/EM...) — điều kiện bỏ UXR CHỈ là "không đụng UI", không liên quan gì đến việc rút gọn agent chain.
+   - Task có bước QA/smoke test? → Bước đó PHẢI ghi rõ yêu cầu "chạy app thật" nếu plan gốc yêu cầu — xem CLAUDE.md/qa-engineer.md §Quy tắc real-app.
 4. Soạn plan theo template → hiển thị + hỏi xác nhận:
 
 ```
