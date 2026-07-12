@@ -1,7 +1,7 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12 22:23
+updated: 2026-07-12 22:25
 status: in-progress
 workflow: WF-REFACTOR
 priority: P1
@@ -60,7 +60,7 @@ Kết quả khảo sát đã xác định:
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
 | 3.1 | Sửa CLAUDE.md §11 (mục "Cấu trúc thư mục chuẩn"): thêm ghi chú tường minh ngay sau diagram rằng "Các thư mục `docs/*/` được tạo tự động khi có dự án thực tế. Trong workspace hiện tại (chưa có sản phẩm), CÁC THƯ MỤC NÀY CHƯA TỒN TẠI — đây là quy ước đặt tên, không phải cấu trúc đã có sẵn. Agent KHÔNG được giả định artifact nào đã tồn tại trong docs/ nếu chưa kiểm tra bằng Glob/Read."; cập nhật tương tự trong `.claude/shared/CORE.md` nếu có mục tương đương | senior-developer | ✅ | `CLAUDE.md` §11 ghi chú thêm + `CLAUDE.docx` xuất đồng bộ; CORE.md không có mục tương đương — bỏ qua | 2026-07-12 22:23 | Edit đúng chỗ §11 trong CLAUDE.md; kiểm tra CORE.md có đề cập thư mục docs/ không rồi cập nhật nếu cần |
-| 3.2 | Tech Lead review bước 3.1: xác nhận ghi chú không mâu thuẫn với các quy tắc artifact bắt buộc khác trong §11, không làm hỏng bảng mapping tính năng → tài liệu ở §15.1 | tech-lead | ⬜ | - | - | |
+| 3.2 | Tech Lead review bước 3.1: xác nhận ghi chú không mâu thuẫn với các quy tắc artifact bắt buộc khác trong §11, không làm hỏng bảng mapping tính năng → tài liệu ở §15.1 | tech-lead | ✅ | Tech Lead xác nhận: ghi chú rõ ràng, không mâu thuẫn §11/§15.1, CLAUDE.docx đồng bộ | 2026-07-12 22:25 | APPROVE — Phase 4 có thể bắt đầu |
 
 ### Phase 4: Rà soát và đề xuất rút gọn CLAUDE.md
 
@@ -152,6 +152,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 22:18 | Bước 2.1 Done (3 eval files), Bước 2.2 Done (CODE-GRAPH.md) — commit d3a06b9 | Senior Developer |
 | 2026-07-12 22:20 | Bước 2.3 Done — Tech Lead APPROVE Phase 2 (evals đủ CE testable, CODE-GRAPH đúng thực tế) | Tech Lead |
 | 2026-07-12 22:23 | Bước 3.1 Done — CLAUDE.md §11 ghi chú thêm trạng thái docs/*, CORE.md không cần sửa, DOCX export OK, commit fd22ba2 | Senior Developer |
+| 2026-07-12 22:25 | Bước 3.2 Done — Tech Lead APPROVE Phase 3 (ghi chú không mâu thuẫn §11/§15.1, CLAUDE.docx đồng bộ) | Tech Lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
