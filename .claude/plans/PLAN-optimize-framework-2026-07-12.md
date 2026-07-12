@@ -1,7 +1,7 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12 22:56
+updated: 2026-07-12 23:06
 status: in-progress
 workflow: WF-REFACTOR
 priority: P1
@@ -69,7 +69,7 @@ Kết quả khảo sát đã xác định:
 | 4.1 | Đọc toàn bộ CLAUDE.md; lập danh sách các đoạn có vấn đề chồng chéo/overhead: (a) mô tả cùng khái niệm ở nhiều §, (b) quy trình phụ của quy trình khác làm dài không cần thiết, (c) ví dụ lặp lại. Ghi rõ: vị trí đoạn (§ và số dòng), vấn đề, đề xuất hợp nhất/rút gọn, lý do KHÔNG vi phạm nguyên tắc cứng nào. Output là file phân tích `_workspace/04_sd_claude-md-analysis.md` | senior-developer | ✅ | `_workspace/04_sd_claude-md-analysis.md` — 10 đề xuất P1-P10 (~56 dòng tiết kiệm) | 2026-07-12 22:32 | KHÔNG tự ý sửa CLAUDE.md ở bước này — chỉ phân tích và đề xuất; giữ nguyên Two-Eyes, chain of command, QA veto |
 | 4.2 | Tech Lead review bản phân tích bước 4.1: chấp nhận, từ chối, hoặc điều chỉnh từng đề xuất; ghi quyết định cuối ("Accept / Reject / Modify") kèm lý do cho mỗi điểm; output là danh sách đã được phê duyệt | tech-lead | ✅ | `_workspace/04b_tl_claude-md-decisions.md` — 7 Accept, 1 Modify (P2), 2 Reject (P5, P10) | 2026-07-12 22:41 | Chỉ chấp nhận đề xuất rút gọn nếu KHÔNG xóa bất kỳ nguyên tắc cứng nào |
 | 4.3 | Áp dụng các đề xuất đã được Tech Lead chấp nhận ở bước 4.2 vào CLAUDE.md (và CORE.md / RULES.md nếu cần đồng bộ); ghi chú vào §21 Changelog với phiên bản mới và mô tả thay đổi; xuất DOCX+PDF của các file .md đã sửa bằng `scripts/md_to_docx_kztek.py` | senior-developer | ✅ | `CLAUDE.md` rút gọn 7 Accept + 1 Modify (P1,P3,P4,P6,P7,P8,P9 + Modify P2), §21 Changelog v1.3 thêm; 1437→1403 dòng (34 dòng); CLAUDE.docx đồng bộ; CORE.md/RULES.md không cần sửa (không có mục tương đương); commit `e43e7b2` | 2026-07-12 22:49 | P5 và P10 KHÔNG áp dụng (Reject bởi Tech Lead) — giữ nguyên đúng như quyết định 4.2 |
-| 4.4 | Tech Lead review bước 4.3: xác nhận CLAUDE.md sau chỉnh sửa vẫn nhất quán, §21 Changelog cập nhật đúng | tech-lead | ⬜ | - | - | |
+| 4.4 | Tech Lead review bước 4.3: xác nhận CLAUDE.md sau chỉnh sửa vẫn nhất quán, §21 Changelog cập nhật đúng | tech-lead | ✅ | Tech Lead xác nhận: diff khớp đúng quyết định 4.2, không áp dụng nhầm P5/P10, §21 Changelog đúng format, CLAUDE.md mạch lạc sau chỉnh sửa | 2026-07-12 23:06 | APPROVE — Phase 5 (QA smoke test + EM approve merge) là 2 bước cuối |
 
 ### Phase 5: Kiểm thử và approve merge
 
@@ -140,6 +140,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: **APPROVE Phase 3** — ghi chú làm rõ trạng thái hiện tại, không xóa/phủ định quy ước cấu trúc chuẩn. Phase 4 có thể bắt đầu.
 - Bước sau cần biết: Phase 4 bước 4.1 (Senior Developer) chỉ PHÂN TÍCH CLAUDE.md và đề xuất rút gọn vào `_workspace/04_sd_claude-md-analysis.md` — KHÔNG tự sửa CLAUDE.md ở bước này. Tech Lead sẽ review từng đề xuất ở bước 4.2 (Accept/Reject/Modify) trước khi bước 4.3 áp dụng. Nguyên tắc cứng phải giữ: Two-Eyes (§8), chain of command (§1), QA veto, chain nhảy cấp cấm (§1).
 
+### Bước 4.4 — Tech Lead review cuối Phase 4
+
+- Đã làm: Đọc `_workspace/04b_tl_claude-md-decisions.md` (checklist gốc 7 Accept + 1 Modify + 2 Reject). Xem diff commit `e43e7b2` — xác nhận từng thay đổi khớp đúng quyết định 4.2: P8 (§0 blockquote rút gọn), P4 (xóa code block fan-out §4 P7, giữ text + ref WORKFLOW.md Ví dụ 9), P2 Modify (xóa 3 bullets Bước 5/10a/10b, GIỮ Bước 9), P3 (xóa "Ví dụ hành động nhỏ hợp lệ" §9a), P1 (xóa toàn bộ §13.2), P6 (§16.5 Bước 2b WEB rút về 2 điểm khác biệt), P9 (xóa blockquote Handoff Log §16.5 Bước 4), P7 (gộp "KHÔNG gợi ý compact" thành 1 câu). Không phát hiện P5/P10 bị áp dụng nhầm. §21 Changelog có entry v1.3 đúng format bảng 5 cột, mô tả rõ đối tượng và lý do. CLAUDE.md 1404 dòng, cấu trúc heading/bảng/code block nguyên vẹn, không có đoạn cắt dở.
+- File/module đã đọc hoặc đổi: `_workspace/04b_tl_claude-md-decisions.md` (đọc), `CLAUDE.md` (đọc §21 + tổng thể), `git show e43e7b2` (xem diff), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 4.4 + Handoff Log)
+- Quyết định quan trọng: **APPROVE Phase 4** — refactor CLAUDE.md hoàn tất, không có nguyên tắc cứng nào bị ảnh hưởng, không có regression cấu trúc.
+- Bước sau cần biết: Phase 5 là 2 bước CUỐI của toàn bộ plan. Bước 5.1 QA Engineer smoke test 6 mục: (a) chạy `md_to_docx_kztek.py` với ≥2 file `.md` bất kỳ — có thể dùng `--no-pdf` (theo G001, PDF không cần trên cloud); (b) đọc GOTCHAS.md G001 xác nhận nội dung đúng thực tế python-docx; (c) `.claude/evals/` đủ 3 file (task-planner, senior-developer, qa-engineer); (d) `code-graph/CODE-GRAPH.md` có ghi chú "chưa có codebase sản phẩm"; (e) CLAUDE.md §11 có ghi chú trạng thái docs/*/; (f) CLAUDE.md §21 có entry v1.3. Ghi log pass/fail từng mục. Bước 5.2 Engineering Manager approve merge nhánh `optimize` → `main` (WF-REFACTOR §4 bước 6 yêu cầu).
+
 ### Bước 4.3 — Áp dụng rút gọn CLAUDE.md (đã được duyệt ở 4.2)
 
 - Đã làm: Đọc `_workspace/04b_tl_claude-md-decisions.md` để lấy checklist chính xác. Áp dụng 7 Accept + 1 Modify (P2 — chỉ xóa 3 bullets "Điều kiện bỏ qua" Bước 5/10a/10b trong WF-FEATURE, giữ bullet Bước 9 vì không có annotation tương đương). Xóa §13.2 trùng lặp (P1), xóa code block pseudocode fan-out §4 P7 (P4), gộp 3 bullets "KHÔNG gợi ý compact" (P7), xóa "Ví dụ hành động nhỏ hợp lệ" §9a (P3), rút gọn Bước 2b WEB §16.5 (P6), xóa blockquote lý do Handoff Log §16.5 (P9), rút gọn blockquote trade-off Dispatcher §0 (P8). Thêm entry v1.3 vào §21 Changelog. Xuất `CLAUDE.docx` bằng `--no-pdf` (theo G001 — PDF không cần trên cloud). KHÔNG áp dụng P5 (danh sách vị trí SPRINT-*.md) và P10 (ký hiệu ∥) — đúng như Tech Lead Reject ở bước 4.2. Kiểm tra CORE.md/RULES.md bằng Grep — không có mục tương đương cần đồng bộ.
@@ -184,6 +191,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 22:32 | Bước 4.1 Done — Phân tích 10 đề xuất P1-P10, ~56 dòng tiết kiệm, file `_workspace/04_sd_claude-md-analysis.md` (không commit) | Senior Developer |
 | 2026-07-12 22:41 | Bước 4.2 Done — Tech Lead duyệt: 7 Accept, 1 Modify (P2), 2 Reject (P5, P10); ~44 dòng tiết kiệm sau điều chỉnh | Tech Lead |
 | 2026-07-12 22:49 | Bước 4.3 Done — Áp dụng rút gọn CLAUDE.md (1437→1403 dòng), §21 Changelog v1.3, CLAUDE.docx đồng bộ, commit e43e7b2 | Senior Developer |
+| 2026-07-12 23:06 | Bước 4.4 Done — Tech Lead APPROVE review cuối Phase 4: diff khớp quyết định 4.2, không nhầm P5/P10, §21 v1.3 đúng format, cấu trúc CLAUDE.md mạch lạc | Tech Lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
