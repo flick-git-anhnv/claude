@@ -1,7 +1,7 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12 22:20
+updated: 2026-07-12 22:23
 status: in-progress
 workflow: WF-REFACTOR
 priority: P1
@@ -59,7 +59,7 @@ Kết quả khảo sát đã xác định:
 
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 3.1 | Sửa CLAUDE.md §11 (mục "Cấu trúc thư mục chuẩn"): thêm ghi chú tường minh ngay sau diagram rằng "Các thư mục `docs/*/` được tạo tự động khi có dự án thực tế. Trong workspace hiện tại (chưa có sản phẩm), CÁC THƯ MỤC NÀY CHƯA TỒN TẠI — đây là quy ước đặt tên, không phải cấu trúc đã có sẵn. Agent KHÔNG được giả định artifact nào đã tồn tại trong docs/ nếu chưa kiểm tra bằng Glob/Read."; cập nhật tương tự trong `.claude/shared/CORE.md` nếu có mục tương đương | senior-developer | ⬜ | - | - | Edit đúng chỗ §11 trong CLAUDE.md; kiểm tra CORE.md có đề cập thư mục docs/ không rồi cập nhật nếu cần |
+| 3.1 | Sửa CLAUDE.md §11 (mục "Cấu trúc thư mục chuẩn"): thêm ghi chú tường minh ngay sau diagram rằng "Các thư mục `docs/*/` được tạo tự động khi có dự án thực tế. Trong workspace hiện tại (chưa có sản phẩm), CÁC THƯ MỤC NÀY CHƯA TỒN TẠI — đây là quy ước đặt tên, không phải cấu trúc đã có sẵn. Agent KHÔNG được giả định artifact nào đã tồn tại trong docs/ nếu chưa kiểm tra bằng Glob/Read."; cập nhật tương tự trong `.claude/shared/CORE.md` nếu có mục tương đương | senior-developer | ✅ | `CLAUDE.md` §11 ghi chú thêm + `CLAUDE.docx` xuất đồng bộ; CORE.md không có mục tương đương — bỏ qua | 2026-07-12 22:23 | Edit đúng chỗ §11 trong CLAUDE.md; kiểm tra CORE.md có đề cập thư mục docs/ không rồi cập nhật nếu cần |
 | 3.2 | Tech Lead review bước 3.1: xác nhận ghi chú không mâu thuẫn với các quy tắc artifact bắt buộc khác trong §11, không làm hỏng bảng mapping tính năng → tài liệu ở §15.1 | tech-lead | ⬜ | - | - | |
 
 ### Phase 4: Rà soát và đề xuất rút gọn CLAUDE.md
@@ -105,6 +105,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: **APPROVE Phase 2** — không có eval mơ hồ, không có sai lệch trong CODE-GRAPH. Không phát hiện vi phạm Two-Eyes hay nguyên tắc cứng nào.
 - Bước sau cần biết: Phase 3 (làm rõ trạng thái docs/* trong CLAUDE.md §11) có thể bắt đầu ngay. Khi sửa CLAUDE.md §11 cần đồng bộ CORE.md nếu có mục tương đương — kiểm tra Grep "docs/prd" trước khi Edit. Không sửa bảng mapping §15.1 (không nằm trong scope Phase 3).
 
+### Bước 3.1 — Làm rõ trạng thái docs/* trong CLAUDE.md §11
+
+- Đã làm: Glob kiểm tra toàn bộ `docs/**` — chỉ `docs/research/` (10 file) tồn tại. `docs/user-manuals/`, `docs/prd/` và tất cả thư mục docs con khác KHÔNG tồn tại. CORE.md không có mục nào đề cập thư mục docs/ (Grep không khớp). Thêm 1 đoạn ghi chú tường minh vào CLAUDE.md §11 ngay sau khối code "Cấu trúc thư mục chuẩn", nêu rõ: đây là quy ước đặt tên, hầu hết thư mục KHÔNG TỒN TẠI, chỉ `docs/research/` có nội dung, agent phải Glob/Read kiểm tra thực tế. Xuất CLAUDE.docx thành công (389KB dạng).
+- File/module đã đọc hoặc đổi: `CLAUDE.md` (Edit thêm ghi chú §11), `CLAUDE.docx` (tạo mới bởi script), `.claude/shared/CORE.md` (read-only, không sửa)
+- Quyết định quan trọng: CORE.md không có section tương đương về cấu trúc thư mục — không cần sửa. Không xóa bảng cấu trúc, chỉ thêm ghi chú trạng thái thực tế.
+- Bước sau cần biết: Bước 3.2 là Tech Lead review — cần đọc CLAUDE.md §11 (dòng ~771-775 sau khối code thư mục), xác nhận ghi chú mới không mâu thuẫn với §15.1 (bảng mapping tính năng → tài liệu). Ghi chú mới KHÔNG thay đổi bảng mapping, chỉ làm rõ trạng thái hiện tại. Commit hash: `fd22ba2`.
+
 ### Bước 1.3 — Tech Lead review Phase 1
 
 - Đã làm: Đọc lại GOTCHAS.md G001 (đã đúng thực tế: python-docx là root cause, PDF optional trên cloud, `--no-pdf` mặc định). Chạy `md_to_docx_kztek.py --help` + smoke test với `docs/research/RESEARCH-harness-2026-07-12.md --no-pdf --output-dir /tmp/tl-review-test/` → DOCX 389KB tạo OK. Xác nhận plan file bước 1.1 + 1.2 đánh dấu ✅ đúng thực tế.
@@ -144,6 +151,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 22:10 | Bước 1.1 Done, Bước 1.2 Done — python-docx xác nhận hoạt động, G001 sửa đúng thực tế, PDF không cần trên cloud | Senior Developer |
 | 2026-07-12 22:18 | Bước 2.1 Done (3 eval files), Bước 2.2 Done (CODE-GRAPH.md) — commit d3a06b9 | Senior Developer |
 | 2026-07-12 22:20 | Bước 2.3 Done — Tech Lead APPROVE Phase 2 (evals đủ CE testable, CODE-GRAPH đúng thực tế) | Tech Lead |
+| 2026-07-12 22:23 | Bước 3.1 Done — CLAUDE.md §11 ghi chú thêm trạng thái docs/*, CORE.md không cần sửa, DOCX export OK, commit fd22ba2 | Senior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
