@@ -1,8 +1,8 @@
 ---
 task: ecc-research
 created: 2026-07-12
-updated: 2026-07-12 (Phase 2 done)
-status: waiting-user-confirm-merge
+updated: 2026-07-12 (Phase 3 done — merged to main)
+status: completed
 workflow: WF-GITHUB-RESEARCH
 priority: P2
 ---
@@ -43,8 +43,8 @@ Nghiên cứu repo GitHub https://github.com/affaan-m/ecc theo workflow WF-GITHU
 ### Phase 3: Merge về main
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 3.1 | User xác nhận merge nhánh nghiên cứu về main | USER | ⬜ | Xác nhận merge rõ ràng | - | Cần xác nhận riêng biệt tại đúng thời điểm này — không suy ra từ lần xác nhận trước |
-| 3.2 | Merge nhánh `research/ecc-2026-07-12` về main sau khi có xác nhận rõ ràng | GITHUB-REPO-RESEARCHER | ⬜ | Nhánh đã merge vào main | - | KHÔNG tự merge khi chưa có xác nhận tại Bước 3.1 |
+| 3.1 | User xác nhận merge nhánh nghiên cứu về main | USER | ✅ | User chọn "Merge thẳng vào main" (không qua PR) | 2026-07-12 | Xác nhận riêng biệt qua AskUserQuestion |
+| 3.2 | Merge nhánh `claude/ecc-research-l0sizv` về main sau khi có xác nhận rõ ràng | GITHUB-REPO-RESEARCHER | ✅ | Merge commit `e3c0f13` trên `main`, đã push origin/main | 2026-07-12 | `git merge --no-ff`, không conflict, đã push `1ddc64d..e3c0f13` |
 
 ## Handoff Log (BẮT BUỘC — xem CLAUDE.md §16.5 Bước 4)
 
@@ -110,6 +110,7 @@ Không có
 | 2026-07-12 | Plan tạo mới | task-planner |
 | 2026-07-12 | Phase 0+1 hoàn thành: Audit, clone ecc, viết RESEARCH-ecc-2026-07-12.md + .docx, 8 đề xuất E1-E8, cập nhật plan + Handoff Log | GitHub Repo Researcher |
 | 2026-07-12 | Phase 2 hoàn thành: Áp dụng E1-E7 (9 file tạo mới, 4 file sửa), test hook E1 pass 5/5, xuất DOCX, cập nhật RESEARCH-ecc + plan | GitHub Repo Researcher |
+| 2026-07-12 | Phase 3 hoàn thành: User xác nhận merge thẳng vào main, merge --no-ff không conflict, push origin/main (1ddc64d..e3c0f13). Plan status → completed | Dispatcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
