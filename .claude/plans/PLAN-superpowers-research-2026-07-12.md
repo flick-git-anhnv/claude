@@ -1,8 +1,8 @@
 ---
 task: superpowers-research
 created: 2026-07-12
-updated: 2026-07-12
-status: planning
+updated: 2026-07-12 04:09
+status: active
 workflow: WF-GITHUB-RESEARCH
 priority: P2
 ---
@@ -29,10 +29,10 @@ Nghiên cứu repo GitHub https://github.com/obra/superpowers, phân tích cấu
 ### Phase 1: Phân tích repo & Viết báo cáo
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 1.1 | Tạo nhánh nghiên cứu mới `research/superpowers-2026-07-12` | GITHUB REPO RESEARCHER | ⬜ | nhánh `research/superpowers-2026-07-12` | - | |
-| 1.2 | Clone repo https://github.com/obra/superpowers về scratchpad (ngoài working tree KZTEK), đọc & phân tích toàn bộ cấu trúc | GITHUB REPO RESEARCHER | ⬜ | thư mục clone tạm trong scratchpad | - | KHÔNG đưa `.git` của repo ngoài vào commit KZTEK |
-| 1.3 | Viết phần phân tích repo vào `docs/research/RESEARCH-superpowers-2026-07-12.md` — mục đích, cấu trúc, điểm nổi bật kỹ thuật; KHÔNG kèm đề xuất ở bước này; xuất DOCX+PDF | GITHUB REPO RESEARCHER | ⬜ | `docs/research/RESEARCH-superpowers-2026-07-12.md` + `.docx` + `.pdf` | - | |
-| 1.3b | Dựa trên phân tích Bước 1.3, viết bảng đề xuất cải tiến riêng biệt (mỗi đề xuất: học từ đâu, áp dụng vào đâu trong KZTEK, lợi ích, rủi ro/effort); cập nhật vào file `.md` đã tạo; xuất lại DOCX+PDF; trình user | GITHUB REPO RESEARCHER | ⬜ | Bảng đề xuất trong `docs/research/RESEARCH-superpowers-2026-07-12.md` | - | |
+| 1.1 | Tạo nhánh nghiên cứu mới `research/superpowers-2026-07-12` | GITHUB REPO RESEARCHER | ✅ | nhánh `research/superpowers-2026-07-12` | 2026-07-12 04:09 | |
+| 1.2 | Clone repo https://github.com/obra/superpowers về scratchpad (ngoài working tree KZTEK), đọc & phân tích toàn bộ cấu trúc | GITHUB REPO RESEARCHER | ✅ | `/tmp/.../scratchpad/research/superpowers/` (không commit vào KZTEK) | 2026-07-12 04:09 | Đọc README, CLAUDE.md, 8/14 SKILL.md tiêu biểu, hooks.json, plugin.json, RELEASE-NOTES.md |
+| 1.3 | Viết phần phân tích repo vào `docs/research/RESEARCH-superpowers-2026-07-12.md` — mục đích, cấu trúc, điểm nổi bật kỹ thuật; KHÔNG kèm đề xuất ở bước này; xuất DOCX+PDF | GITHUB REPO RESEARCHER | ✅ | `docs/research/RESEARCH-superpowers-2026-07-12.md` + `.docx` (PDF thất bại do chưa có LibreOffice) | 2026-07-12 04:09 | |
+| 1.3b | Dựa trên phân tích Bước 1.3, viết bảng đề xuất cải tiến riêng biệt (mỗi đề xuất: học từ đâu, áp dụng vào đâu trong KZTEK, lợi ích, rủi ro/effort); cập nhật vào file `.md` đã tạo; xuất lại DOCX+PDF; trình user | GITHUB REPO RESEARCHER | ✅ | Bảng 7 đề xuất (P1-P7) trong `docs/research/RESEARCH-superpowers-2026-07-12.md` | 2026-07-12 04:09 | |
 
 ### Phase 2: User xác nhận & Áp dụng đề xuất
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
@@ -58,6 +58,30 @@ Nghiên cứu repo GitHub https://github.com/obra/superpowers, phân tích cấu
 - Quyết định quan trọng: Xác nhận task mới — bắt đầu từ Bước 1.1
 - Bước sau cần biết: Không có artifact nào cần kế thừa; bắt đầu từ đầu hoàn toàn
 
+### Bước 1.1 — Tạo nhánh nghiên cứu
+- Đã làm: Tạo nhánh `research/superpowers-2026-07-12` từ `claude/superpowers-research-otxyms` bằng `git checkout -b`.
+- File/module đã đọc hoặc đổi: Plan file (đọc), không có file code nào thay đổi.
+- Quyết định quan trọng: Không cần push ngay — sẽ push khi commit đầu tiên.
+- Bước sau cần biết: Nhánh đã tồn tại cục bộ, chưa push lên remote.
+
+### Bước 1.2 — Clone & phân tích repo
+- Đã làm: Clone `--depth 1` vào scratchpad. Đọc: README.md, CLAUDE.md, plugin.json, hooks.json, RELEASE-NOTES.md, và 8 SKILL.md (using-superpowers, subagent-driven-development, writing-plans, brainstorming, verification-before-completion, systematic-debugging, dispatching-parallel-agents, writing-skills).
+- File/module đã đọc hoặc đổi: Scratchpad tại `/tmp/claude-0/-home-user-claude/ddb05ad1-365a-5f35-9174-56323bfb3e6f/scratchpad/research/superpowers/` — KHÔNG commit vào KZTEK.
+- Quyết định quan trọng: Tập trung đọc các skill core liên quan đến agent orchestration và workflow; bỏ qua skill git-worktrees, finishing-branch, requesting/receiving-code-review vì ít liên quan nhất với KZTEK multi-agent system.
+- Bước sau cần biết: Repo v6.1.1 (MIT). 14 skills. Key patterns: Red Flags tables, file handoffs, durable ledger, model tier selection, two-stage review, writing-skills TDD methodology.
+
+### Bước 1.3 — Viết phân tích repo
+- Đã làm: Viết `docs/research/RESEARCH-superpowers-2026-07-12.md` (Phần 1: phân tích repo). Xuất DOCX thành công. PDF thất bại do thiếu LibreOffice (ghi chú, không block).
+- File/module đã đọc hoặc đổi: `docs/research/RESEARCH-superpowers-2026-07-12.md` (tạo mới), `docs/research/RESEARCH-superpowers-2026-07-12.docx` (tạo mới).
+- Quyết định quan trọng: Tách Phần 1 (phân tích) và Phần 2 (đề xuất) thành 2 section riêng trong cùng 1 file theo đúng CLAUDE.md §4 WF-GITHUB-RESEARCH.
+- Bước sau cần biết: Không cần đọc lại toàn bộ repo — đã tóm tắt đủ trong RESEARCH-*.md Phần 1.
+
+### Bước 1.3b — Viết bảng đề xuất
+- Đã làm: Viết 7 đề xuất (P1-P7) vào Phần 2 của cùng file. Cập nhật DOCX. Tất cả đề xuất không đụng auth/payment/DB — không cần security-audit-stride.
+- File/module đã đọc hoặc đổi: `docs/research/RESEARCH-superpowers-2026-07-12.md` (cập nhật), `docs/research/RESEARCH-superpowers-2026-07-12.docx` (cập nhật).
+- Quyết định quan trọng: 7 đề xuất tập trung vào cải thiện compliance agent (P1-P2), tooling workflow (P3), resilience (P4), consistency (P5), skill creation process (P6), cost optimization (P7). Không có đề xuất nào thay đổi cấu trúc agent hierarchy.
+- Bước sau cần biết: Bước 2.1 là DỪNG bắt buộc chờ user. KHÔNG tự áp dụng bất kỳ đề xuất nào trước khi user chọn.
+
 ## Artifacts dự kiến
 - [ ] nhánh `research/superpowers-2026-07-12`
 - [ ] `docs/research/RESEARCH-superpowers-2026-07-12.md` — phân tích repo + bảng đề xuất
@@ -77,6 +101,7 @@ Không có
 | Ngày | Cập nhật | Agent |
 |------|----------|-------|
 | 2026-07-12 | Plan tạo mới, Phase 0 Audit hoàn thành (task mới xác nhận) | task-planner |
+| 2026-07-12 04:09 | Bước 1.1-1.3b Done: nhánh tạo, repo clone+phân tích, RESEARCH-*.md + .docx viết xong (7 đề xuất P1-P7) | GitHub Repo Researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
