@@ -1,8 +1,8 @@
 ---
 task: superpowers-research
 created: 2026-07-12
-updated: 2026-07-12 04:27
-status: active
+updated: 2026-07-12 04:35
+status: completed
 workflow: WF-GITHUB-RESEARCH
 priority: P2
 ---
@@ -43,8 +43,8 @@ Nghiên cứu repo GitHub https://github.com/obra/superpowers, phân tích cấu
 ### Phase 3: User xác nhận merge & Merge về main
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 3.1 | [DỪNG — CHỜ USER] User xác nhận merge nhánh `research/superpowers-2026-07-12` về main | USER | ⬜ | Xác nhận rõ ràng từ user tại đúng thời điểm này | - | KHÔNG tự suy ra từ lần xác nhận trước (Git Safety Protocol) |
-| 3.2 | Merge nhánh `research/superpowers-2026-07-12` về main sau khi có xác nhận rõ ràng | GITHUB REPO RESEARCHER | ⬜ | Nhánh đã được merge vào main | - | |
+| 3.1 | [DỪNG — CHỜ USER] User xác nhận merge nhánh `research/superpowers-2026-07-12` về main | USER | ✅ | User xác nhận "oke merge" | 2026-07-12 04:35 | Xác nhận rõ ràng, riêng biệt với bước 2.1 |
+| 3.2 | Merge nhánh `research/superpowers-2026-07-12` về main sau khi có xác nhận rõ ràng | Dispatcher | ✅ | Merge commit `1d6c0c8` trên `main`, đã push | 2026-07-12 04:35 | Merge no-ff, không conflict |
 
 ## Handoff Log (BẮT BUỘC — xem CLAUDE.md §16.5 Bước 4)
 
@@ -102,12 +102,18 @@ Nghiên cứu repo GitHub https://github.com/obra/superpowers, phân tích cấu
 - Quyết định quan trọng: P5 chỉ sửa `junior-developer.md` (file duy nhất dùng "Dùng agent này khi:" thay vì "PHẢI dùng agent này khi:"); tất cả agent khác đã chuẩn. P1 cho tech-lead.md: chuyển đổi bullet format cũ sang Thought|Reality table, không xóa nội dung.
 - Bước sau cần biết: Bước 3.1 là DỪNG CHỜ USER xác nhận merge. TUYỆT ĐỐI KHÔNG tự merge nhánh `research/superpowers-2026-07-12` về main — phải có xác nhận rõ ràng từ user tại đúng thời điểm này (Git Safety Protocol).
 
+### Bước 3.2 — Merge về main
+- Đã làm: User xác nhận "oke merge" (riêng biệt với xác nhận Bước 2.1). Fetch + checkout `main`, fast-forward lên `origin/main` (11 commit mới từ nghiên cứu `revfactory/harness` trước đó), merge no-ff nhánh `research/superpowers-2026-07-12` — không conflict, push thành công.
+- File/module đã đọc hoặc đổi: Merge commit `1d6c0c8` trên `main` — gộp 27 files (agent .md/.docx, scripts/review-package.sh, .gitignore, CLAUDE.md, docs/research/*, plan file).
+- Quyết định quan trọng: Không cần security-audit-stride vì không đề xuất nào đụng auth/payment/DB.
+- Bước sau cần biết: Workflow WF-GITHUB-RESEARCH hoàn tất. Không có bước tiếp theo.
+
 ## Artifacts dự kiến
-- [ ] nhánh `research/superpowers-2026-07-12`
-- [ ] `docs/research/RESEARCH-superpowers-2026-07-12.md` — phân tích repo + bảng đề xuất
-- [ ] `docs/research/RESEARCH-superpowers-2026-07-12.docx`
-- [ ] `docs/research/RESEARCH-superpowers-2026-07-12.pdf`
-- [ ] Các file code/tài liệu KZTEK được cập nhật theo đề xuất đã chọn (xác định sau Bước 2.1)
+- [x] nhánh `research/superpowers-2026-07-12`
+- [x] `docs/research/RESEARCH-superpowers-2026-07-12.md` — phân tích repo + bảng đề xuất
+- [x] `docs/research/RESEARCH-superpowers-2026-07-12.docx`
+- [ ] `docs/research/RESEARCH-superpowers-2026-07-12.pdf` — thất bại (thiếu LibreOffice/docx2pdf, ghi chú)
+- [x] Các file code/tài liệu KZTEK được cập nhật theo 7 đề xuất đã chọn (P1-P7), merge vào main
 
 ## Blockers
 Không có
@@ -123,6 +129,7 @@ Không có
 | 2026-07-12 | Plan tạo mới, Phase 0 Audit hoàn thành (task mới xác nhận) | task-planner |
 | 2026-07-12 04:09 | Bước 1.1-1.3b Done: nhánh tạo, repo clone+phân tích, RESEARCH-*.md + .docx viết xong (7 đề xuất P1-P7) | GitHub Repo Researcher |
 | 2026-07-12 04:27 | Bước 2.1 Done (user xác nhận áp dụng P1-P7); Bước 2.2 Done: 14 files cập nhật (12 sửa, 2 tạo mới), commit+push lên nhánh | GitHub Repo Researcher |
+| 2026-07-12 04:35 | Phase 3 hoàn thành: user xác nhận merge → merge no-ff `research/superpowers-2026-07-12` vào `main` (commit `1d6c0c8`), push thành công. Workflow WF-GITHUB-RESEARCH hoàn tất. | Dispatcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
