@@ -770,6 +770,7 @@ src/                        ← Senior Developer + Junior Developer
 tests/                      ← Senior Developer + Junior Developer + QA Engineer
 ```
 
+> **Lưu ý về trạng thái thực tế (cập nhật 2026-07-12):** Cấu trúc trên là **QUY ƯỚC đặt tên/vị trí** — các thư mục được tạo mới khi bắt đầu một dự án sản phẩm thực tế (ví dụ khi chạy WF-FEATURE lần đầu). Tại thời điểm này, workspace **chưa có dự án sản phẩm nào đang phát triển**, nên hầu hết các thư mục trên (`docs/prd/`, `docs/user-stories/`, `docs/design/`, `docs/planning/`, `docs/architecture/`, `docs/tech-design/`, `docs/test-plans/`, `docs/test-cases/`, `docs/bugs/`, `docs/incidents/`, `docs/devops/`, `infra/`, `src/`, `tests/`) **KHÔNG TỒN TẠI** trên disk. Chỉ `docs/research/` (báo cáo nghiên cứu GitHub repo ngoài) hiện có nội dung. Agent **PHẢI dùng Glob/Read để kiểm tra thực tế** trước khi giả định bất kỳ artifact nào đã tồn tại trong `docs/`.
 
 > Chi tiết artifact bắt buộc của từng agent: xem file tương ứng trong `.claude/agents/[agent-name].md`
 
