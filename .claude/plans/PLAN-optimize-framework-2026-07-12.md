@@ -75,7 +75,7 @@ Kết quả khảo sát đã xác định:
 
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 5.1 | QA Engineer smoke test toàn bộ thay đổi: (a) chạy `scripts/md_to_docx_kztek.py` với ≥2 file .md bất kỳ, xác nhận DOCX+PDF output; (b) đọc GOTCHAS.md G001 xác nhận nội dung đúng; (c) kiểm tra `.claude/evals/` có đủ 3 file eval; (d) kiểm tra `code-graph/CODE-GRAPH.md` có ghi chú trạng thái rõ ràng; (e) đọc CLAUDE.md §11 xác nhận ghi chú thư mục; (f) xác nhận CLAUDE.md §21 Changelog có entry mới | qa-engineer | ⬜ | - | - | Ghi log kết quả pass/fail từng mục (a)-(f) |
+| 5.1 | QA Engineer smoke test toàn bộ thay đổi: (a) chạy `scripts/md_to_docx_kztek.py` với ≥2 file .md bất kỳ, xác nhận DOCX+PDF output; (b) đọc GOTCHAS.md G001 xác nhận nội dung đúng; (c) kiểm tra `.claude/evals/` có đủ 3 file eval; (d) kiểm tra `code-graph/CODE-GRAPH.md` có ghi chú trạng thái rõ ràng; (e) đọc CLAUDE.md §11 xác nhận ghi chú thư mục; (f) xác nhận CLAUDE.md §21 Changelog có entry mới | qa-engineer | ✅ | (a) RESEARCH-harness.docx 389KB + CLAUDE.docx 421KB OK; (b) G001 đúng thực tế; (c) 3 evals đủ CE-01/02/03; (d) CODE-GRAPH.md ghi chú rõ; (e) §11 dòng 755 "KHÔNG TỒN TẠI" OK; (f) v1.3 dòng 1401 OK; (g) settings.json JSON VALID; (h) code fence balanced, 1 H1 thật — TẤT CẢ 8/8 PASS | 2026-07-12 23:08 | Ghi log kết quả pass/fail từng mục (a)-(h) — TẤT CẢ PASS |
 | 5.2 | Engineering Manager approve merge nhánh `optimize` về `main` (vì refactor ảnh hưởng rộng: CLAUDE.md, GOTCHAS.md, CORE.md, RULES.md, script infrastructure, evals) | engineering-manager | ⬜ | - | - | WF-REFACTOR §4 bước 6 yêu cầu EM approve; không bỏ qua dù scope là nội bộ |
 
 ## Handoff Log (BẮT BUỘC — xem CLAUDE.md §16.5 Bước 4)
@@ -154,6 +154,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: Số dòng giảm từ 1437 → 1403 (34 dòng, khớp ước tính ~44 dòng của Tech Lead — chênh lệch nhỏ do cách đếm dòng trống). Không có nguyên tắc cứng nào bị ảnh hưởng (Two-Eyes, chain of command, QA veto, security-audit-stride, Plan §16, Code Graph §17 đều nguyên vẹn).
 - Bước sau cần biết: Bước 4.4 (Tech Lead review cuối) cần đọc lại CLAUDE.md ở các vị trí đã sửa (dùng commit `e43e7b2` để xem diff) để xác nhận không mâu thuẫn, và xác nhận §21 Changelog có entry v1.3 đúng format. Sau đó Phase 5 (QA smoke test + EM approve merge) là bước cuối cùng của toàn bộ plan.
 
+### Bước 5.1 — QA Engineer smoke test toàn bộ thay đổi
+
+- Đã làm: Test 8 mục (a)-(h): (a) chạy `md_to_docx_kztek.py` với `docs/research/RESEARCH-harness-2026-07-12.md` và `CLAUDE.md` (`--no-pdf`) — cả 2 DOCX tạo thành công (389KB, 421KB); (b) đọc GOTCHAS.md G001 — đúng thực tế (python-docx là root cause đã fix, PDF optional trên cloud); (c) `.claude/evals/` có đủ 3 file, mỗi file ≥3 CE; (d) `code-graph/CODE-GRAPH.md` có ghi chú rõ "chưa có codebase sản phẩm"; (e) CLAUDE.md §11 dòng 755 có ghi chú "KHÔNG TỒN TẠI" đúng; (f) CLAUDE.md §21 dòng 1401 có entry v1.3; (g) `.claude/settings.json` vẫn là JSON hợp lệ sau khi thêm Edit/Write; (h) code fence cân bằng, chỉ 1 H1 thật (9 dòng bắt đầu bằng "# " nhưng 8 dòng nằm trong code block minh họa, không phải heading thật). **KẾT QUẢ: 8/8 PASS.**
+- File/module đã đọc hoặc đổi: `scripts/md_to_docx_kztek.py` (chạy test), `.claude/GOTCHAS.md`, `.claude/evals/*.md`, `code-graph/CODE-GRAPH.md`, `CLAUDE.md`, `.claude/settings.json` (đều read-only/test), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 5.1)
+- Quyết định quan trọng: Không phát hiện regression nào từ toàn bộ Phase 1-4. Framework sẵn sàng để merge.
+- Bước sau cần biết: Bước 5.2 (Engineering Manager) là bước CUỐI CÙNG của plan — approve merge nhánh `optimize` → `main`. Toàn bộ artifact đã pass smoke test, không có blocker nào tồn đọng.
+
 ## Artifacts dự kiến
 
 - [ ] `.claude/GOTCHAS.md` — G001 sửa đúng thực tế (LibreOffice có, python-docx thiếu)
@@ -192,6 +199,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 22:41 | Bước 4.2 Done — Tech Lead duyệt: 7 Accept, 1 Modify (P2), 2 Reject (P5, P10); ~44 dòng tiết kiệm sau điều chỉnh | Tech Lead |
 | 2026-07-12 22:49 | Bước 4.3 Done — Áp dụng rút gọn CLAUDE.md (1437→1403 dòng), §21 Changelog v1.3, CLAUDE.docx đồng bộ, commit e43e7b2 | Senior Developer |
 | 2026-07-12 23:06 | Bước 4.4 Done — Tech Lead APPROVE review cuối Phase 4: diff khớp quyết định 4.2, không nhầm P5/P10, §21 v1.3 đúng format, cấu trúc CLAUDE.md mạch lạc | Tech Lead |
+| 2026-07-12 23:08 | Bước 5.1 Done — QA smoke test 8/8 PASS (script DOCX, GOTCHAS G001, evals, code-graph, CLAUDE.md §11/§21, settings.json, Markdown structure) | QA Engineer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
