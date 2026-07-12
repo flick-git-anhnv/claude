@@ -342,6 +342,40 @@ sequenceDiagram
 
 ---
 
+## Ví dụ 9: Song song hoá — QA Engineer ∥ UX/UI Reviewer (lấy cảm hứng từ Ruflo/Claude Flow)
+
+**Tình huống:** Feature "Đăng nhập bằng Google" (tiếp theo Ví dụ 1) vừa được Tech Lead merge, có cả logic OAuth và UI login button mới. Thay vì chạy UX/UI Reviewer RỒI MỚI đến QA Engineer (tuần tự), Dispatcher gọi cả hai chạy đồng thời vì cả hai cùng nhận code đã merge và không phụ thuộc lẫn nhau (đủ điều kiện theo `RULES.md` §3.4).
+
+```mermaid
+sequenceDiagram
+    participant TL as Tech Lead
+    participant Disp as Dispatcher
+    participant QA as QA Engineer
+    participant UXR as UX/UI Reviewer
+    participant QAL as QA Lead
+
+    TL->>Disp: Code đã merge — có đổi UI + logic
+    Disp->>Disp: Kiểm tra điều kiện RULES.md §3.4 — QA & UXR độc lập, cùng nhận input từ TL
+    par Chạy song song (1 lời gọi Agent tool)
+        Disp->>QA: Test chức năng (functional)
+        QA->>QA: Manual + automation test
+    and
+        Disp->>UXR: Đánh giá trực quan (C1-C7)
+        UXR->>UXR: Chạy app thật, chụp screenshot
+    end
+    QA->>QAL: Report functional test
+    UXR->>QAL: Report UX review
+    QAL->>QAL: Tổng hợp cả 2 báo cáo — Sign-off
+```
+
+**Bài học từ ví dụ này:**
+- Song song hoá CHỈ áp dụng khi 2 bước thật sự độc lập (`RULES.md` §3.4) — QA và UXR cùng nhận 1 input (code merge), không bên nào chờ kết quả bên kia.
+- Rút ngắn thời gian workflow đáng kể cho cặp bước này so với chạy tuần tự, mà KHÔNG bỏ bớt bất kỳ bước kiểm tra nào.
+- QA Lead vẫn phải nhận ĐỦ cả 2 báo cáo trước khi sign-off — không sign-off khi thiếu 1 trong 2.
+- KHÔNG áp dụng song song cho cặp có quan hệ review (VD: Senior Dev code → Tech Lead review vẫn PHẢI tuần tự).
+
+---
+
 ## Tóm tắt nguyên tắc xuyên suốt
 
 | # | Nguyên tắc | Áp dụng khi |
@@ -356,3 +390,4 @@ sequenceDiagram
 | 8 | Khách hàng là trung tâm | Khi có tranh cãi nội bộ |
 | 9 | UX/UI Reviewer bắt buộc khi đổi giao diện | Trước QA sign-off, nếu code sửa/thêm UI (feature, bugfix, hotfix, fast-track, refactor) |
 | 10 | Code Migrator chỉ dùng khi được yêu cầu | Không tự động chạy trong bất kỳ workflow nào khác; Opus chỉ dùng ở giai đoạn lập plan/review |
+| 11 | Song song hoá khi 2 bước độc lập, không quan hệ review | Tăng tốc workflow, không giảm chất lượng kiểm tra (xem `RULES.md` §3.4, ký hiệu `∥` trong `CLAUDE.md` §4) |

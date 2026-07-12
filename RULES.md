@@ -98,7 +98,7 @@ Engineering Manager / CTO (release sign-off)
 3. KHÔNG làm thay đổi luồng nghiệp vụ (Business Logic) hiện tại.
 4. KHÔNG đụng chạm đến cơ sở dữ liệu (Database Schema) hoặc luồng xác thực (Auth Core).
 
-**Luồng thực thi Fast-Track:**
+**Luồng thực thi Fast-Track (tham khảo nhanh):**
 Người dùng giao task nhỏ
 ↓
 Dispatcher (Phân loại tự động thành WF-FASTTRACK)
@@ -115,6 +115,31 @@ QA Engineer (Smoke Test nhanh bằng tay trên staging, không cần tạo Test 
 ↓
 DevOps Engineer (Deploy thẳng lên môi trường đích)
 > **Lưu ý an toàn:** Nếu Tech Lead trong lúc review phát hiện tác động của task Fast-Track lớn hơn dự kiến (ví dụ: ảnh hưởng đến file core trên Code Graph), Tech Lead có quyền HỦY Fast-Track và ép luồng này quay trở lại trạng thái chờ duyệt PPP thông thường.
+
+---
+
+### 3.4. Nguyên tắc song song hoá (Parallel Execution) — bổ sung, lấy cảm hứng từ Ruflo/Claude Flow
+
+**Mục tiêu:** Rút ngắn thời gian workflow bằng cách chạy các bước ĐỘC LẬP đồng thời, thay vì ép tuần tự khi không cần thiết. KHÔNG áp dụng cho bất kỳ cặp bước nào có quan hệ review/approve (vi phạm Two-Eyes Principle §5).
+
+**Điều kiện BẮT BUỘC để 2 bước được chạy song song (phải thỏa mãn TẤT CẢ):**
+1. Cả hai bước cùng nhận input từ MỘT bước trước đó — không bước nào phụ thuộc output của bước kia.
+2. Không có quan hệ "làm → review/approve" giữa 2 bước.
+3. Artifact của 2 bước độc lập nhau — không cùng ghi vào 1 file tại cùng thời điểm (nếu có, phải tuần tự phần đó).
+4. Cả hai đều đã đủ điều kiện bắt đầu ngay (không blocked, không chờ user).
+
+**Danh sách cặp bước đã xác định đủ điều kiện song song** (ký hiệu `∥` trong `CLAUDE.md` §4):
+- WF-FEATURE: Senior Developer (code phần phức tạp) ∥ Junior Developer (code CRUD/UI đơn giản) — cùng nhận task breakdown từ Tech Lead.
+- WF-FEATURE / WF-BUGFIX / WF-HOTFIX / WF-FASTTRACK / WF-REFACTOR (khi có UXR): UX/UI Reviewer (đánh giá trực quan) ∥ QA Engineer (test chức năng) — cùng nhận code đã merge, không phụ thuộc lẫn nhau.
+- WF-SPRINT: Business Analyst (AC check) ∥ Tech Lead (pre-estimate) — cùng dùng backlog từ Product Manager.
+
+**Cách thực thi:** Dispatcher gọi nhiều subagent trong CÙNG 1 lời gọi Agent tool (không tuần tự từng cái một). Mỗi agent vẫn PHẢI tự tạo đủ artifact riêng theo đúng domain (§11 CLAUDE.md) — song song hoá KHÔNG được phép làm giảm chất lượng artifact hay bỏ qua bất kỳ bước kiểm tra nào.
+
+**TUYỆT ĐỐI KHÔNG song song hoá:**
+- Bất kỳ cặp bước nào một bên review/approve output của bên kia (VD: Senior Dev code → Tech Lead review PHẢI tuần tự).
+- Các bước ghi đè lên cùng 1 file/artifact cùng lúc.
+- Bất kỳ bước nào trong WF-INCIDENT liên quan quyết định rollback/hotfix (cần quyết định tuần tự, trách nhiệm rõ ràng theo từng người).
+
 ---
 
 ## 4. QUY TẮC GIAO VIỆC (Delegation Rules)

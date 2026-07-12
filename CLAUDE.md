@@ -171,6 +171,8 @@ Bước tiếp theo: [hành động cần làm tiếp / "Không có — workflow
 
 ## 4. Chi tiết từng workflow bắt buộc
 
+> **Ký hiệu song song hoá (`∥`):** khi 2 bước được nối bằng `∥`, nghĩa là 2 bước đó ĐỘC LẬP nhau (không bước nào cần output của bước kia, cùng nhận input từ 1 bước trước) và ĐƯỢC PHÉP chạy đồng thời (Dispatcher gọi nhiều subagent trong CÙNG 1 lời gọi Agent tool) để rút ngắn thời gian workflow — lấy cảm hứng từ mô hình song song hoá của Ruflo/Claude Flow. TUYỆT ĐỐI KHÔNG áp dụng `∥` cho cặp bước có quan hệ review/approve (vi phạm Two-Eyes §8). Điều kiện đầy đủ + danh sách cặp đã duyệt: xem `RULES.md` §3.4. Minh họa: `WORKFLOW.md` Ví dụ 9.
+
 ### WF-FEATURE — Yêu cầu tính năng mới
 
 **Trigger:** User mô tả tính năng cần xây dựng, ý tưởng sản phẩm mới.
@@ -183,9 +185,11 @@ Bước 4  → ENGINEERING MANAGER  : Estimate resource, quyết định priorit
 Bước 5  → CTO                  : Review kiến trúc [CHỈ khi feature lớn/bảo mật/chiến lược]
 Bước 6  → PROJECT MANAGER      : Lên sprint, timeline, task board
 Bước 7  → TECH LEAD            : Viết Technical Design Doc, chia task chi tiết
+Bước 8  ∥ Bước 9 (song song — cùng nhận task breakdown từ Bước 7, độc lập nhau):
 Bước 8  → SENIOR DEVELOPER     : Code phần phức tạp, mentor junior
 Bước 9  → JUNIOR DEVELOPER     : Code phần CRUD/UI đơn giản theo spec
 Bước 10 → TECH LEAD            : Code review cuối, merge decision
+Bước 10b ∥ Bước 11 (song song — cả hai cùng nhận code đã merge từ Bước 10, độc lập nhau):
 Bước 10b → UX/UI REVIEWER      : [CÓ ĐIỀU KIỆN — nếu feature có chỉnh sửa/thêm giao diện] Chạy app thật, chụp screenshot, đánh giá C1–C7 trước khi QA test
 Bước 11 → QA ENGINEER          : Thực thi test plan, log bug
 Bước 12 → QA LEAD              : Sign-off chất lượng, veto nếu còn P0/P1
@@ -283,6 +287,7 @@ Bước 2 → CTO       : Review, approve, hoặc yêu cầu thay đổi
 
 ```
 Bước 1 → PRODUCT MANAGER  : Chuẩn bị backlog ưu tiên
+Bước 2 ∥ Bước 3 (song song — cả hai cùng dùng backlog từ Bước 1, độc lập nhau):
 Bước 2 → BUSINESS ANALYST : Đảm bảo AC của top stories rõ ràng trước họp
 Bước 3 → TECH LEAD        : Pre-estimate các story
 Bước 4 → PROJECT MANAGER  : Chốt sprint backlog theo velocity, tạo task board
@@ -717,9 +722,36 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 
 ---
 
+### 13.1b Model routing 3 tầng theo loại task (bổ sung — lấy cảm hứng từ Ruflo/Claude Flow)
+
+> §13.1 gán model theo AGENT (danh tính cố định). Mục này bổ sung lớp routing thứ 2 theo LOẠI TASK bên trong công việc của agent — vì cùng một agent vẫn có lúc làm việc cần suy luận, có lúc làm việc thuần cơ học lặp lại theo template.
+
+| Tầng | Model | Áp dụng khi |
+|---|---|---|
+| Tầng 1 — Cao | `claude-opus-4-7` | Quyết định kiến trúc, trade-off rủi ro cao, lập plan migrate — giữ nguyên theo §13.1 |
+| Tầng 2 — Trung | `claude-sonnet-4-6` | Viết PRD/user story/code có suy luận, review, phân tích nghiệp vụ — giữ nguyên theo §13.1 |
+| Tầng 3 — Thấp (MỚI) | `claude-haiku-4-5` | Task cơ học, có template rõ ràng, không cần suy luận nghiệp vụ hay ra quyết định |
+
+**Danh sách task đủ điều kiện downshift sang Tầng 3 (Haiku)** — CHỈ áp dụng cho bước cụ thể liệt kê dưới đây, KHÔNG đổi model mặc định của cả agent trong §13.1:
+
+| Agent | Task được downshift sang Haiku |
+|---|---|
+| QA Engineer | Điền smoke-test log theo template có sẵn, ghi kết quả Pass/Fail đã xác định rõ |
+| DevOps Engineer | Điền checklist deploy theo template `DEPLOY-*.md`, không cần quyết định kỹ thuật mới |
+| Documentation Writer | Chạy `scripts/md_to_docx_kztek.py` và báo cáo kết quả (không soạn nội dung mới) |
+| Junior Developer | Task CRUD lặp lại đã có pattern rõ từ PR trước đó trong cùng project |
+
+**Nguyên tắc downshift (BẮT BUỘC tuân thủ cả 4):**
+1. CHỈ downshift khi task có template/pattern đã tồn tại trong project — task ĐẦU TIÊN của một loại pattern mới vẫn PHẢI dùng model mặc định của agent (§13.1) để lập đúng pattern; chỉ các lần lặp lại sau mới downshift.
+2. Agent tự quyết định downshift dựa trên bảng trên — KHÔNG cần hỏi user.
+3. Nếu task tưởng cơ học nhưng phát sinh quyết định ngoài template (VD: gặp case chưa có trong pattern) → dừng downshift ngay, quay về model mặc định của agent đó.
+4. TUYỆT ĐỐI KHÔNG áp dụng Tầng 3 cho bất kỳ bước REVIEW / APPROVE / SIGN-OFF nào (Two-Eyes Principle §8) — các bước đó luôn cần model đủ mạnh để phát hiện vấn đề.
+
+---
+
 ### 13.2 Nguyên tắc chọn model
 
-**Opus 4.7** dùng cho CTO và Tech Lead (suy luận sâu, rủi ro cao). **Sonnet 4.6** dùng cho tất cả các agent còn lại (viết văn bản, phân tích vừa, code phức tạp).
+**Opus 4.7** dùng cho CTO và Tech Lead (suy luận sâu, rủi ro cao). **Sonnet 4.6** dùng cho tất cả các agent còn lại (viết văn bản, phân tích vừa, code phức tạp). **Haiku 4.5** dùng cho task cơ học có template theo §13.1b — không thay thế model mặc định của agent, chỉ downshift từng task cụ thể.
 
 ---
 
