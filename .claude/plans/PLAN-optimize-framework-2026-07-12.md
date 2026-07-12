@@ -45,7 +45,7 @@ Kết quả khảo sát đã xác định:
 |---|------|-------|--------|----------|-----------------|---------|
 | 1.1 | Cài `python-docx` và `Pillow` vào môi trường; chạy thử `scripts/md_to_docx_kztek.py` với file `.md` mẫu để xác nhận DOCX và PDF tạo thành công; ghi lại lệnh cài đặt và kết quả kiểm thử | senior-developer | ✅ | `pip install python-docx Pillow` xác nhận DOCX OK; PDF dùng `--no-pdf` trên cloud | 2026-07-12 22:10 | Dùng pip install; xác nhận cả DOCX lẫn PDF output; nếu PDF fail ghi rõ nguyên nhân |
 | 1.2 | Sửa entry G001 trong `.claude/GOTCHAS.md`: thay nội dung "LibreOffice bị thiếu" thành thực tế đúng ("LibreOffice đã cài tại /usr/bin/soffice; vấn đề thực là `python-docx` chưa được cài — giải quyết bằng `pip install python-docx Pillow`"); cập nhật mục "Giải pháp" và "Ngày phát hiện" cho khớp | senior-developer | ✅ | `.claude/GOTCHAS.md` G001 đã sửa: fix python-docx, PDF dùng --no-pdf mặc định trên cloud | 2026-07-12 22:10 | Đọc G001 hiện tại trước khi Edit; KHÔNG xóa entry, chỉ sửa nội dung sai |
-| 1.3 | Tech Lead review bước 1.1 + 1.2: xác nhận script chạy đúng, G001 mô tả chính xác thực tế, không còn thông tin sai lệch nào trong GOTCHAS | tech-lead | ⬜ | - | - | Review nhanh — không cần tạo PR riêng, ghi nhận approval trong Handoff Log |
+| 1.3 | Tech Lead review bước 1.1 + 1.2: xác nhận script chạy đúng, G001 mô tả chính xác thực tế, không còn thông tin sai lệch nào trong GOTCHAS | tech-lead | ✅ | Tech Lead xác nhận: script chạy OK (DOCX 389KB test file), GOTCHAS G001 chính xác | 2026-07-12 22:12 | Review nhanh — không cần tạo PR riêng, ghi nhận approval trong Handoff Log |
 
 ### Phase 2: Bổ sung hạ tầng còn thiếu (evals + code-graph)
 
@@ -84,7 +84,19 @@ Kết quả khảo sát đã xác định:
 
 <!-- Thêm entry mới ở cuối, KHÔNG xoá entry cũ -->
 
-_(Chưa có entry nào — plan mới tạo, chưa có bước nào thực thi)_
+### Bước 1.1-1.2 — Cài python-docx, sửa GOTCHAS G001
+
+- Đã làm: Xác nhận `pip install python-docx Pillow` thành công, DOCX export hoạt động. Sửa G001 trong GOTCHAS.md: thay thế nội dung sai ("LibreOffice không được cài") bằng thực tế đúng — python-docx thiếu là vấn đề chính (đã fix), soffice có ở /usr/bin/soffice nhưng không convert được trong sandbox (hiện tượng đã biết, không debug thêm).
+- File/module đã đọc hoặc đổi: `.claude/GOTCHAS.md` (sửa G001), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status)
+- Quyết định quan trọng: Theo chỉ đạo user — PDF không cần thiết trên cloud/sandbox. Không điều tra thêm lỗi soffice. Dùng `--no-pdf` làm mặc định khi chạy trên cloud.
+- Bước sau cần biết: Phase 2 bước 2.2 tạo code-graph nên dùng `--no-pdf` mặc định (không chờ PDF export thành công). DOCX export hoạt động bình thường sau khi python-docx đã cài. KHÔNG cần chạy `pip install` lại — đã cài rồi.
+
+### Bước 1.3 — Tech Lead review Phase 1
+
+- Đã làm: Đọc lại GOTCHAS.md G001 (đã đúng thực tế: python-docx là root cause, PDF optional trên cloud, `--no-pdf` mặc định). Chạy `md_to_docx_kztek.py --help` + smoke test với `docs/research/RESEARCH-harness-2026-07-12.md --no-pdf --output-dir /tmp/tl-review-test/` → DOCX 389KB tạo OK. Xác nhận plan file bước 1.1 + 1.2 đánh dấu ✅ đúng thực tế.
+- File/module đã đọc hoặc đổi: `.claude/GOTCHAS.md` (read-only), `scripts/md_to_docx_kztek.py` (smoke test), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 1.3)
+- Quyết định quan trọng: **APPROVE Phase 1** — hạ tầng script đã sạch, GOTCHAS G001 không còn gây hiểu nhầm. Phase 2 (evals + code-graph) có thể bắt đầu ngay.
+- Bước sau cần biết: Khi Phase 2 cần xuất PDF/DOCX cho code-graph → dùng `--no-pdf` (theo G001) — chỉ tạo DOCX. Nếu bước sau cần cả PDF thật, phải chạy trên máy local có LibreOffice GUI (không phải sandbox này). Không cần chạy lại `pip install`.
 
 ## Artifacts dự kiến
 
@@ -115,6 +127,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | Ngày | Cập nhật | Agent |
 |------|----------|-------|
 | 2026-07-12 | Plan tạo mới — 5 phases, 12 steps | task-planner |
+| 2026-07-12 22:10 | Bước 1.1 Done, Bước 1.2 Done — python-docx xác nhận hoạt động, G001 sửa đúng thực tế, PDF không cần trên cloud | Senior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
