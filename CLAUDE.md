@@ -821,11 +821,15 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 3. Nếu task tưởng cơ học nhưng phát sinh quyết định ngoài template (VD: gặp case chưa có trong pattern) → dừng downshift ngay, quay về model mặc định của agent đó.
 4. TUYỆT ĐỐI KHÔNG áp dụng Tầng 3 cho bất kỳ bước REVIEW / APPROVE / SIGN-OFF nào (Two-Eyes Principle §8) — các bước đó luôn cần model đủ mạnh để phát hiện vấn đề.
 
+> **Cảnh báo "Turn count beats token price" (học từ obra/superpowers §1.3.5):** Haiku chỉ phù hợp khi task ước tính hoàn thành trong ≤2 turns (điền template cố định, chạy script đơn giản). Nếu task có khả năng cần ≥3 turns — phải tự sửa lỗi, xử lý case ngoài template, hoặc ra quyết định phụ — dùng Sonnet dù nhìn qua tưởng đơn giản. Model rẻ hơn thường mất nhiều turns hơn; tổng chi phí (turns × đơn giá) có thể cao hơn Sonnet, và còn tốn thêm thời gian chờ.
+
 ---
 
 ### 13.2 Nguyên tắc chọn model
 
 **Opus 4.7** dùng cho CTO và Tech Lead (suy luận sâu, rủi ro cao). **Sonnet 4.6** dùng cho tất cả các agent còn lại (viết văn bản, phân tích vừa, code phức tạp). **Haiku 4.5** dùng cho task cơ học có template theo §13.1b — không thay thế model mặc định của agent, chỉ downshift từng task cụ thể.
+
+> **Nguyên tắc turn count (quan trọng khi cân nhắc downshift):** Đơn giá token thấp hơn không đồng nghĩa chi phí tổng thấp hơn. Haiku phù hợp cho task ≤2 turns rõ ràng; task phức tạp hơn dù có vẻ đơn giản sẽ mất nhiều turns với Haiku hơn Sonnet, làm tổng chi phí và thời gian cao hơn. Khi không chắc task sẽ mất bao nhiêu turns → mặc định dùng Sonnet.
 
 ---
 

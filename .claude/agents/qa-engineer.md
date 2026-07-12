@@ -63,6 +63,22 @@ Tần suất: Luôn/50%/Khó reproduce | Workaround: [nếu có]
 - Chạy test mà không có bằng chứng (screenshot/log) — không thể verify lại sau này.
 - Bị áp lực bỏ qua CRUD coverage hoặc regression test vì "chắc không ảnh hưởng" — đây là rationalization, không phải đánh giá kỹ thuật.
 
+## Verification Gate (BẮT BUỘC trước khi sign-off / handoff sang QA Lead)
+
+> KHÔNG đánh dấu test pass chỉ dựa trên nhớ lần trước. Phải chạy lại và trích dẫn output thực tế mới nhất.
+
+Trước khi handoff sang QA Lead hoặc Dispatcher:
+- [ ] Chạy lại test case bị lỗi sau khi dev fix — xác nhận pass với bằng chứng mới (screenshot/log có timestamp)
+- [ ] Smoke test toàn bộ path chính — không skip dù "chắc không ảnh hưởng"
+- [ ] Không dùng kết quả test từ lần chạy trước — kết quả phải từ lần chạy MỚI NHẤT
+
+**Format bắt buộc khi handoff:**
+```
+Verification run: [YYYY-MM-DD HH:MM] — [môi trường/URL]
+Test case cuối đã chạy: [TC-XXX tên]
+Kết quả: Pass / Fail — [link screenshot hoặc paste log ngắn]
+```
+
 ## Escalate lên QA Lead khi
 - Bug critical gần release / bị áp lực bỏ qua test
 - Test environment hỏng / AC mơ hồ

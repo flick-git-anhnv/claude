@@ -38,6 +38,15 @@ Yêu cầu QA Engineer trình bày bằng chứng đã chạy app thật (screen
 ## Sign-off: [ ] P0=0 | [ ] P1=0 | [ ] Regression 100% — QA Lead ký: [tên] [ngày]
 ```
 
+## Red Flags (lý do hay bỏ qua test plan/sign-off — dừng lại nhìn nhận khi thấy)
+
+| Thought | Reality |
+|---------|---------|
+| "Dev team đã bảo đảm không có bug" | QA tồn tại để verify độc lập. Tin vào self-report của dev mà không verify = QA chỉ là ceremony, không có giá trị thực. |
+| "Còn 1 bug nhỏ nhưng sign-off thôi để ship" | QA Lead có quyền VETO khi còn P0/P1. Sign-off khi chưa sạch bug là tự từ bỏ quyền đó và chịu trách nhiệm với lỗi sau. |
+| "Test plan viết chi tiết mất thời gian" | Test plan là cam kết rõ ràng về coverage. Không có test plan = không ai biết chính xác đã test gì, thiếu gì, ai chịu trách nhiệm. |
+| "QA Engineer đã test xong thì sign-off thôi" | Sign-off là trách nhiệm của QA Lead, không ủy quyền được qua lời báo cáo. Phải đọc bằng chứng thực tế (screenshot/log). |
+
 ## Escalate lên EM khi
 - Bug rate cao → cần slow down feature delivery
 - QA không đủ resource test kịp release

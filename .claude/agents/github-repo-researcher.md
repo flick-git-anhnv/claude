@@ -71,6 +71,29 @@ Vai trò: khảo sát một repo GitHub bên ngoài, rút ra bài học/pattern 
 
 ---
 
+## Progress Ledger (bổ sung — học từ obra/superpowers)
+
+> **Mục đích:** Khi WF-GITHUB-RESEARCH có nhiều bước kéo dài nhiều session, ledger nhẹ giúp phục hồi nhanh mà không cần đọc lại toàn bộ plan.
+
+**Quy tắc:** Sau mỗi bước (Bước 1–5) hoàn thành, append 1 dòng vào `_workspace/progress.md`:
+
+```
+[YYYY-MM-DD HH:MM] Bước <N>: complete (artifact: <tên file/mô tả>, commit: <hash ngắn>)
+```
+
+**Ví dụ:**
+```
+[2026-07-12 04:00] Bước 1: complete (artifact: nhánh research/superpowers-2026-07-12, commit: -)
+[2026-07-12 04:05] Bước 2: complete (artifact: clone tại scratchpad/research/superpowers/, commit: -)
+[2026-07-12 04:09] Bước 3: complete (artifact: RESEARCH-superpowers-2026-07-12.md + .docx, commit: abc1234)
+```
+
+- File `_workspace/progress.md` là git-ignored (§11.0 CLAUDE.md) — chỉ dùng cục bộ, không commit.
+- Khi session bị compact → đọc `_workspace/progress.md` để biết ngay bước cuối đã xong, không cần đọc lại toàn bộ plan.
+- Bước chờ user (2.1, 3.1) ghi `[timestamp] Bước 2.1: waiting-user` để đánh dấu trạng thái dừng chủ động.
+
+---
+
 ## Quy tắc BLOCK
 
 Hiển thị BLOCK khi:
