@@ -1,7 +1,7 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12 22:25
+updated: 2026-07-12 22:32
 status: in-progress
 workflow: WF-REFACTOR
 priority: P1
@@ -66,7 +66,7 @@ Kết quả khảo sát đã xác định:
 
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 4.1 | Đọc toàn bộ CLAUDE.md; lập danh sách các đoạn có vấn đề chồng chéo/overhead: (a) mô tả cùng khái niệm ở nhiều §, (b) quy trình phụ của quy trình khác làm dài không cần thiết, (c) ví dụ lặp lại. Ghi rõ: vị trí đoạn (§ và số dòng), vấn đề, đề xuất hợp nhất/rút gọn, lý do KHÔNG vi phạm nguyên tắc cứng nào. Output là file phân tích `_workspace/04_sd_claude-md-analysis.md` | senior-developer | ⬜ | - | - | KHÔNG tự ý sửa CLAUDE.md ở bước này — chỉ phân tích và đề xuất; giữ nguyên Two-Eyes, chain of command, QA veto |
+| 4.1 | Đọc toàn bộ CLAUDE.md; lập danh sách các đoạn có vấn đề chồng chéo/overhead: (a) mô tả cùng khái niệm ở nhiều §, (b) quy trình phụ của quy trình khác làm dài không cần thiết, (c) ví dụ lặp lại. Ghi rõ: vị trí đoạn (§ và số dòng), vấn đề, đề xuất hợp nhất/rút gọn, lý do KHÔNG vi phạm nguyên tắc cứng nào. Output là file phân tích `_workspace/04_sd_claude-md-analysis.md` | senior-developer | ✅ | `_workspace/04_sd_claude-md-analysis.md` — 10 đề xuất P1-P10 (~56 dòng tiết kiệm) | 2026-07-12 22:32 | KHÔNG tự ý sửa CLAUDE.md ở bước này — chỉ phân tích và đề xuất; giữ nguyên Two-Eyes, chain of command, QA veto |
 | 4.2 | Tech Lead review bản phân tích bước 4.1: chấp nhận, từ chối, hoặc điều chỉnh từng đề xuất; ghi quyết định cuối ("Accept / Reject / Modify") kèm lý do cho mỗi điểm; output là danh sách đã được phê duyệt | tech-lead | ⬜ | - | - | Chỉ chấp nhận đề xuất rút gọn nếu KHÔNG xóa bất kỳ nguyên tắc cứng nào |
 | 4.3 | Áp dụng các đề xuất đã được Tech Lead chấp nhận ở bước 4.2 vào CLAUDE.md (và CORE.md / RULES.md nếu cần đồng bộ); ghi chú vào §21 Changelog với phiên bản mới và mô tả thay đổi; xuất DOCX+PDF của các file .md đã sửa bằng `scripts/md_to_docx_kztek.py` | senior-developer | ⬜ | - | - | Đồng bộ CLAUDE.md + CORE.md + RULES.md nếu có rule chuyển vị trí; KHÔNG sửa những gì chưa được approve ở bước 4.2 |
 | 4.4 | Tech Lead review bước 4.3: xác nhận CLAUDE.md sau chỉnh sửa vẫn nhất quán, §21 Changelog cập nhật đúng | tech-lead | ⬜ | - | - | |
@@ -119,6 +119,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: **APPROVE Phase 1** — hạ tầng script đã sạch, GOTCHAS G001 không còn gây hiểu nhầm. Phase 2 (evals + code-graph) có thể bắt đầu ngay.
 - Bước sau cần biết: Khi Phase 2 cần xuất PDF/DOCX cho code-graph → dùng `--no-pdf` (theo G001) — chỉ tạo DOCX. Nếu bước sau cần cả PDF thật, phải chạy trên máy local có LibreOffice GUI (không phải sandbox này). Không cần chạy lại `pip install`.
 
+### Bước 4.1 — Phân tích đề xuất rút gọn CLAUDE.md
+
+- Đã làm: Đọc toàn bộ CLAUDE.md (1438 dòng) và CORE.md. Phát hiện 10 vấn đề overhead cụ thể, sắp xếp theo impact giảm dần (P1–P10). Tổng ước tính tiết kiệm ~56 dòng (3,9%). Phân tích ghi vào `_workspace/04_sd_claude-md-analysis.md` — file này KHÔNG commit (đã gitignore _workspace/).
+- File/module đã đọc hoặc đổi: `CLAUDE.md` (toàn bộ, read-only), `.claude/shared/CORE.md` (read-only), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 4.1 + Handoff Log)
+- Quyết định quan trọng: Không có đề xuất nào xóa nguyên tắc cứng (Two-Eyes, chain of command, QA veto, security-audit-stride WF-REVIEW-CRIT, plan file §16, code graph §17, Git Safety Protocol — đều giữ nguyên). Các đề xuất chỉ xóa prose summary trùng lặp, ví dụ quá hiển nhiên, và rút ngắn text giải thích lặp lại.
+- Bước sau cần biết: Tech Lead (bước 4.2) đọc `_workspace/04_sd_claude-md-analysis.md` — file có bảng summary 10 đề xuất + chi tiết từng mục + bảng xác nhận nguyên tắc cứng. Phân loại "Nên Accept ngay" gồm P1/P3/P7/P9 (rõ ràng nhất). P2/P5/P6 cần xác nhận thêm. Bước 4.3 (Senior Developer) chỉ sửa những mục được Tech Lead Accept ở 4.2.
+
 ### Bước 3.2 — Tech Lead review Phase 3
 
 - Đã làm: Đọc CLAUDE.md dòng 755-775 (§11 khối "Cấu trúc thư mục chuẩn" + ghi chú mới thêm ngay sau ```). Xác nhận ghi chú (a) rõ ràng nêu đây là QUY ƯỚC đặt tên, (b) liệt kê đúng các thư mục chưa tồn tại, (c) chỉ `docs/research/` có nội dung — khớp thực tế Glob của bước 3.1, (d) yêu cầu agent Glob/Read trước khi giả định. Không phủ định bảng "Bảng tổng hợp artifact bắt buộc theo workflow" (§11 dòng 779+) — workflow tương lai vẫn tạo thư mục khi cần. Không mâu thuẫn §15.1 (mapping tính năng → tài liệu vẫn nguyên). CLAUDE.docx timestamp 22:23 khớp CLAUDE.md → đồng bộ.
@@ -160,6 +167,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 22:20 | Bước 2.3 Done — Tech Lead APPROVE Phase 2 (evals đủ CE testable, CODE-GRAPH đúng thực tế) | Tech Lead |
 | 2026-07-12 22:23 | Bước 3.1 Done — CLAUDE.md §11 ghi chú thêm trạng thái docs/*, CORE.md không cần sửa, DOCX export OK, commit fd22ba2 | Senior Developer |
 | 2026-07-12 22:25 | Bước 3.2 Done — Tech Lead APPROVE Phase 3 (ghi chú không mâu thuẫn §11/§15.1, CLAUDE.docx đồng bộ) | Tech Lead |
+| 2026-07-12 22:32 | Bước 4.1 Done — Phân tích 10 đề xuất P1-P10, ~56 dòng tiết kiệm, file `_workspace/04_sd_claude-md-analysis.md` (không commit) | Senior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
