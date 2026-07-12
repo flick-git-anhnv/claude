@@ -1,5 +1,6 @@
 ---
-description: "Dùng khi muốn tạo agent/skill mới cho hệ thống KZTEK theo quy trình TDD-for-documentation — viết test scenario trước, verify agent hiện tại vi phạm (RED), viết định nghĩa agent/skill (GREEN), verify agent mới xử lý đúng, rồi tìm thêm edge case và vá (REFACTOR). KHÔNG dùng khi chỉ muốn sửa agent đã có (→ md-optimizer) hoặc kiểm tra trigger accuracy (→ skill-trigger-test)."
+name: writing-agent-skill
+description: "PHẢI dùng khi: tạo agent/skill mới cho hệ thống KZTEK, cần viết `.claude/agents/[name].md` hoặc `.claude/commands/[name].md` từ đầu, muốn áp dụng quy trình TDD-for-documentation (RED viết test scenario xác nhận vi phạm → GREEN viết định nghĩa → REFACTOR tìm edge case), hoặc user nói 'tạo agent mới', 'viết skill mới', 'cần một agent để...'. KHÔNG dùng khi: chỉ muốn sửa/tối ưu agent đã có sẵn (→ `md-optimizer`), chỉ cần kiểm tra trigger accuracy của agent/skill đã tồn tại (→ `skill-trigger-test`), hoặc chỉ cần sửa nội dung body không liên quan đến quy trình tạo mới."
 ---
 
 # Skill: writing-agent-skill — Tạo agent/skill mới theo TDD
@@ -149,6 +150,35 @@ Với mỗi rationalization scenario bị bỏ qua → thêm dòng vào bảng R
 
 ---
 
+### Bước 6 — Agent Definition Testing (Reader Testing)
+
+> Học từ `skills/doc-coauthoring/SKILL.md` (anthropics/skills) — Stage 3 "Reader Testing": test tài liệu với người đọc chưa có context, KHÔNG phải người đã viết ra nó.
+
+Vấn đề: agent/skill được viết trong session hiện tại — người viết (bạn) có toàn bộ context của cuộc hội thoại dẫn đến quyết định đó. Nhưng khi agent/skill này được gọi thật sự sau này, agent nhận nó sẽ đọc file **hoàn toàn không có context session gốc** ("cold read"). Một definition "rõ ràng" với người vừa viết ra có thể mơ hồ/thiếu sót với agent đọc lần đầu.
+
+Quy trình:
+1. Sau khi hoàn thành Bước 4 (GREEN verify) và Bước 5 (REFACTOR), spawn **1 subagent mới, chỉ đưa cho nó file định nghĩa vừa viết** (`.claude/agents/[name].md` hoặc `.claude/commands/[name].md`) — KHÔNG kèm theo lịch sử hội thoại, KHÔNG giải thích thêm ngoài nội dung file.
+2. Yêu cầu subagent đó tự chạy lại các Test Scenarios (Capability Eval) từ Bước 2, chỉ dựa vào những gì đọc được trong file.
+3. Ghi nhận kết quả: subagent có hiểu đúng khi nào trigger không? Có bỏ sót near-miss case nào description chưa liệt kê không? Có bước nào trong quy trình mà subagent hiểu sai ý đồ không?
+4. Nếu subagent "cold read" xử lý sai/hiểu nhầm bất kỳ điểm nào → đây là blind spot thật sự (không phải giả định) → quay lại Bước 3 sửa definition, KHÔNG tự cho là "chắc nó sẽ hiểu".
+5. Chỉ đánh dấu agent/skill "APPROVED" sau khi Reader Testing pass — khớp yêu cầu Eval-Driven Development (§18.5 CLAUDE.md): ≥ 2/3 Capability Eval phải pass qua cold-read thật, không phải suy luận của người viết.
+
+---
+
+## Khi nào nên dùng Bundled Resources (scripts/references/assets)
+
+> Học từ `skill-creator/SKILL.md` (anthropics/skills) — "Anatomy of a Skill": skill phức tạp nên tách nội dung ra ngoài file chính thay vì nhồi hết vào 1 file, để tránh tốn context khi mọi phần đều bị load dù agent chỉ cần một phần nhỏ.
+
+Đa số skill/agent của KZTEK là single-file và nên **giữ nguyên single-file** — chỉ tách khi có ít nhất 1 trong 3 tín hiệu sau:
+
+1. **Nội dung tham chiếu dài, ít khi cần đọc hết** — VD: bảng tra cứu mã lỗi đầy đủ, danh sách API contract chi tiết mà agent chỉ cần tra 1-2 dòng mỗi lần dùng → tách vào `references/*.md`, file chính chỉ trỏ đường dẫn.
+2. **Có đoạn logic/thao tác lặp lại y hệt mỗi lần chạy, không cần LLM "suy nghĩ" lại** — VD: script chuyển đổi định dạng, script kiểm tra checklist cố định → tách thành `scripts/*.py` hoặc `.sh` để agent GỌI trực tiếp (black-box), không cần nhồi toàn bộ code vào context.
+3. **Có asset nhị phân/template cố định dùng lặp lại** — VD: logo, template DOCX, ảnh mẫu → để trong `assets/`, file chính chỉ mô tả cách dùng.
+
+Nếu KHÔNG có tín hiệu nào ở trên → giữ single-file, không tạo cấu trúc thư mục phụ không cần thiết (tránh over-engineering cho skill đơn giản).
+
+---
+
 ## Checklist hoàn thành
 
 - [ ] File agent/skill đã tạo tại đúng vị trí (`.claude/agents/` hoặc `.claude/commands/`)
@@ -156,6 +186,7 @@ Với mỗi rationalization scenario bị bỏ qua → thêm dòng vào bảng R
 - [ ] Có "KHÔNG dùng khi:" với near-miss cases
 - [ ] Có bảng Red Flags (nếu là agent/skill quan trọng hay bị bỏ qua)
 - [ ] Tất cả test scenarios từ Bước 2 đã Pass ở Bước 4
+- [ ] Đã chạy Bước 6 — Agent Definition Testing (cold-read qua subagent mới, không có context session)
 - [ ] Chạy `skill-trigger-test` để verify routing accuracy (xem `.claude/commands/skill-trigger-test.md`)
 - [ ] Nếu agent mới → cập nhật đầy đủ routing theo §10 CLAUDE.md (org chart, bảng routing, model assignment)
 - [ ] Xuất DOCX+PDF theo §19 CLAUDE.md nếu file .md thuộc docs/
@@ -171,3 +202,9 @@ Với mỗi rationalization scenario bị bỏ qua → thêm dòng vào bảng R
 **GREEN:** Thêm `## Verification Gate` vào `senior-developer.md` với Iron Law và format output bắt buộc.
 
 **REFACTOR rationalization:** "Build chạy trong đầu rồi, paste output làm gì mất thời gian" → thêm vào Red Flags.
+
+---
+
+## Keywords
+
+tạo agent mới, viết skill mới, TDD-for-documentation, RED GREEN REFACTOR, test scenario, capability eval, agent definition, skill definition, Reader Testing, cold read, bundled resources, agent introspection, viết định nghĩa agent, viết định nghĩa skill, EDD Eval-Driven Development
