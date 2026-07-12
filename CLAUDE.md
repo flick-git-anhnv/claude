@@ -47,7 +47,8 @@ CTO  (L1 - Executive)
 │   ├── Tech Lead  (L3 - Lead)
 │   │   ├── Senior Developer  (L4 - Senior IC)
 │   │   ├── Junior Developer  (L5 - Junior IC)
-│   │   └── Code Migrator  (L4 - Senior IC, Opus khi lập plan)  ← CHỈ khi user yêu cầu migrate code
+│   │   ├── Code Migrator  (L4 - Senior IC, Opus khi lập plan)  ← CHỈ khi user yêu cầu migrate code
+│   │   └── GitHub Repo Researcher  (L4 - Senior IC)  ← CHỈ khi user gửi link GitHub yêu cầu nghiên cứu
 │   ├── QA Lead  (L3 - Lead)
 │   │   ├── QA Engineer  (L5 - Junior IC)
 │   │   └── UX/UI Reviewer  (L5 - Junior IC)  ← gọi khi code vừa sửa/thêm giao diện
@@ -59,6 +60,8 @@ CTO  (L1 - Executive)
 ```
 
 > **Code Migrator:** chỉ kích hoạt khi user yêu cầu rõ ràng chuyển đổi framework/ngôn ngữ/UI stack (xem WF-MIGRATE, §4). Không tự động chạy trong WF-FEATURE/WF-BUGFIX/... KHÔNG dùng để viết tính năng mới hay fix bug thông thường.
+>
+> **GitHub Repo Researcher:** chỉ kích hoạt khi user gửi link GitHub repo và yêu cầu nghiên cứu (xem WF-GITHUB-RESEARCH, §4). Không tự động chạy trong workflow khác.
 >
 > **UX/UI Reviewer:** tự động chèn vào workflow (WF-FEATURE, WF-BUGFIX, WF-HOTFIX, WF-FASTTRACK, WF-REFACTOR) ngay sau khi code có **chỉnh sửa, làm mới, hoặc thêm giao diện** — chạy ứng dụng thật, chụp screenshot, đánh giá trực quan trước khi chuyển cho QA sign-off / DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 
@@ -88,6 +91,7 @@ CTO  (L1 - Executive)
 | Chuyển đổi .md → DOCX/PDF | WF-CONVERT | DOC-WRITER (chạy `scripts/md_to_docx_kztek.py`) — **CHỈ khi user yêu cầu** |
 | Sửa lỗi UI nhỏ, typo, config sai không đụng logic (P3) | WF-FASTTRACK | JD (fix) → TL (review nhanh) → [UXR nếu đổi UI] → QAE (smoke test) → DOE (deploy) |
 | Chuyển đổi framework/ngôn ngữ/UI stack (migrate/port) | WF-MIGRATE | CODE-MIGRATOR (khảo sát + plan, Opus) → user duyệt → SD/JD (code, Sonnet) → CODE-MIGRATOR (review, Opus) → QAE (verify) — **CHỈ khi user yêu cầu rõ ràng** |
+| Nghiên cứu 1 repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (tạo nhánh → clone & nghiên cứu → đề xuất cải tiến) → user duyệt đề xuất → GITHUB-REPO-RESEARCHER (áp dụng) → user xác nhận merge → merge main — **CHỈ khi user gửi link GitHub** |
 
 `[UXR nếu đổi UI]` — chèn bước **UX/UI REVIEWER**: chạy app thật, chụp screenshot, đánh giá 7 tiêu chí (C1–C7) trước khi chuyển QA sign-off/DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic, không đụng giao diện.
 
@@ -488,6 +492,30 @@ Bước 6 → QA LEAD                  : Sign-off (P0/P1 phải sạch)
 
 ---
 
+### WF-GITHUB-RESEARCH — Nghiên cứu 1 repo GitHub theo link user gửi
+
+**Trigger:** User gửi 1 (hoặc nhiều) link GitHub repo và yêu cầu nghiên cứu.
+
+> ⚠️ **CHÚ Ý:** Workflow này **KHÔNG tự động kích hoạt** trong các workflow khác. Dispatcher CHỈ gọi khi user gửi link GitHub kèm yêu cầu nghiên cứu. Không dùng để migrate/port codebase hiện tại (đó là WF-MIGRATE) hay để review PR nội bộ (WF-REVIEW-STD/CRIT).
+
+```
+Bước 1 → GITHUB REPO RESEARCHER : Tạo nhánh nghiên cứu mới `research/<repo-slug>-<date>`
+Bước 2 → GITHUB REPO RESEARCHER : Clone repo về thư mục scratchpad (ngoài working tree KZTEK), đọc & phân tích
+Bước 3 → GITHUB REPO RESEARCHER : Viết `docs/research/RESEARCH-*.md` + bảng đề xuất cải tiến, trình user
+Bước 4 → USER                    : Xác nhận đề xuất nào được áp dụng
+Bước 4b → GITHUB REPO RESEARCHER : Áp dụng đề xuất đã chọn vào code/tài liệu KZTEK, commit lên nhánh nghiên cứu
+Bước 5 → USER                    : Xác nhận merge nhánh nghiên cứu về main
+Bước 5b → GITHUB REPO RESEARCHER : Merge về main sau khi có xác nhận rõ ràng (không tự suy ra từ lần xác nhận trước)
+```
+
+**Nguyên tắc cứng (xem `.claude/agents/github-repo-researcher.md` chi tiết):**
+- Repo ngoài clone về CHỈ để đọc, không đưa `.git` của repo ngoài vào commit KZTEK.
+- Không tự áp dụng đề xuất khi chưa được user chọn ở Bước 4.
+- Không tự merge về main khi chưa có xác nhận rõ ràng tại đúng thời điểm merge (Git Safety Protocol).
+- Đề xuất đụng auth/payment/DB schema/dữ liệu nhạy cảm → chạy `security-audit-stride` trước khi merge.
+
+---
+
 ## 5. Format task bắt buộc khi agent giao việc
 
 Mỗi khi một agent giao task cho agent khác, PHẢI dùng format sau:
@@ -672,6 +700,7 @@ tests/                      ← Senior Developer + Junior Developer + QA Enginee
 | WF-DOCS | Documentation Writer | `docs/user-manuals/MANUAL-*.md` + `*.docx` + `*.pdf` + `screenshots/` |
 | WF-CONVERT | Documentation Writer | `[name].docx` + `[name].pdf` (cùng thư mục hoặc `exports/`) |
 | WF-MIGRATE | Code Migrator | `.claude/plans/PLAN-[migration-slug]-*.md`, `docs/architecture/[migration-slug]/ADR-*.md` (inventory + mapping) |
+| WF-GITHUB-RESEARCH | GitHub Repo Researcher | `docs/research/RESEARCH-[repo-slug]-*.md` + `*.docx` + `*.pdf`, nhánh `research/[repo-slug]-*` |
 | (điều kiện) UXR trong WF-FEATURE/BUGFIX/HOTFIX/FASTTRACK/REFACTOR | UX/UI Reviewer | `docs/ux-review/UX-REVIEW-*.md` + `*.docx` + `*.pdf` + `screenshots/` |
 
 ---
@@ -726,6 +755,7 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 | **Documentation Writer** | `claude-sonnet-4-6` | Viết tài liệu hướng dẫn, xử lý hình ảnh, xuất DOCX/PDF — CHỈ khi user yêu cầu |
 | **UX/UI Reviewer** | `claude-sonnet-4-6` | Chạy app thật, chụp screenshot, đánh giá trực quan — không cần suy luận kiến trúc sâu |
 | **Code Migrator** | `claude-opus-4-7` | **Ngoại lệ có ghi nhận:** suy luận kiến trúc cao khi khảo sát/lập plan/mapping/review việc migrate framework — nhưng CHỈ dùng ở giai đoạn đó (G1,G2,G5-review); viết code migrate thực tế PHẢI giao Sonnet-agent (`senior-developer`/`junior-developer`). CHỈ hoạt động khi user yêu cầu rõ ràng. |
+| **GitHub Repo Researcher** | `claude-sonnet-4-6` | Đọc/phân tích repo ngoài, đề xuất cải tiến — reasoning vừa phải, không cần suy luận kiến trúc sâu như Opus. CHỈ hoạt động khi user gửi link GitHub. |
 
 ---
 

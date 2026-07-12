@@ -376,6 +376,43 @@ sequenceDiagram
 
 ---
 
+## Ví dụ 10: WF-GITHUB-RESEARCH — Nghiên cứu repo GitHub theo link user gửi
+
+**Tình huống:** Người dùng gửi "Nguồn: https://github.com/addyosmani/agent-skills — nghiên cứu github này giúp tôi, sau đó đề xuất cải tiến".
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant Disp as Dispatcher
+    participant GRR as GitHub Repo Researcher
+    participant TL as Tech Lead
+
+    U->>Disp: Gửi link GitHub + yêu cầu nghiên cứu
+    Disp->>Disp: Có link GitHub → kích hoạt WF-GITHUB-RESEARCH
+    Disp->>GRR: Giao task (Sonnet)
+
+    GRR->>GRR: Bước 1 — Tạo nhánh research/<repo-slug>-<date>
+    GRR->>GRR: Bước 2 — Clone repo vào scratchpad (ngoài working tree), đọc & phân tích
+    GRR->>U: Bước 3 — Trình docs/research/RESEARCH-*.md + bảng đề xuất cải tiến
+    U->>GRR: Bước 4 — Chọn đề xuất được áp dụng
+    GRR->>GRR: Bước 4b — Áp dụng đề xuất đã chọn, commit lên nhánh nghiên cứu
+    opt Đề xuất đụng kiến trúc/logic nghiệp vụ đáng kể
+        GRR->>TL: Khuyến nghị review nhanh trước khi merge
+        TL->>GRR: Review xong
+    end
+    GRR->>U: Bước 5 — Xin xác nhận merge về main
+    U->>GRR: Xác nhận merge
+    GRR->>GRR: Bước 5b — Merge về main, báo cáo kết quả
+```
+
+**Bài học từ ví dụ này:**
+- GitHub Repo Researcher CHỈ kích hoạt khi user gửi link GitHub — không tự động chạy trong workflow khác.
+- Repo ngoài clone về thư mục scratchpad để đọc, không đưa `.git` của repo ngoài vào commit KZTEK.
+- Không tự áp dụng đề xuất (Bước 4b) khi user chưa chọn ở Bước 4; không tự merge (Bước 5b) khi user chưa xác nhận rõ ràng tại đúng thời điểm merge — tuân thủ Git Safety Protocol chung của hệ thống.
+- Nếu thay đổi đụng kiến trúc/logic nghiệp vụ đáng kể → khuyến nghị Tech Lead review trước khi merge (Two-Eyes Principle).
+
+---
+
 ## Tóm tắt nguyên tắc xuyên suốt
 
 | # | Nguyên tắc | Áp dụng khi |
@@ -391,3 +428,4 @@ sequenceDiagram
 | 9 | UX/UI Reviewer bắt buộc khi đổi giao diện | Trước QA sign-off, nếu code sửa/thêm UI (feature, bugfix, hotfix, fast-track, refactor) |
 | 10 | Code Migrator chỉ dùng khi được yêu cầu | Không tự động chạy trong bất kỳ workflow nào khác; Opus chỉ dùng ở giai đoạn lập plan/review |
 | 11 | Song song hoá khi 2 bước độc lập, không quan hệ review | Tăng tốc workflow, không giảm chất lượng kiểm tra (xem `RULES.md` §3.4, ký hiệu `∥` trong `CLAUDE.md` §4) |
+| 12 | GitHub Repo Researcher chỉ dùng khi user gửi link GitHub | Không tự động chạy trong workflow khác; không tự áp dụng đề xuất hay tự merge khi chưa có xác nhận rõ ràng của user |

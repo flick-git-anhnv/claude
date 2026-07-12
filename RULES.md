@@ -14,7 +14,8 @@ CTO  (Cấp cao nhất)
 │   ├── Tech Lead
 │   │   ├── Senior Developer
 │   │   ├── Junior Developer
-│   │   └── Code Migrator          ← CHỈ khi user yêu cầu migrate code (Opus khi lập plan, Sonnet khi code)
+│   │   ├── Code Migrator          ← CHỈ khi user yêu cầu migrate code (Opus khi lập plan, Sonnet khi code)
+│   │   └── GitHub Repo Researcher ← CHỈ khi user gửi link GitHub yêu cầu nghiên cứu (Sonnet)
 │   ├── QA Lead
 │   │   ├── QA Engineer
 │   │   └── UX/UI Reviewer         ← gọi khi code vừa sửa/thêm giao diện
@@ -36,7 +37,7 @@ CTO  (Cấp cao nhất)
 | L1 - Executive | CTO | Phê duyệt kiến trúc, ngân sách, chiến lược kỹ thuật |
 | L2 - Management | Engineering Manager, Product Manager | Phân bổ resource, quyết định scope, đánh giá hiệu suất |
 | L3 - Lead | Tech Lead, QA Lead, DevOps Lead, Project Manager | Phân chia task kỹ thuật, code review cuối cùng, mentor |
-| L4 - Senior IC | Senior Developer, Business Analyst, UI/UX Designer, Documentation Writer (chỉ khi user yêu cầu), Code Migrator (Opus — chỉ khi lập plan migrate, chỉ khi user yêu cầu) | Thiết kế giải pháp, code review, làm task khó |
+| L4 - Senior IC | Senior Developer, Business Analyst, UI/UX Designer, Documentation Writer (chỉ khi user yêu cầu), Code Migrator (Opus — chỉ khi lập plan migrate, chỉ khi user yêu cầu), GitHub Repo Researcher (Sonnet — chỉ khi user gửi link GitHub) | Thiết kế giải pháp, code review, làm task khó |
 | L5 - Junior IC | Junior Developer, QA Engineer, DevOps Engineer, UX/UI Reviewer (gọi khi code vừa đổi/thêm giao diện) | Thực thi task được giao, học hỏi, báo cáo tiến độ |
 
 **Nguyên tắc:** Cấp dưới KHÔNG được phép tự ý quyết định ngoài phạm vi task được giao. Khi gặp vấn đề vượt thẩm quyền, PHẢI escalate lên cấp trên trực tiếp.
@@ -80,6 +81,8 @@ Engineering Manager / CTO (release sign-off)
 > **UX/UI Reviewer:** bỏ qua bước này nếu thay đổi chỉ ở backend/logic, không đụng giao diện. Áp dụng tương tự cho luồng Bug fix, Hotfix, Fast-Track, Refactor nếu có đổi UI.
 >
 > **Code Migrator:** KHÔNG nằm trong luồng "Yêu cầu mới" ở trên. Chỉ dùng cho yêu cầu riêng "chuyển đổi framework/ngôn ngữ/UI stack" (xem `CLAUDE.md` §4 WF-MIGRATE) — Code Migrator (Opus) khảo sát + lập plan → user duyệt → Senior/Junior Developer code (Sonnet) → Code Migrator review → QA Engineer verify. KHÔNG tự động chạy trong luồng feature/bug thông thường.
+>
+> **GitHub Repo Researcher:** KHÔNG nằm trong luồng "Yêu cầu mới" ở trên. Chỉ dùng khi user gửi link GitHub repo và yêu cầu nghiên cứu (xem `CLAUDE.md` §4 WF-GITHUB-RESEARCH) — tạo nhánh nghiên cứu → clone & nghiên cứu → đề xuất cải tiến → user duyệt → áp dụng → user xác nhận merge → merge main. KHÔNG tự merge khi chưa có xác nhận rõ ràng của user tại thời điểm merge.
 
 ### 3.2. Luồng báo cáo (Reporting Flow)
 
@@ -211,6 +214,7 @@ Trong Claude Code, gọi agent bằng cách:
 - "Cần thiết kế kiến trúc microservice" → Tech Lead, có thể escalate lên CTO.
 - "Chuyển đổi project WinForms sang Avalonia" → Code Migrator tiếp nhận (chỉ khi yêu cầu rõ ràng, không tự động).
 - Sau khi Senior/Junior Developer code xong màn hình mới → UX/UI Reviewer tự động được gọi kiểm tra trực quan trước khi QA vào.
+- "Nghiên cứu repo https://github.com/... này giúp tôi" → GitHub Repo Researcher tiếp nhận (chỉ khi có link GitHub, không tự động).
 
 ---
 

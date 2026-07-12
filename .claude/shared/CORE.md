@@ -15,7 +15,8 @@ CTO (L1)
 ├── Product Manager (L2) → Business Analyst (L4)
 ├── Engineering Manager (L2)
 │   ├── Tech Lead (L3) → Senior Dev (L4) → Junior Dev (L5)
-│   │   └── Code Migrator (L4, Opus khi lập plan) ← CHỈ khi user yêu cầu migrate code
+│   │   ├── Code Migrator (L4, Opus khi lập plan) ← CHỈ khi user yêu cầu migrate code
+│   │   └── GitHub Repo Researcher (L4, Sonnet) ← CHỈ khi user gửi link GitHub nghiên cứu
 │   ├── QA Lead (L3) → QA Engineer (L5)
 │   │   └── UX/UI Reviewer (L5) ← gọi khi code vừa đổi/thêm giao diện
 │   ├── DevOps Lead (L3) → DevOps Engineer (L5)
@@ -48,6 +49,7 @@ CTO (L1)
 | Convert .md | WF-CONVERT | DOC-WRITER — CHỈ khi user yêu cầu |
 | Typo/UI nhỏ P3 | WF-FASTTRACK | JD→TL→[UXR nếu đổi UI]→QAE→DOE |
 | Migrate framework/ngôn ngữ | WF-MIGRATE | CODE-MIGRATOR (plan, Opus)→SD/JD (code, Sonnet)→CODE-MIGRATOR (review)→QAE — CHỈ khi user yêu cầu |
+| Nghiên cứu repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (nhánh→clone→nghiên cứu→đề xuất)→user duyệt→áp dụng→user xác nhận merge→main — CHỈ khi user gửi link |
 
 `[UXR nếu đổi UI]` = chèn bước UX/UI REVIEWER (chạy app, chụp screenshot, đánh giá C1–C7) khi code vừa sửa/thêm giao diện. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 
@@ -129,6 +131,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 |---|---|
 | CTO, Tech Lead | `claude-opus-4-7` |
 | Code Migrator | `claude-opus-4-7` — CHỈ dùng khi lập plan/khảo sát/review (G1,G2,G5-review); code thực tế giao Sonnet-agent |
+| GitHub Repo Researcher | `claude-sonnet-4-6` — CHỈ hoạt động khi user gửi link GitHub |
 | Tất cả còn lại | `claude-sonnet-4-6` |
 | Task cơ học có template (smoke-test log, deploy checklist, MD→DOCX, CRUD lặp lại đã có pattern) | `claude-haiku-4-5` — downshift theo §13.1b CLAUDE.md; KHÔNG áp dụng cho bước review/approve |
 
