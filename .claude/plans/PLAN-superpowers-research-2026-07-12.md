@@ -1,7 +1,7 @@
 ---
 task: superpowers-research
 created: 2026-07-12
-updated: 2026-07-12 04:09
+updated: 2026-07-12 04:27
 status: active
 workflow: WF-GITHUB-RESEARCH
 priority: P2
@@ -37,8 +37,8 @@ Nghiên cứu repo GitHub https://github.com/obra/superpowers, phân tích cấu
 ### Phase 2: User xác nhận & Áp dụng đề xuất
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 2.1 | [DỪNG — CHỜ USER] User xác nhận đề xuất nào được áp dụng vào codebase KZTEK | USER | ⬜ | Danh sách đề xuất được chọn | - | KHÔNG tự áp dụng khi chưa có xác nhận rõ ràng (CLAUDE.md §4 WF-GITHUB-RESEARCH) |
-| 2.2 | Áp dụng các đề xuất đã được user chọn vào code/tài liệu KZTEK; commit lên nhánh `research/superpowers-2026-07-12`; nếu đề xuất đụng auth/payment/DB schema → chạy `security-audit-stride` trước khi tiếp tục | GITHUB REPO RESEARCHER | ⬜ | Các file code/tài liệu KZTEK đã cập nhật, commit lên nhánh | - | |
+| 2.1 | [DỪNG — CHỜ USER] User xác nhận đề xuất nào được áp dụng vào codebase KZTEK | USER | ✅ | Xác nhận áp dụng TẤT CẢ 7 đề xuất (P1–P7) | 2026-07-12 | User xác nhận qua dispatch message — áp dụng toàn bộ P1–P7 |
+| 2.2 | Áp dụng các đề xuất đã được user chọn vào code/tài liệu KZTEK; commit lên nhánh `research/superpowers-2026-07-12`; nếu đề xuất đụng auth/payment/DB schema → chạy `security-audit-stride` trước khi tiếp tục | GITHUB REPO RESEARCHER | ✅ | 14 files đã cập nhật (xem Handoff Log), commit + push lên nhánh | 2026-07-12 04:27 | Không có đề xuất nào đụng auth/payment/DB — không cần security-audit-stride |
 
 ### Phase 3: User xác nhận merge & Merge về main
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
@@ -82,6 +82,26 @@ Nghiên cứu repo GitHub https://github.com/obra/superpowers, phân tích cấu
 - Quyết định quan trọng: 7 đề xuất tập trung vào cải thiện compliance agent (P1-P2), tooling workflow (P3), resilience (P4), consistency (P5), skill creation process (P6), cost optimization (P7). Không có đề xuất nào thay đổi cấu trúc agent hierarchy.
 - Bước sau cần biết: Bước 2.1 là DỪNG bắt buộc chờ user. KHÔNG tự áp dụng bất kỳ đề xuất nào trước khi user chọn.
 
+### Bước 2.2 — Áp dụng đề xuất P1–P7
+- Đã làm: Áp dụng tất cả 7 đề xuất đã được user xác nhận. Cập nhật 14 file (12 sửa, 2 tạo mới). Xuất DOCX+PDF cho tất cả file `.md` bị thay đổi (11 DOCX thành công; PDF thất bại do thiếu LibreOffice — không block). Cập nhật bảng trạng thái áp dụng trong RESEARCH file (tất cả ✅).
+- File/module đã đọc hoặc đổi:
+  - `.claude/commands/scope-check.md` (P1 — thêm Red Flags table)
+  - `.claude/commands/ship.md` (P1 — thêm Red Flags table)
+  - `.claude/agents/tech-lead.md` (P1 — chuyển Red Flags sang table; P3 — thêm tip review-package.sh)
+  - `.claude/agents/qa-lead.md` (P1 — thêm Red Flags table)
+  - `.claude/agents/senior-developer.md` (P2 — thêm Verification Gate; P3 — thêm tip review-package.sh)
+  - `.claude/agents/junior-developer.md` (P2 — thêm Verification Gate; P5 — chuẩn hóa description)
+  - `.claude/agents/qa-engineer.md` (P2 — thêm Verification Gate)
+  - `.claude/agents/code-migrator.md` (P4 — thêm Progress Ledger)
+  - `.claude/agents/github-repo-researcher.md` (P4 — thêm Progress Ledger)
+  - `.gitignore` (P4 — thêm `_workspace/` và `_workspace_*/`)
+  - `scripts/review-package.sh` (P3 — tạo mới)
+  - `.claude/commands/writing-agent-skill.md` (P6 — tạo mới)
+  - `CLAUDE.md` (P7 — thêm turn count caution vào §13.1b và §13.2)
+  - `docs/research/RESEARCH-superpowers-2026-07-12.md` (cập nhật bảng trạng thái → tất cả ✅)
+- Quyết định quan trọng: P5 chỉ sửa `junior-developer.md` (file duy nhất dùng "Dùng agent này khi:" thay vì "PHẢI dùng agent này khi:"); tất cả agent khác đã chuẩn. P1 cho tech-lead.md: chuyển đổi bullet format cũ sang Thought|Reality table, không xóa nội dung.
+- Bước sau cần biết: Bước 3.1 là DỪNG CHỜ USER xác nhận merge. TUYỆT ĐỐI KHÔNG tự merge nhánh `research/superpowers-2026-07-12` về main — phải có xác nhận rõ ràng từ user tại đúng thời điểm này (Git Safety Protocol).
+
 ## Artifacts dự kiến
 - [ ] nhánh `research/superpowers-2026-07-12`
 - [ ] `docs/research/RESEARCH-superpowers-2026-07-12.md` — phân tích repo + bảng đề xuất
@@ -102,6 +122,7 @@ Không có
 |------|----------|-------|
 | 2026-07-12 | Plan tạo mới, Phase 0 Audit hoàn thành (task mới xác nhận) | task-planner |
 | 2026-07-12 04:09 | Bước 1.1-1.3b Done: nhánh tạo, repo clone+phân tích, RESEARCH-*.md + .docx viết xong (7 đề xuất P1-P7) | GitHub Repo Researcher |
+| 2026-07-12 04:27 | Bước 2.1 Done (user xác nhận áp dụng P1-P7); Bước 2.2 Done: 14 files cập nhật (12 sửa, 2 tạo mới), commit+push lên nhánh | GitHub Repo Researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

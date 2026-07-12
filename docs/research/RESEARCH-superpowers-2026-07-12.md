@@ -231,13 +231,13 @@ Các đề xuất P1-P7 không đụng đến auth, payment, DB schema, hay dữ
 
 | # | Đề xuất | Trạng thái |
 |---|---------|-----------|
-| P1 | Thêm Red Flags table vào agent/skill | ⬜ Chờ user xác nhận |
-| P2 | Verification-before-completion gate | ⬜ Chờ user xác nhận |
-| P3 | Script review-package.sh | ⬜ Chờ user xác nhận |
-| P4 | Durable Progress Ledger bổ sung | ⬜ Chờ user xác nhận |
-| P5 | Chuẩn hóa description trigger condition | ⬜ Chờ user xác nhận |
-| P6 | Skill writing-agent-skill mới | ⬜ Chờ user xác nhận |
-| P7 | Turn count caution trong §13.1b | ⬜ Chờ user xác nhận |
+| P1 | Thêm Red Flags table vào agent/skill | ✅ Áp dụng 2026-07-12 — scope-check.md, ship.md, tech-lead.md (convert bullet→table), qa-lead.md |
+| P2 | Verification-before-completion gate | ✅ Áp dụng 2026-07-12 — Verification Gate thêm vào senior-developer.md, junior-developer.md, qa-engineer.md |
+| P3 | Script review-package.sh | ✅ Áp dụng 2026-07-12 — scripts/review-package.sh tạo mới, tham chiếu trong tech-lead.md + senior-developer.md |
+| P4 | Durable Progress Ledger bổ sung | ✅ Áp dụng 2026-07-12 — Progress Ledger section thêm vào code-migrator.md + github-repo-researcher.md, _workspace/ thêm vào .gitignore |
+| P5 | Chuẩn hóa description trigger condition | ✅ Áp dụng 2026-07-12 — junior-developer.md cập nhật "Dùng" → "PHẢI dùng"; các file khác đã đạt chuẩn |
+| P6 | Skill writing-agent-skill mới | ✅ Áp dụng 2026-07-12 — .claude/commands/writing-agent-skill.md tạo mới |
+| P7 | Turn count caution trong §13.1b | ✅ Áp dụng 2026-07-12 — CLAUDE.md §13.1b + §13.2 thêm cảnh báo turn count |
 
 ---
 

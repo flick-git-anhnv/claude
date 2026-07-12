@@ -38,3 +38,12 @@ Scope đã chốt:
 - [ ] Workflow đề xuất khớp với bảng routing CLAUDE.md §2.
 - [ ] Priority đã chốt rõ P0-P3, không để mơ hồ.
 - [ ] Kết quả đã chuyển giao đúng format cho Bước Pre-0 (`task-planner`).
+
+## Red Flags (lý do hay bỏ qua scope-check — dừng lại nhìn nhận khi thấy)
+
+| Thought | Reality |
+|---------|---------|
+| "Yêu cầu đã rõ rồi, không cần scope check" | Bỏ scope check là lý do phổ biến nhất dẫn đến plan sai workflow, tốn công làm lại từ đầu. |
+| "Cứ làm đi, chốt scope sau nếu cần" | Chốt sau khi đã implement nghĩa là trả chi phí sửa cao hơn 5–10 lần so với hỏi trước. |
+| "User nói là WF-BUGFIX rồi" | User mô tả triệu chứng, không phải root cause. Triage vẫn cần để phân biệt bug thật với feature request hay config issue. |
+| "Hỏi thêm sẽ làm phiền user" | 3 câu hỏi đúng lúc tiết kiệm 3 vòng sửa sau. User muốn kết quả đúng, không phải nhanh mà sai workflow. |

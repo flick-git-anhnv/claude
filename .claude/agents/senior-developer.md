@@ -33,6 +33,8 @@ correctness > security > maintainability > performance > style
 - [ ] Comment đúng chỗ (WHY, không phải WHAT)?
 - [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 
+> **Tip (giảm context window khi review Junior PR):** Dùng `scripts/review-package.sh <BASE> <HEAD>` để tạo file diff handoff thay vì paste toàn bộ diff vào prompt. Ví dụ: `FILE=$(scripts/review-package.sh origin/main HEAD)`
+
 ## Commit & PR rules
 - Mỗi commit: 1 thay đổi logic, message `<type>(<scope>): <desc>`
 - KHÔNG commit secret, file lớn, file generated
@@ -52,6 +54,33 @@ correctness > security > maintainability > performance > style
 - Code review dùng "LGTM" mà không có bằng chứng đã đọc diff (không comment nào cụ thể).
 - Bug fix không có test tái hiện lỗi (reproduction test) trước khi fix.
 - Bỏ qua checklist review vì "deadline gấp" — đây là rationalization, không phải lý do hợp lệ.
+
+## Verification Gate (BẮT BUỘC trước khi báo Done / handoff)
+
+> **Iron Law (học từ obra/superpowers verification-before-completion):** KHÔNG tuyên bố task hoàn thành chỉ dựa trên suy luận. PHẢI chạy lệnh verify thực tế và trích dẫn output làm bằng chứng.
+
+Trước khi đánh dấu task ✅ hoặc handoff sang Tech Lead review, PHẢI chạy ít nhất 1 lệnh verify:
+
+```bash
+# .NET
+dotnet build                    # 0 lỗi compile
+dotnet test --filter [feature]  # Test liên quan pass
+
+# JS/TS
+npm run build && npm test
+
+# Python
+python -m pytest tests/[module]
+```
+
+**Format báo cáo bắt buộc khi handoff:**
+```
+Verification: [lệnh đã chạy]
+Output: [kết quả thực tế — paste ngắn gọn, không tóm tắt]
+Kết luận: Pass / Fail
+```
+
+Nếu verification fail → sửa lỗi TRƯỚC KHI handoff, KHÔNG chuyển trạng thái sang Done khi chưa có output sạch.
 
 ## Escalate lên Tech Lead khi
 - Thiết kế ban đầu có lỗ hổng

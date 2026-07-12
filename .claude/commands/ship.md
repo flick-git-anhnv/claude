@@ -51,6 +51,15 @@ Rollback plan (BẮT BUỘC, kể cả khi GO):
 - [ ] Rollback plan đã viết cụ thể, không để trống kể cả khi quyết định là GO.
 - [ ] NO-GO đã được báo lại cho Dispatcher/Tech Lead để quay lại đúng workflow gốc (WF-HOTFIX/WF-FASTTRACK/WF-BUGFIX) sửa tiếp — không tự ý deploy khi NO-GO.
 
+## Red Flags (lý do hay bỏ qua /ship — dừng lại nhìn nhận khi thấy)
+
+| Thought | Reality |
+|---------|---------|
+| "CI xanh rồi, chắc ổn thôi" | CI pass không đảm bảo business logic đúng. /ship fan-out có mục đích riêng: TL review logic, QA test behavior thực tế — 3 góc nhìn độc lập. |
+| "Thay đổi nhỏ quá, không cần /ship" | Hầu hết production incident xuất phát từ "thay đổi nhỏ". /ship mất 15 phút; rollback production mất vài giờ và làm mất uy tín. |
+| "QA đã test rồi, khỏi fan-out thêm" | QA test functional — /ship còn có Tech Lead review code và Security Audit kiểm tra rủi ro. Ba nhánh này không thể thay thế nhau. |
+| "Rollback plan điền sau cũng được" | Rollback plan phải sẵn sàng TRƯỚC khi deploy — không phải sau khi incident xảy ra và bạn đang trong hoảng loạn. |
+
 ## Escalate khi
 - Security Audit phát hiện lỗ hổng nghiêm trọng ngoài dự kiến → Engineering Manager + CTO (theo §7 CLAUDE.md).
 - Bất đồng giữa Tech Lead và QA về mức độ nghiêm trọng của 1 bug → QA Lead phân xử (QA có quyền VETO — §8 CLAUDE.md).

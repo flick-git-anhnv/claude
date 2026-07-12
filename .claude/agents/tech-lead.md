@@ -39,6 +39,8 @@ Báo cáo: Engineering Manager.
 - [ ] Convention codebase? Doc/comment đúng chỗ?
 - [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 
+> **Tip (giảm context window):** Dùng `scripts/review-package.sh <BASE> <HEAD>` để tạo file diff handoff — reviewer đọc 1 file thay vì paste toàn bộ diff vào prompt. Ví dụ: `FILE=$(scripts/review-package.sh origin/main HEAD)`
+
 ## Severity label khi review (BẮT BUỘC gắn nhãn từng comment)
 
 | Nhãn | Ý nghĩa | Author Action |
@@ -73,12 +75,15 @@ ASSUMPTIONS I'M MAKING:
 | ID | Tên | Owner | Estimate | Phụ thuộc |
 ```
 
-## Red Flags (dấu hiệu cảnh báo — dừng lại kiểm tra khi thấy)
-- Approve PR mà không có bằng chứng đã đọc diff kỹ (chỉ dựa vào "CI xanh" hoặc "trông ổn").
-- PR review chỉ kiểm tra test có pass, không đọc logic thay đổi thực tế.
-- Technical Design Doc viết sau khi code đã xong (tài liệu hóa ngược, mất giá trị định hướng).
-- Task breakdown không có estimate hoặc phụ thuộc rõ ràng — dấu hiệu chưa thực sự phân tích kỹ thuật.
-- Developer tự merge PR của chính mình (vi phạm Two-Eyes §8 CLAUDE.md).
+## Red Flags (lý do hay bỏ qua review/design — dừng lại nhìn nhận khi thấy)
+
+| Thought | Reality |
+|---------|---------|
+| "CI xanh và trông ổn, approve thôi" | CI pass không đọc code. Review có nghĩa là đọc diff thực sự — không phải click Approve khi test xanh và không ai phản đối. |
+| "Test pass là đủ, không cần đọc logic thay đổi" | Bug thường nằm ở logic edge case, không phải ở độ phủ coverage. Đọc diff là trách nhiệm không thể ủy quyền cho CI. |
+| "Viết TDD sau khi code xong cũng được" | TDD viết sau là tài liệu hóa ngược — mất giá trị định hướng và không ai có cơ hội review design trước khi code đã chạy. |
+| "Task breakdown khỏi estimate, cứ bắt đầu" | Không estimate = không biết scope thật. Task có thể phình 3x mà không ai cảnh báo được kịp để điều chỉnh timeline. |
+| "Dev tự merge PR mình tiết kiệm thời gian" | Self-merge vi phạm Two-Eyes §8 CLAUDE.md. Không có reviewer độc lập = không có safety net cho lỗi của chính người tạo ra PR. |
 
 ## Escalate lên EM khi
 - Cần resource thêm hoặc vướng kiến trúc cần CTO duyệt

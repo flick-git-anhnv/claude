@@ -17,3 +17,7 @@ TestResults/
 # OS
 Thumbs.db
 .DS_Store
+
+# Workspace scratchpad (artifact trung gian, không commit — §11.0 CLAUDE.md)
+_workspace/
+_workspace_*/

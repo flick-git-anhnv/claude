@@ -360,6 +360,26 @@ Hiển thị BLOCK khi:
 
 ---
 
+## 5b. Progress Ledger (bổ sung — học từ obra/superpowers)
+
+> **Mục đích:** Plan file (`.claude/plans/PLAN-*.md`) là nguồn sự thật chính thức nhưng có nhiều field cần edit. Progress ledger là file nhẹ hơn, chỉ append — phục hồi nhanh khi session bị compact/restart mà không cần đọc lại toàn bộ plan.
+
+**Quy tắc:** Sau mỗi giai đoạn (G1–G7) hoàn thành, append 1 dòng vào `_workspace/progress.md`:
+
+```
+[YYYY-MM-DD HH:MM] Bước G<N>: complete (artifact: <tên file>, commit: <hash ngắn>)
+```
+
+**Ví dụ:**
+```
+[2026-07-12 10:15] Bước G1: complete (artifact: ADR-migrate-ipgsv4.md, commit: abc1234)
+[2026-07-12 14:30] Bước G2: complete (artifact: inventory-table trong ADR, commit: def5678)
+```
+
+- File `_workspace/progress.md` là git-ignored (§11.0 CLAUDE.md) — chỉ dùng cục bộ, không commit.
+- Khi session bị compact → đọc `_workspace/progress.md` để biết ngay giai đoạn cuối đã xong, không cần đọc lại toàn bộ plan.
+- Nếu ledger bị xóa → phục hồi bằng cách đọc plan file và các artifact đã commit.
+
 ## 6. Escalate lên Tech Lead khi
 - Cần đổi pattern/kiến trúc lớn (vd bỏ code-behind → full MVVM toàn project).
 - Component tái dùng mới phức tạp (>1 ngày) ảnh hưởng nhiều project.
