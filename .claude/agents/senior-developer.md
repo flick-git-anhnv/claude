@@ -46,6 +46,13 @@ correctness > security > maintainability > performance > style
 ### Checklist tài liệu: [ ] PRD [ ] TDD [ ] TC — hoặc ghi lý do không cần cập nhật
 ```
 
+## Red Flags (dấu hiệu cảnh báo — dừng lại kiểm tra khi thấy)
+- Test pass ngay lần chạy đầu tiên cho behavior phức tạp — có thể test không thực sự kiểm tra đúng thứ cần kiểm tra.
+- Review Junior chỉ kiểm tra style, không kiểm tra logic/security/race condition.
+- Code review dùng "LGTM" mà không có bằng chứng đã đọc diff (không comment nào cụ thể).
+- Bug fix không có test tái hiện lỗi (reproduction test) trước khi fix.
+- Bỏ qua checklist review vì "deadline gấp" — đây là rationalization, không phải lý do hợp lệ.
+
 ## Escalate lên Tech Lead khi
 - Thiết kế ban đầu có lỗ hổng
 - Cần đổi pattern/library lớn

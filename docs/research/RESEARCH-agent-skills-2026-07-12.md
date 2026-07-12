@@ -84,15 +84,17 @@ npx skills add addyosmani/agent-skills
 
 ## Trạng thái áp dụng
 
-| # | Đề xuất | Trạng thái |
-|---|---|---|
-| 1 | Anti-rationalization table trong security-audit-stride | Chờ duyệt |
-| 2 | Red Flags trong tech-lead / senior-dev / qa-engineer | Chờ duyệt |
-| 3 | Verification checklist cuối skill/command files | Chờ duyệt |
-| 4 | "When NOT to use" trong skill/agent definitions | Chờ duyệt |
-| 5 | Tách reference checklists ra `references/` | Chờ duyệt |
-| 6 | "ASSUMPTIONS I'M MAKING" format block | Chờ duyệt |
-| 7 | Severity label protocol trong code review output | Chờ duyệt |
-| 8 | Slash command `/ship` fan-out | Chờ duyệt |
-| 9 | Ghi chú trade-off dispatcher layer | Chờ duyệt |
-| 10 | `references/definition-of-done.md` standing checklist | Chờ duyệt |
+> User đã xác nhận áp dụng TẤT CẢ 10 đề xuất (2026-07-12).
+
+| # | Đề xuất | Trạng thái | File đã sửa/tạo |
+|---|---|---|---|
+| 1 | Anti-rationalization table trong security-audit-stride | ✅ Đã áp dụng | `.claude/commands/security-audit-stride.md` |
+| 2 | Red Flags trong tech-lead / senior-dev / qa-engineer | ✅ Đã áp dụng | `.claude/agents/tech-lead.md`, `.claude/agents/senior-developer.md`, `.claude/agents/qa-engineer.md` |
+| 3 | Verification checklist cuối skill/command files | ✅ Đã áp dụng | `.claude/commands/security-audit-stride.md`, `.claude/commands/scope-check.md`, `.claude/agents/code-migrator.md` |
+| 4 | "When NOT to use" trong skill/agent definitions | ✅ Đã áp dụng | `.claude/commands/security-audit-stride.md`, `.claude/agents/code-migrator.md` (`scope-check.md` đã có sẵn "KHÔNG dùng khi") |
+| 5 | Tách reference checklists ra `references/` | ✅ Đã áp dụng | `.claude/references/security-audit-checklist.md` (mới), link từ `security-audit-stride.md` |
+| 6 | "ASSUMPTIONS I'M MAKING" format block | ✅ Đã áp dụng | `.claude/agents/code-migrator.md` (G1), `.claude/agents/tech-lead.md` (trước TDD) |
+| 7 | Severity label protocol trong code review output | ✅ Đã áp dụng | `.claude/agents/tech-lead.md` |
+| 8 | Slash command `/ship` fan-out | ✅ Đã áp dụng | `.claude/commands/ship.md` (mới), route ghi chú trong `CLAUDE.md` §4 |
+| 9 | Ghi chú trade-off dispatcher layer | ✅ Đã áp dụng | `CLAUDE.md` §0, `.claude/shared/CORE.md` §1 |
+| 10 | `references/definition-of-done.md` standing checklist | ✅ Đã áp dụng | `.claude/references/definition-of-done.md` (mới) |

@@ -6,6 +6,8 @@ Claude Code = **Dispatcher**. KHÔNG trả lời thẳng. KHÔNG tự xử lý t
 **PHẢI:** Phân tích → chọn workflow → gọi agent tuần tự → hiển thị đủ header/output/handoff.
 **KHÔNG ĐƯỢC:** Bỏ qua agent, gộp output, nhảy cấp, gọi agent tiếp khi agent hiện tại chưa xong.
 
+> **Trade-off:** mỗi bước Dispatcher thêm là 1 paraphrasing hop (tăng token/độ trễ) — đây là đánh đổi có chủ đích để giữ Two-Eyes Principle, không phải chi phí miễn phí. Chi tiết: `CLAUDE.md` §0.
+
 ---
 
 ## 2. Chain of Command

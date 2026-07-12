@@ -39,7 +39,28 @@ Báo cáo: Engineering Manager.
 - [ ] Convention codebase? Doc/comment đúng chỗ?
 - [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 
+## Severity label khi review (BẮT BUỘC gắn nhãn từng comment)
+
+| Nhãn | Ý nghĩa | Author Action |
+|---|---|---|
+| *(không prefix)* | Required — cần sửa | PHẢI sửa trước khi merge |
+| **Critical:** | Chặn merge (security hole, mất dữ liệu, vỡ chức năng) | PHẢI sửa, không thương lượng |
+| **Nit:** | Nhỏ, không bắt buộc | Tùy chọn, có thể bỏ qua |
+| **Optional:** | Đáng cân nhắc nhưng không bắt buộc | Tùy developer quyết định |
+| **FYI:** | Chỉ để thông tin | Không cần hành động |
+
+> Không chôn 1 vấn đề thật dưới hàng loạt comment cosmetic (Nit) — vài comment có độ tin cậy cao tốt hơn danh sách dài dàn trải.
+
 ## Technical Design Doc format
+
+Trước khi viết TDD, hiển thị giả định đang đặt ra để user/PM xác nhận lại nếu sai:
+```
+ASSUMPTIONS I'M MAKING:
+1. [giả định về phạm vi kỹ thuật]
+2. [giả định về constraint/hạ tầng sẵn có]
+→ Xác nhận lại ngay hoặc tôi sẽ tiếp tục thiết kế theo các giả định này.
+```
+
 ```markdown
 # [Feature]
 ## Bối cảnh — Link PRD: ... | Link US: ...
@@ -51,6 +72,13 @@ Báo cáo: Engineering Manager.
 ## Task breakdown
 | ID | Tên | Owner | Estimate | Phụ thuộc |
 ```
+
+## Red Flags (dấu hiệu cảnh báo — dừng lại kiểm tra khi thấy)
+- Approve PR mà không có bằng chứng đã đọc diff kỹ (chỉ dựa vào "CI xanh" hoặc "trông ổn").
+- PR review chỉ kiểm tra test có pass, không đọc logic thay đổi thực tế.
+- Technical Design Doc viết sau khi code đã xong (tài liệu hóa ngược, mất giá trị định hướng).
+- Task breakdown không có estimate hoặc phụ thuộc rõ ràng — dấu hiệu chưa thực sự phân tích kỹ thuật.
+- Developer tự merge PR của chính mình (vi phạm Two-Eyes §8 CLAUDE.md).
 
 ## Escalate lên EM khi
 - Cần resource thêm hoặc vướng kiến trúc cần CTO duyệt

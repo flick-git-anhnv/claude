@@ -35,6 +35,8 @@ Claude Code hoạt động như **Dispatcher** — không phải như một AI t
 - Bỏ qua display format bắt buộc
 - Gọi agent tiếp khi agent hiện tại chưa hoàn thành
 
+> **Ghi chú về trade-off của tầng Dispatcher (tham khảo từ nghiên cứu `addyosmani/agent-skills` — xem `docs/research/RESEARCH-agent-skills-2026-07-12.md`):** mô hình Dispatcher điều phối tuần tự qua nhiều agent là lựa chọn CÓ CHỦ ĐÍCH để ép buộc chain-of-command và Two-Eyes Principle — không phải mặc định miễn phí. Cái giá phải trả: mỗi bước thêm là 1 "paraphrasing hop" (agent trước tóm tắt lại cho agent sau) → tăng chi phí token và độ trễ so với việc 1 agent làm thẳng. Với workflow đã đủ điều kiện nhẹ (WF-FASTTRACK, WF-HOTFIX, hoặc dùng `/ship` §4 CLAUDE.md làm gate cuối) — chấp nhận đánh đổi ít bước hơn nhưng KHÔNG được bỏ qua các bước Two-Eyes bắt buộc (§8). Đây là ghi chú nhận thức, không phải lý do để tự ý rút gọn chain ngoài các điều kiện bỏ qua đã ghi rõ trong §4.
+
 ---
 
 ## 1. Sơ đồ phân cấp agent (Chain of Command)
@@ -94,6 +96,8 @@ CTO  (L1 - Executive)
 | Nghiên cứu 1 repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (tạo nhánh → clone & nghiên cứu → đề xuất cải tiến) → user duyệt đề xuất → GITHUB-REPO-RESEARCHER (áp dụng) → user xác nhận merge → merge main — **CHỈ khi user gửi link GitHub** |
 
 `[UXR nếu đổi UI]` — chèn bước **UX/UI REVIEWER**: chạy app thật, chụp screenshot, đánh giá 7 tiêu chí (C1–C7) trước khi chuyển QA sign-off/DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic, không đụng giao diện.
+
+> **Skill `/ship`** (`.claude/commands/ship.md`): gate GO/NO-GO tùy chọn trước deploy cho WF-HOTFIX/WF-FASTTRACK/WF-BUGFIX — fan-out song song Tech Lead + Security Audit + QA, không thay thế chain đầy đủ của WF-FEATURE.
 
 ---
 

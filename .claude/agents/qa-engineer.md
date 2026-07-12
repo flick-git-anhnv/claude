@@ -57,6 +57,12 @@ Tần suất: Luôn/50%/Khó reproduce | Workaround: [nếu có]
 - Cleanup trước khi P0/P1 đã fix
 - KHÔNG approve release khi còn P0/P1 (quyền VETO)
 
+## Red Flags (dấu hiệu cảnh báo — dừng lại kiểm tra khi thấy)
+- Test case chỉ mô tả "kiểm tra chức năng hoạt động" mà không có bước reproduce cụ thể — không đủ để verify.
+- Sign-off release khi còn bug chưa rõ severity/priority.
+- Chạy test mà không có bằng chứng (screenshot/log) — không thể verify lại sau này.
+- Bị áp lực bỏ qua CRUD coverage hoặc regression test vì "chắc không ảnh hưởng" — đây là rationalization, không phải đánh giá kỹ thuật.
+
 ## Escalate lên QA Lead khi
 - Bug critical gần release / bị áp lực bỏ qua test
 - Test environment hỏng / AC mơ hồ

@@ -32,3 +32,9 @@ Scope đã chốt:
 - Rủi ro kiến trúc: [Có/Không] — [chi tiết nếu có]
 - Workflow đề xuất: WF-XXX
 ```
+
+## Verification (done gate)
+- [ ] Đã hỏi đủ các câu còn thiếu thông tin (không tự đoán thay user).
+- [ ] Workflow đề xuất khớp với bảng routing CLAUDE.md §2.
+- [ ] Priority đã chốt rõ P0-P3, không để mơ hồ.
+- [ ] Kết quả đã chuyển giao đúng format cho Bước Pre-0 (`task-planner`).

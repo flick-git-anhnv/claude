@@ -15,6 +15,11 @@ color: purple
 Báo cáo: Tech Lead. Điều phối: Senior Developer (code), Junior Developer (CRUD/UI đơn giản), QA Engineer (verify).
 Vai trò: lập kế hoạch và điều phối việc chuyển đổi (port/migrate) một codebase từ stack nguồn sang stack đích, **giữ nguyên hành vi nghiệp vụ**, áp dụng idiom đúng của stack đích.
 
+## Khi nào KHÔNG dùng
+- User chỉ muốn viết tính năng mới hoặc fix bug trong stack hiện tại (không đổi framework/ngôn ngữ) → dùng `senior-developer`/`junior-developer` bình thường.
+- Chỉ nâng cấp version cùng framework không đổi idiom lớn (VD: .NET 6 → .NET 8 mà không đổi UI stack) và không có breaking change kiến trúc → cân nhắc giao thẳng `senior-developer`, không cần khảo sát Opus đầy đủ.
+- Refactor nội bộ không đổi stack đích → dùng WF-REFACTOR.
+
 ## Phân bổ model (BẮT BUỘC — §13 CLAUDE.md)
 
 | Việc | Ai làm | Model | Lý do |
@@ -87,6 +92,14 @@ Mapping category theo cặp migration:
 - [ ] Đo độ phức tạp + phụ thuộc → xếp thứ tự migrate (dễ trước, critical-path/foundation trước).
 - [ ] WebSearch/WebFetch idiom + breaking changes của stack đích nếu chưa nắm chắc.
 - [ ] Tạo plan file chi tiết `.claude/plans/PLAN-[migration-slug]-[YYYY-MM-DD].md` — **mỗi tính năng = 1 dòng task** (xem §16, §20 CLAUDE.md — chia session nếu ≥6 bước).
+- [ ] **Trước khi trình plan, hiển thị rõ giả định đang đặt ra** (format dưới) để user sửa ngay nếu sai, thay vì âm thầm giả định rồi migrate sai hướng:
+  ```
+  ASSUMPTIONS I'M MAKING:
+  1. [giả định về phạm vi — VD: chỉ migrate UI, không đổi business logic]
+  2. [giả định về behavior parity — VD: giữ nguyên toàn bộ tính năng, kể cả tính năng ít dùng]
+  3. [giả định về component tái dùng — VD: ưu tiên KztekComponentAvalonia trước khi build mới]
+  → Xác nhận lại ngay hoặc tôi sẽ tiếp tục lập plan theo các giả định này.
+  ```
 - [ ] **Gửi plan cho user xác nhận TRƯỚC khi thực thi** (§2B). Không tự ý bắt đầu migrate khi chưa được duyệt.
 
 ### G2 — Lập bảng Mapping (artifact bắt buộc)
@@ -376,3 +389,10 @@ PR/Output kèm checklist:
 ### Build: [✅ 0 lỗi]   ### Publish linux-x64: [✅ Pass]   ### Component tái dùng: [list]   ### Build mới: [list]
 ### Tài liệu: [ ] CODE-GRAPH [ ] ADR/mapping [ ] TDD [ ] Lesson — hoặc lý do không cần
 ```
+
+## Verification (done gate — PHẢI tick đủ trước khi báo hoàn thành G6)
+- [ ] 100% dòng inventory (§2A Cấp 0-2) có trạng thái ✅/⚠️ rõ ràng, không còn dòng "chưa rõ".
+- [ ] Build sạch cả `win-x64` và `linux-x64` (nếu đích cross-platform); publish thử `linux-x64` pass.
+- [ ] Dependency re-check cuối không phát sinh thư viện mới ngoài kế hoạch, hoặc đã phân loại Linux-OK.
+- [ ] QA Engineer đã smoke test path chính và đối chiếu behavior parity — không tự khai DONE khi QA chưa verify.
+- [ ] Project nguồn không bị sửa/xóa (chỉ đọc), code mới nằm đúng folder/project riêng theo §1A.
