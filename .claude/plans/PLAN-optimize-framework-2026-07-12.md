@@ -119,6 +119,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: **APPROVE Phase 1** — hạ tầng script đã sạch, GOTCHAS G001 không còn gây hiểu nhầm. Phase 2 (evals + code-graph) có thể bắt đầu ngay.
 - Bước sau cần biết: Khi Phase 2 cần xuất PDF/DOCX cho code-graph → dùng `--no-pdf` (theo G001) — chỉ tạo DOCX. Nếu bước sau cần cả PDF thật, phải chạy trên máy local có LibreOffice GUI (không phải sandbox này). Không cần chạy lại `pip install`.
 
+### Bước 3.2 — Tech Lead review Phase 3
+
+- Đã làm: Đọc CLAUDE.md dòng 755-775 (§11 khối "Cấu trúc thư mục chuẩn" + ghi chú mới thêm ngay sau ```). Xác nhận ghi chú (a) rõ ràng nêu đây là QUY ƯỚC đặt tên, (b) liệt kê đúng các thư mục chưa tồn tại, (c) chỉ `docs/research/` có nội dung — khớp thực tế Glob của bước 3.1, (d) yêu cầu agent Glob/Read trước khi giả định. Không phủ định bảng "Bảng tổng hợp artifact bắt buộc theo workflow" (§11 dòng 779+) — workflow tương lai vẫn tạo thư mục khi cần. Không mâu thuẫn §15.1 (mapping tính năng → tài liệu vẫn nguyên). CLAUDE.docx timestamp 22:23 khớp CLAUDE.md → đồng bộ.
+- File/module đã đọc hoặc đổi: `CLAUDE.md` §11 (read-only), `CLAUDE.docx` (kiểm tra timestamp), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 3.2 + Handoff Log)
+- Quyết định quan trọng: **APPROVE Phase 3** — ghi chú làm rõ trạng thái hiện tại, không xóa/phủ định quy ước cấu trúc chuẩn. Phase 4 có thể bắt đầu.
+- Bước sau cần biết: Phase 4 bước 4.1 (Senior Developer) chỉ PHÂN TÍCH CLAUDE.md và đề xuất rút gọn vào `_workspace/04_sd_claude-md-analysis.md` — KHÔNG tự sửa CLAUDE.md ở bước này. Tech Lead sẽ review từng đề xuất ở bước 4.2 (Accept/Reject/Modify) trước khi bước 4.3 áp dụng. Nguyên tắc cứng phải giữ: Two-Eyes (§8), chain of command (§1), QA veto, chain nhảy cấp cấm (§1).
+
 ## Artifacts dự kiến
 
 - [ ] `.claude/GOTCHAS.md` — G001 sửa đúng thực tế (LibreOffice có, python-docx thiếu)
