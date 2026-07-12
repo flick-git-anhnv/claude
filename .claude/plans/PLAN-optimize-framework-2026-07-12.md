@@ -1,8 +1,8 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12
-status: planning
+updated: 2026-07-12 22:10
+status: in-progress
 workflow: WF-REFACTOR
 priority: P1
 ---
@@ -43,8 +43,8 @@ Kết quả khảo sát đã xác định:
 
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 1.1 | Cài `python-docx` và `Pillow` vào môi trường; chạy thử `scripts/md_to_docx_kztek.py` với file `.md` mẫu để xác nhận DOCX và PDF tạo thành công; ghi lại lệnh cài đặt và kết quả kiểm thử | senior-developer | ⬜ | - | - | Dùng pip install; xác nhận cả DOCX lẫn PDF output; nếu PDF fail ghi rõ nguyên nhân |
-| 1.2 | Sửa entry G001 trong `.claude/GOTCHAS.md`: thay nội dung "LibreOffice bị thiếu" thành thực tế đúng ("LibreOffice đã cài tại /usr/bin/soffice; vấn đề thực là `python-docx` chưa được cài — giải quyết bằng `pip install python-docx Pillow`"); cập nhật mục "Giải pháp" và "Ngày phát hiện" cho khớp | senior-developer | ⬜ | - | - | Đọc G001 hiện tại trước khi Edit; KHÔNG xóa entry, chỉ sửa nội dung sai |
+| 1.1 | Cài `python-docx` và `Pillow` vào môi trường; chạy thử `scripts/md_to_docx_kztek.py` với file `.md` mẫu để xác nhận DOCX và PDF tạo thành công; ghi lại lệnh cài đặt và kết quả kiểm thử | senior-developer | ✅ | `pip install python-docx Pillow` xác nhận DOCX OK; PDF dùng `--no-pdf` trên cloud | 2026-07-12 22:10 | Dùng pip install; xác nhận cả DOCX lẫn PDF output; nếu PDF fail ghi rõ nguyên nhân |
+| 1.2 | Sửa entry G001 trong `.claude/GOTCHAS.md`: thay nội dung "LibreOffice bị thiếu" thành thực tế đúng ("LibreOffice đã cài tại /usr/bin/soffice; vấn đề thực là `python-docx` chưa được cài — giải quyết bằng `pip install python-docx Pillow`"); cập nhật mục "Giải pháp" và "Ngày phát hiện" cho khớp | senior-developer | ✅ | `.claude/GOTCHAS.md` G001 đã sửa: fix python-docx, PDF dùng --no-pdf mặc định trên cloud | 2026-07-12 22:10 | Đọc G001 hiện tại trước khi Edit; KHÔNG xóa entry, chỉ sửa nội dung sai |
 | 1.3 | Tech Lead review bước 1.1 + 1.2: xác nhận script chạy đúng, G001 mô tả chính xác thực tế, không còn thông tin sai lệch nào trong GOTCHAS | tech-lead | ⬜ | - | - | Review nhanh — không cần tạo PR riêng, ghi nhận approval trong Handoff Log |
 
 ### Phase 2: Bổ sung hạ tầng còn thiếu (evals + code-graph)
