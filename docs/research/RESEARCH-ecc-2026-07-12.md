@@ -5,7 +5,7 @@ slug: ecc
 date: 2026-07-12
 researcher: GitHub Repo Researcher
 workflow: WF-GITHUB-RESEARCH
-status: phase-1-complete
+status: phase-2-complete
 ---
 
 # Nghiên cứu repo: affaan-m/ecc — Everything Claude Code (ECC)
@@ -191,7 +191,7 @@ Cho phép team chọn "profile" (full/minimal/custom) thay vì install all-or-no
 
 ## PHẦN 2: BẢNG ĐỀ XUẤT CẢI TIẾN
 
-> Trạng thái: ⬜ Chờ user xác nhận. Ghi chú: Không có đề xuất nào đụng auth/payment/DB schema — không cần chạy `security-audit-stride`.
+> Trạng thái: ✅ E1-E7 đã áp dụng (2026-07-12). E8 không áp dụng (user không chọn). Ghi chú: Không có đề xuất nào đụng auth/payment/DB schema — không cần chạy `security-audit-stride`.
 
 | # | Đề xuất | Học từ đâu trong ECC | Áp dụng vào đâu trong KZTEK | Tác dụng cụ thể (trước → sau khi áp dụng) | Rủi ro / Effort | Trạng thái |
 |---|---------|----------------------|------------------------------|---------------------------------------------|-----------------|-----------|
@@ -218,13 +218,13 @@ Cho phép team chọn "profile" (full/minimal/custom) thay vì install all-or-no
 
 ## Trạng thái áp dụng
 
-| # | Đề xuất | Trạng thái |
-|---|---------|-----------|
-| E1 | Hook bảo vệ config | ⬜ Chờ user xác nhận |
-| E2 | PLUGIN_SCHEMA_NOTES pattern | ⬜ Chờ user xác nhận |
-| E3 | DAILY vs LIBRARY skill classification | ⬜ Chờ user xác nhận |
-| E4 | Verification Loop trước PR | ⬜ Chờ user xác nhận |
-| E5 | Eval-Driven Development | ⬜ Chờ user xác nhận |
-| E6 | Agent Introspection Debugging | ⬜ Chờ user xác nhận |
-| E7 | Strategic Compact gợi ý | ⬜ Chờ user xác nhận |
-| E8 | Tiered package structure | ⬜ Chờ user xác nhận |
+| # | Đề xuất | Trạng thái | File áp dụng |
+|---|---------|-----------|-------------|
+| E1 | Hook bảo vệ config | ✅ Đã áp dụng | `.claude/hooks/config-protection.js`, `.claude/settings.json` |
+| E2 | PLUGIN_SCHEMA_NOTES pattern (GOTCHAS.md) | ✅ Đã áp dụng | `.claude/GOTCHAS.md`, `CLAUDE.md` §KHỞI ĐỘNG |
+| E3 | DAILY vs LIBRARY skill classification | ✅ Đã áp dụng | `.claude/shared/CORE.md` §6b |
+| E4 | Verification Loop trước PR | ✅ Đã áp dụng | `.claude/commands/verify-pr.md`, `CLAUDE.md` §WF-FEATURE Bước 10, §WF-BUGFIX Bước 3 |
+| E5 | Eval-Driven Development | ✅ Đã áp dụng | `.claude/templates/EVAL-template.md`, `CLAUDE.md` §18.5 |
+| E6 | Agent Introspection Debugging | ✅ Đã áp dụng | `CLAUDE.md` §9a |
+| E7 | Strategic Compact gợi ý | ✅ Đã áp dụng | `CLAUDE.md` §16.5 |
+| E8 | Tiered package structure | ⏭️ Không áp dụng | User không chọn — structural refactor rủi ro cao, bỏ qua |

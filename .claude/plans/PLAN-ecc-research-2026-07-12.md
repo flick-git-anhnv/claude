@@ -1,8 +1,8 @@
 ---
 task: ecc-research
 created: 2026-07-12
-updated: 2026-07-12 (Phase 0+1 done)
-status: waiting-user-approval-phase-2
+updated: 2026-07-12 (Phase 2 done)
+status: waiting-user-confirm-merge
 workflow: WF-GITHUB-RESEARCH
 priority: P2
 ---
@@ -37,8 +37,8 @@ Nghiên cứu repo GitHub https://github.com/affaan-m/ecc theo workflow WF-GITHU
 ### Phase 2: User duyệt & Áp dụng
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 2.1 | User xác nhận đề xuất nào được áp dụng | USER | ⬜ | Danh sách đề xuất được chọn | - | Bước chờ input user — KHÔNG tự áp dụng khi chưa có xác nhận |
-| 2.2 | Áp dụng đề xuất đã được user chọn vào code/tài liệu KZTEK, commit lên nhánh `research/ecc-2026-07-12` | GITHUB-REPO-RESEARCHER | ⬜ | Các file đã sửa/thêm; commit trên nhánh nghiên cứu | - | Đề xuất đụng auth/payment/DB schema → chạy `security-audit-stride` trước khi merge |
+| 2.1 | User xác nhận đề xuất nào được áp dụng | USER | ✅ | E1-E7 được chọn, E8 bỏ qua | 2026-07-12 | User xác nhận áp dụng E1-E7 |
+| 2.2 | Áp dụng đề xuất đã được user chọn vào code/tài liệu KZTEK, commit lên nhánh nghiên cứu | GITHUB-REPO-RESEARCHER | ✅ | 9 file tạo mới, 4 file sửa; commit trên nhánh session | 2026-07-12 | E1-E7 đã áp dụng đầy đủ |
 
 ### Phase 3: Merge về main
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
@@ -70,6 +70,12 @@ Nghiên cứu repo GitHub https://github.com/affaan-m/ecc theo workflow WF-GITHU
 - Quyết định quan trọng: ECC là harness operator system (không phải framework code), 211K stars, MIT, v2.0.0, 278 skills, 67 agents, 94 command shims.
 - Bước sau cần biết: ECC KHÔNG có source code app thông thường — toàn bộ là `.md` skill/agent definitions + JS hook scripts + JSON manifests. Đọc thêm trong scratchpad nếu cần, không clone lại.
 
+### Bước 2.1 + 2.2 — User xác nhận & Áp dụng E1-E7
+- Đã làm: User chọn E1-E7, bỏ E8. Áp dụng 7 thay đổi: E1 (hook config-protection.js + settings.json), E2 (GOTCHAS.md + CLAUDE.md §KHỞI ĐỘNG), E3 (CORE.md §6b DAILY/LIBRARY table), E4 (verify-pr.md + CLAUDE.md WF-BUGFIX/WF-FEATURE), E5 (EVAL-template.md + CLAUDE.md §18.5 EDD), E6 (CLAUDE.md §9a introspection debugging), E7 (CLAUDE.md §16.5 compact gợi ý). Đã cập nhật RESEARCH-ecc-2026-07-12.md trạng thái áp dụng + xuất DOCX. Thêm §21 changelog.
+- File/module đã đọc hoặc đổi: `.claude/hooks/config-protection.js` (tạo), `.claude/settings.json` (sửa), `.claude/GOTCHAS.md` (tạo), `CLAUDE.md` (sửa nhiều section), `.claude/shared/CORE.md` (thêm §6b), `.claude/commands/verify-pr.md` (tạo), `.claude/templates/EVAL-template.md` (tạo), `docs/research/RESEARCH-ecc-2026-07-12.md` (cập nhật status + trạng thái áp dụng)
+- Quyết định quan trọng: Hook E1 test pass 5/5 test cases. DOCX xuất thành công cho tất cả .md mới. Không cần security-audit-stride (không đụng auth/payment/DB).
+- Bước sau cần biết: Bước tiếp theo (3.1) là USER xác nhận merge về main. KHÔNG tự merge. Branch hiện tại: `claude/ecc-research-l0sizv`.
+
 ### Bước 1.2 + 1.3 — Viết phân tích + Đề xuất
 - Đã làm: Tạo `docs/research/RESEARCH-ecc-2026-07-12.md` gồm Phần 1 (phân tích: tổng quan, cấu trúc, kỹ thuật, thông tin repo) và Phần 2 (8 đề xuất E1-E8). Chạy `md_to_docx_kztek.py` → DOCX OK, PDF thất bại (thiếu LibreOffice/docx2pdf).
 - File/module đã đọc hoặc đổi: `docs/research/RESEARCH-ecc-2026-07-12.md` (tạo mới), `docs/research/RESEARCH-ecc-2026-07-12.docx` (tạo mới)
@@ -81,8 +87,13 @@ Nghiên cứu repo GitHub https://github.com/affaan-m/ecc theo workflow WF-GITHU
 - [x] `docs/research/RESEARCH-ecc-2026-07-12.md` — phân tích repo + bảng đề xuất cải tiến
 - [x] `docs/research/RESEARCH-ecc-2026-07-12.docx` — xuất bởi `md_to_docx_kztek.py`
 - [ ] `docs/research/RESEARCH-ecc-2026-07-12.pdf` — SKIP: thiếu LibreOffice/docx2pdf trên môi trường hiện tại
-- [ ] Các file áp dụng đề xuất (tuỳ theo đề xuất user chọn ở Bước 2.1)
-- [ ] Các file áp dụng đề xuất (tuỳ theo đề xuất user chọn ở Bước 2.1)
+- [x] `.claude/hooks/config-protection.js` — E1: Hook bảo vệ config (Node.js, 5/5 test pass)
+- [x] `.claude/settings.json` — E1: Đăng ký PreToolUse hook
+- [x] `.claude/GOTCHAS.md` — E2: Ghi lỗi ngầm (1 entry G001)
+- [x] `.claude/shared/CORE.md` §6b — E3: Bảng DAILY/LIBRARY classification
+- [x] `.claude/commands/verify-pr.md` — E4: Pre-PR verification checklist skill
+- [x] `.claude/templates/EVAL-template.md` — E5: Eval-Driven Development template
+- [x] `CLAUDE.md` §KHỞI ĐỘNG §9a §16.5 §18.5 §WF-BUGFIX §WF-FEATURE §21 — E2/E4/E5/E6/E7 + changelog
 
 ## Blockers
 Không có
@@ -98,6 +109,7 @@ Không có
 |------|----------|-------|
 | 2026-07-12 | Plan tạo mới | task-planner |
 | 2026-07-12 | Phase 0+1 hoàn thành: Audit, clone ecc, viết RESEARCH-ecc-2026-07-12.md + .docx, 8 đề xuất E1-E8, cập nhật plan + Handoff Log | GitHub Repo Researcher |
+| 2026-07-12 | Phase 2 hoàn thành: Áp dụng E1-E7 (9 file tạo mới, 4 file sửa), test hook E1 pass 5/5, xuất DOCX, cập nhật RESEARCH-ecc + plan | GitHub Repo Researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

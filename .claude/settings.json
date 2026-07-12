@@ -14,5 +14,18 @@
       "WebSearch",
       "WebFetch"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/config-protection.js"
+          }
+        ]
+      }
+    ]
   }
 }
