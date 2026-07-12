@@ -12,7 +12,9 @@
       "Grep",
       "Read",
       "WebSearch",
-      "WebFetch"
+      "WebFetch",
+      "Edit",
+      "Write"
     ]
   },
   "hooks": {

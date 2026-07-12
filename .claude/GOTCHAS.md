@@ -12,45 +12,41 @@
 
 | # | Vấn đề | Ngày |
 |---|--------|------|
-| G001 | `scripts/md_to_docx_kztek.py` — PDF export thất bại trên Linux không có LibreOffice | 2026-07-12 |
+| G001 | `scripts/md_to_docx_kztek.py` — thiếu `python-docx`/`Pillow`; PDF không cần trên cloud/sandbox | 2026-07-12 |
 
 ---
 
-## G001 — PDF export thất bại: thiếu LibreOffice trên Linux
+## G001 — `scripts/md_to_docx_kztek.py`: thiếu `python-docx`/`Pillow`; PDF là optional trên cloud/sandbox
 
 **Ngày phát hiện:** 2026-07-12
 
-**Môi trường:** Linux sandbox (claude.ai / cloud agent), không có GUI
+**Môi trường:** Linux sandbox (claude.ai / cloud agent)
 
-**Vấn đề:**
-Chạy `python scripts/md_to_docx_kztek.py <file.md>` thành công tạo DOCX nhưng báo lỗi PDF:
+**Vấn đề ban đầu:**
+Chạy `python scripts/md_to_docx_kztek.py <file.md>` báo `ModuleNotFoundError: No module named 'docx'` vì thiếu package `python-docx` và `Pillow`.
 
+**Khắc phục (ĐÃ XÁC NHẬN HOẠT ĐỘNG):**
+```bash
+pip install python-docx Pillow
 ```
-⚠  PDF: Không thể xuất PDF (thử cài docx2pdf hoặc LibreOffice)
+Sau khi cài, DOCX tạo thành công. Đây là fix dứt điểm cho lỗi ModuleNotFoundError.
+
+**Về PDF export trên cloud/sandbox:**
+LibreOffice đã cài tại `/usr/bin/soffice`, nhưng `soffice --headless --convert-to pdf` báo lỗi "source file could not be loaded" trong môi trường sandbox — đây là hiện tượng đã biết, KHÔNG cần debug thêm.
+
+Theo chỉ đạo: **trên cloud/sandbox, PDF không cần thiết**. Dùng `--no-pdf` làm mặc định:
+```bash
+python scripts/md_to_docx_kztek.py <file.md> --no-pdf
 ```
 
-Script cố gắng dùng `docx2pdf` (Windows/macOS) hoặc gọi `libreoffice --headless` (Linux). Cả hai đều thất bại trong môi trường Linux sandbox:
-- `docx2pdf` yêu cầu Microsoft Word (chỉ có trên Windows/macOS)
-- `libreoffice --headless` không được cài sẵn trong môi trường sandbox
-
-**Nguyên nhân:**
-- Môi trường cloud agent không có LibreOffice và không có Microsoft Word
-- Script không raise exception — chỉ in cảnh báo và tiếp tục — nên DOCX vẫn được tạo
-
-**Cách xử lý:**
-1. Dùng flag `--no-pdf` để chỉ tạo DOCX và bỏ qua PDF:
-   ```bash
-   python scripts/md_to_docx_kztek.py docs/research/RESEARCH-xyz.md --no-pdf
-   ```
-2. Ghi rõ trong output agent: "PDF thất bại (thiếu LibreOffice), DOCX OK"
-3. KHÔNG coi đây là lỗi blocking — DOCX là artifact chính; PDF là nice-to-have
-4. Nếu cần PDF thật: cài LibreOffice trên máy local rồi chạy lại
-
-**Lần đầu gặp:** Bước 1.2 — WF-GITHUB-RESEARCH nghiên cứu affaan-m/ecc (2026-07-12)
+PDF chỉ cần khi chạy trên máy local có LibreOffice GUI đầy đủ — không phải môi trường sandbox.
 
 **Không cần làm lại:**
-- Không cần thử `pip install docx2pdf` — nó phụ thuộc vào Word/LibreOffice, không hoạt động độc lập trên Linux sandbox
-- Không cần điều chỉnh script — script đã xử lý đúng, chỉ cần dùng `--no-pdf`
+- Không cần điều tra tại sao soffice lỗi trên sandbox — không blocking, không cần fix
+- Không cần thử `pip install docx2pdf` — phụ thuộc vào Word/LibreOffice GUI, không hoạt động trên Linux sandbox
+- DOCX là artifact chính; PDF là optional và chỉ cần ở môi trường local
+
+**Lần đầu gặp:** Bước 1.1-1.2 — WF-REFACTOR optimize-framework (2026-07-12)
 
 ---
 
