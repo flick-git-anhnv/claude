@@ -1,7 +1,7 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12 22:18
+updated: 2026-07-12 22:20
 status: in-progress
 workflow: WF-REFACTOR
 priority: P1
@@ -53,7 +53,7 @@ Kết quả khảo sát đã xác định:
 |---|------|-------|--------|----------|-----------------|---------|
 | 2.1 | Tạo thư mục `.claude/evals/`; tạo file eval mẫu cho 3 agent quan trọng nhất: `task-planner`, `senior-developer`, `qa-engineer` — mỗi file theo template `.claude/templates/EVAL-template.md`, điền ≥ 3 Capability Eval (CE-01, CE-02, CE-03) cho mỗi agent; ghi rõ input/expected-output có thể kiểm thử được | senior-developer | ✅ | `.claude/evals/task-planner.md`, `.claude/evals/senior-developer.md`, `.claude/evals/qa-engineer.md` — mỗi file 3 CE + 2 RE | 2026-07-12 22:18 | Đọc EVAL-template.md trước; chỉ tạo eval cho 3 agent này, không cần làm đủ 19 agent trong 1 bước |
 | 2.2 | Tạo `code-graph/CODE-GRAPH.md` từ template `.claude/templates/CODE-GRAPH-template.md`; điền ghi chú rõ: "Workspace này là AI Agent Framework, chưa có codebase sản phẩm (src/ không tồn tại). File này được tạo để tuân thủ CLAUDE.md §17; sẽ được điền đầy đủ khi có project sản phẩm thực tế."; xuất `code-graph/CODE-GRAPH.pdf` từ file .md vừa tạo | senior-developer | ✅ | `code-graph/CODE-GRAPH.md` — liệt kê 31 WinForms controls, agent definitions, scripts; PDF export bỏ qua (sandbox, dùng --no-docx → cả 2 skip, acceptable) | 2026-07-12 22:18 | Chạy `python scripts/md_to_docx_kztek.py code-graph/CODE-GRAPH.md --no-docx` để xuất PDF sau khi python-docx đã cài (Phase 1 xong trước) |
-| 2.3 | Tech Lead review bước 2.1 + 2.2: xác nhận eval files đúng format template, CE có thể dùng được để test thực tế; CODE-GRAPH.md rõ ràng về trạng thái "chưa có sản phẩm" | tech-lead | ⬜ | - | - | |
+| 2.3 | Tech Lead review bước 2.1 + 2.2: xác nhận eval files đúng format template, CE có thể dùng được để test thực tế; CODE-GRAPH.md rõ ràng về trạng thái "chưa có sản phẩm" | tech-lead | ✅ | Tech Lead xác nhận: 3 eval file đủ CE cụ thể, CODE-GRAPH.md phản ánh đúng thực tế | 2026-07-12 22:20 | APPROVE — Phase 3 có thể bắt đầu ngay |
 
 ### Phase 3: Làm rõ trạng thái docs/* trong CLAUDE.md §11
 
@@ -98,6 +98,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: CE của task-planner tập trung 3 kịch bản lifecycle: tạo plan mới (chờ xác nhận trước khi Write), tiếp tục plan dở (không tạo lại), BLOCK khi thiếu thông tin. CE senior-developer: code+test phức tạp, review PR Junior đúng priority (correctness trước style), escalate khi vượt thẩm quyền (DB schema change). CE qa-engineer: Given/When/Then+CRUD, reproduce có evidence, từ chối khi app chưa chạy + VETO P0.
 - Bước sau cần biết: Bước 2.3 là Tech Lead review — cần đọc 3 file eval vừa tạo và CODE-GRAPH.md để xác nhận (a) CE có testable không, (b) CODE-GRAPH có ghi chú trạng thái "chưa có sản phẩm" rõ ràng không, (c) không có eval nào vi phạm Two-Eyes hay nguyên tắc cứng. Commit hash bước này: `d3a06b9`.
 
+### Bước 2.3 — Tech Lead review Phase 2
+
+- Đã làm: Đọc `.claude/evals/task-planner.md`, `.claude/evals/senior-developer.md`, `.claude/evals/qa-engineer.md` — mỗi file đủ 3 CE + 2 RE, input/expected-output cụ thể testable (CE-01 task-planner có Glob path + format block xác nhận cụ thể; CE-01 senior-dev có artifact path + số test case tối thiểu; CE-01 qa-engineer có AC + CRUD coverage cụ thể). Đọc `code-graph/CODE-GRAPH.md` — phản ánh đúng thực tế: nêu rõ workspace không có `src/`, liệt kê đúng 31 KztekComponent controls thật + agents/skills/scripts thật, có ghi chú "sẽ điền đầy đủ khi có sản phẩm thực".
+- File/module đã đọc hoặc đổi: `.claude/evals/task-planner.md`, `.claude/evals/senior-developer.md`, `.claude/evals/qa-engineer.md`, `code-graph/CODE-GRAPH.md` (read-only); `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 2.3)
+- Quyết định quan trọng: **APPROVE Phase 2** — không có eval mơ hồ, không có sai lệch trong CODE-GRAPH. Không phát hiện vi phạm Two-Eyes hay nguyên tắc cứng nào.
+- Bước sau cần biết: Phase 3 (làm rõ trạng thái docs/* trong CLAUDE.md §11) có thể bắt đầu ngay. Khi sửa CLAUDE.md §11 cần đồng bộ CORE.md nếu có mục tương đương — kiểm tra Grep "docs/prd" trước khi Edit. Không sửa bảng mapping §15.1 (không nằm trong scope Phase 3).
+
 ### Bước 1.3 — Tech Lead review Phase 1
 
 - Đã làm: Đọc lại GOTCHAS.md G001 (đã đúng thực tế: python-docx là root cause, PDF optional trên cloud, `--no-pdf` mặc định). Chạy `md_to_docx_kztek.py --help` + smoke test với `docs/research/RESEARCH-harness-2026-07-12.md --no-pdf --output-dir /tmp/tl-review-test/` → DOCX 389KB tạo OK. Xác nhận plan file bước 1.1 + 1.2 đánh dấu ✅ đúng thực tế.
@@ -136,6 +143,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 | Plan tạo mới — 5 phases, 12 steps | task-planner |
 | 2026-07-12 22:10 | Bước 1.1 Done, Bước 1.2 Done — python-docx xác nhận hoạt động, G001 sửa đúng thực tế, PDF không cần trên cloud | Senior Developer |
 | 2026-07-12 22:18 | Bước 2.1 Done (3 eval files), Bước 2.2 Done (CODE-GRAPH.md) — commit d3a06b9 | Senior Developer |
+| 2026-07-12 22:20 | Bước 2.3 Done — Tech Lead APPROVE Phase 2 (evals đủ CE testable, CODE-GRAPH đúng thực tế) | Tech Lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
