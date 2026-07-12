@@ -1,6 +1,6 @@
 ---
 name: documentation-writer
-description: Use this agent ONLY when user explicitly requests documentation. Mode A: write new user manual from running app. Mode B: convert .md to DOCX+PDF (KZTEK brand). NEVER auto-activate in other workflows.
+description: "PHẢI dùng agent này khi: user nói rõ 'viết tài liệu hướng dẫn', 'tạo user manual', 'làm tài liệu đào tạo', 'chuyển .md sang DOCX/PDF', 'xuất Word/PDF'. Có 2 chế độ: A) viết manual mới từ app đang chạy thật (phải chụp screenshot thực tế), B) convert file .md có sẵn sang DOCX+PDF theo brand KZTEK. KHÔNG dùng khi: workflow khác đang chạy và chỉ cần xuất DOCX như bước phụ (→ agent đó tự gọi script), user hỏi về nội dung tài liệu mà không yêu cầu tạo file (→ trả lời trực tiếp), chỉ cần screenshot UI để đánh giá (→ ux-ui-reviewer)."
 model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash
 color: purple
@@ -85,63 +85,20 @@ Khi user yêu cầu:
 
 Script `scripts/md_to_docx_kztek.py` đã có sẵn, xử lý toàn bộ branding KZTEK tự động.
 
-#### ⚠️ TIỀN ĐIỀU KIỆN BẮT BUỘC — PHẢI KIỂM TRA TRƯỚC KHI CHẠY SCRIPT
+> **[Progressive Disclosure]** Tiền điều kiện Windows (encoding, file lock check), lệnh script đầy đủ (batch/single/export-dir), và các lỗi thường gặp:
+> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §E khi gặp vấn đề.
 
 ```powershell
-# 1. Đặt encoding UTF-8 (BẮT BUỘC trên Windows — thiếu sẽ crash khi in tiếng Việt)
-$env:PYTHONIOENCODING = "utf-8"
+# Cú pháp cơ bản (Linux/macOS — không cần set encoding)
+python scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md
 
-# 2. Kiểm tra file output KHÔNG bị mở trong Word/Excel
-#    Nếu file đang mở → script sẽ lỗi "[Errno 13] Permission denied"
-#    → Đóng file trong Word trước, CHỜ SAU ĐÓ mới chạy script
-$outputFile = "docs/user-manuals/MANUAL-ten-file.docx"  # đổi tên phù hợp
-try {
-    $s = [System.IO.File]::Open($outputFile,'Open','ReadWrite','None')
-    $s.Close()
-    Write-Host "OK — file không bị lock, có thể chạy script"
-} catch {
-    Write-Error "FILE ĐANG BỊ KHÓA — Đóng file trong Word trước khi tiếp tục"
-}
-```
-
-> **Lỗi thường gặp trên Windows:**
-> - `UnicodeEncodeError: 'charmap'` → Thiếu `$env:PYTHONIOENCODING = "utf-8"` → thêm vào trước khi chạy
-> - `[Errno 13] Permission denied` → File DOCX đang mở trong Word → Đóng lại rồi chạy lại
-> - `(-2147023170, 'The remote procedure call failed')` từ docx2pdf → Word COM lỗi tạm thời → kill WINWORD.EXE rồi thử lại; nếu PDF vẫn được tạo ra thì bỏ qua lỗi này
-
-```powershell
-# Cài đặt (lần đầu)
-pip install python-docx Pillow
-
-# Chuyển 1 file cụ thể (LUÔN set encoding trước)
+# Windows — LUÔN set encoding trước
 $env:PYTHONIOENCODING = "utf-8"
 python scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md
 
-# Chuyển 1 file, lưu vào thư mục exports/
-$env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md --output-dir exports/
-
-# Chuyển toàn bộ file *.md trong 1 thư mục
-$env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/prd/ --batch
-
-# Chuyển nhiều file, chỉ DOCX (bỏ PDF)
-$env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/prd/PRD-x.md docs/user-stories/US-001.md --no-pdf
-
-# Chuyển toàn bộ tài liệu dự án
+# Batch toàn bộ thư mục
 $env:PYTHONIOENCODING = "utf-8"
 python scripts/md_to_docx_kztek.py docs/ --batch --output-dir exports/
-
-# Nếu file output bị lock → xuất ra thư mục tạm rồi copy sau
-$env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-x.md --output-dir docs/user-manuals/temp_out
-# Sau khi user đóng file: Copy-Item temp_out\*.docx, temp_out\*.pdf → thư mục đích; Remove-Item temp_out -Recurse
-
-# Cài thêm để xuất PDF (chọn 1)
-pip install docx2pdf          # Windows / macOS (cần MS Word)
-# hoặc
-# sudo apt install libreoffice  # Linux
 ```
 
 ### B.3 — Danh sách file có thể chuyển đổi
@@ -248,45 +205,18 @@ Select-String -Path "**/*.csproj" -Pattern "WinForms|UseWindowsForms|OutputType.
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-```powershell
-# Phương án 1: Dùng build.ps1 nếu có sẵn trong project
-.\build.ps1
-
-# Phương án 2: dotnet publish (tạo thư mục publish sạch)
-dotnet publish -c Release -o ./publish
-
-# Phương án 3: MSBuild trực tiếp
-msbuild /p:Configuration=Release /p:OutputPath=./bin/Release/
-
-# Xác nhận build thành công
-Get-ChildItem -Path "./publish","./bin/Release" -Filter "*.exe" -Recurse |
-    Select-Object Name, LastWriteTime, @{N='SizeMB';E={[Math]::Round($_.Length/1MB,2)}}
-```
+> **[Progressive Disclosure]** Script build, khởi động, và xác nhận chi tiết:
+> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §A + §B khi thực hiện bước này.
 
 **Quy tắc bắt buộc:**
 - Phải chạy đến khi xuất hiện thông báo **Build succeeded** — KHÔNG tiếp tục nếu có lỗi build.
 - Nếu build lỗi → **DỪNG**, báo lỗi cho Senior Developer, không tự xử lý.
 - Chạy file `.exe` từ thư mục Release để xác nhận ứng dụng khởi động bình thường trước khi chụp.
 
-```powershell
-# Khởi động ứng dụng Release
-$app = Start-Process ".\publish\[AppName].exe" -PassThru
-Start-Sleep -Seconds 4
-# Xác nhận process đang chạy
-if ($app.HasExited) { Write-Error "ỨNG DỤNG KHÔNG KHỞI ĐỘNG ĐƯỢC — DỪNG LẠI" }
-else { Write-Host "✅ Ứng dụng đang chạy — PID: $($app.Id)" }
-```
-
 #### Nếu là ứng dụng Web
 
-```bash
-# Khởi động server local
-npm run dev        # hoặc: python manage.py runserver / dotnet run / ...
-
-# Xác nhận đang chạy — phải trả về HTTP 200
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/
-# Kết quả phải là: 200
-```
+> **[Progressive Disclosure]** Script khởi động và kiểm tra HTTP 200:
+> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §B.
 
 #### Bước B — XÁC NHẬN ỨNG DỤNG ĐANG CHẠY (Điền trước khi tiếp tục)
 
@@ -310,27 +240,10 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/
 
 > **Quy tắc cứng:** PHẢI liệt kê 100% màn hình trước khi chụp bất kỳ cái nào. Nếu phát hiện thêm màn hình sau khi đã bắt đầu → quay lại cập nhật checklist này.
 
-#### Với Windows Forms — quét source code để lập danh sách
+#### Quét danh sách màn hình theo loại ứng dụng
 
-```powershell
-# Liệt kê tất cả Form trong project
-Get-ChildItem -Recurse -Filter "*.cs" |
-    Select-String -Pattern "class \w+ *: *(Form|UserControl|MetroForm|BaseForm)" |
-    ForEach-Object { "$($_.Filename):$($_.LineNumber) — $($_.Line.Trim())" }
-
-# Liệt kê tất cả file .Designer.cs (mỗi file = 1 Form/Control)
-Get-ChildItem -Recurse -Filter "*.Designer.cs" | Select-Object Name
-```
-
-#### Với ứng dụng Web — quét routes
-
-```powershell
-# Next.js / React Router
-Get-ChildItem -Recurse -Include "*.tsx","*.jsx" -Path "src/pages","src/app","src/routes"
-
-# ASP.NET MVC
-Get-ChildItem -Recurse -Filter "*.cshtml" | Select-Object FullName
-```
+> **[Progressive Disclosure]** Lệnh PowerShell đầy đủ để quét Forms (WinForms) và routes (Web/ASP.NET):
+> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §F.
 
 #### Điền vào Screen Inventory trước khi tiếp tục
 
@@ -399,91 +312,10 @@ Get-ChildItem -Recurse -Filter "*.cshtml" | Select-Object FullName
 
 **KHÔNG được chuyển sang Bước 3 khi checklist chưa 100% tick.**
 
-#### Cách chụp Windows Forms (dùng tool tích hợp Windows)
+#### Cách chụp màn hình
 
-```powershell
-# Chụp cửa sổ WinForms bằng PowerShell + .NET
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-function Capture-Window {
-    param([string]$ProcessName, [string]$OutputPath)
-    $proc = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $proc) { Write-Host "Không tìm thấy process: $ProcessName"; return }
-
-    $hwnd = $proc.MainWindowHandle
-    Add-Type @"
-using System;
-using System.Drawing;
-using System.Runtime.InteropServices;
-public class WinCapture {
-    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-    public struct RECT { public int Left, Top, Right, Bottom; }
-    public static Bitmap Capture(IntPtr hwnd) {
-        SetForegroundWindow(hwnd);
-        RECT r; GetWindowRect(hwnd, out r);
-        var bmp = new Bitmap(r.Right-r.Left, r.Bottom-r.Top);
-        using (var g = Graphics.FromImage(bmp))
-            g.CopyFromScreen(r.Left, r.Top, 0, 0, bmp.Size);
-        return bmp;
-    }
-}
-"@
-    $bmp = [WinCapture]::Capture($hwnd)
-    $bmp.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
-    $bmp.Dispose()
-    Write-Host "Đã chụp: $OutputPath"
-}
-
-# Ví dụ sử dụng
-$screenshotDir = "docs\user-manuals\screenshots"
-New-Item -ItemType Directory -Force -Path $screenshotDir | Out-Null
-
-# Khởi động app
-$app = Start-Process ".\publish\[AppName].exe" -PassThru
-Start-Sleep -Seconds 3
-
-# Chụp màn hình mặc định
-Capture-Window -ProcessName "[AppName]" -OutputPath "$screenshotDir\main-default.png"
-```
-
-#### Với ứng dụng Web — dùng Playwright
-
-```bash
-pip install playwright && playwright install chromium
-
-# Script chụp nhiều màn hình web
-python - <<'PYEOF'
-from playwright.sync_api import sync_playwright
-import os
-
-SCREENS = [
-    # (route, tên_file, mô_tả)
-    ("/",              "home-default",        "Trang chủ"),
-    ("/login",         "login-default",       "Đăng nhập — mặc định"),
-    ("/login",         "login-error",         "Đăng nhập — lỗi"),
-    ("/dashboard",     "dashboard-default",   "Dashboard"),
-    # ... thêm TẤT CẢ route ở đây
-]
-
-BASE_URL = "http://localhost:3000"
-OUT_DIR  = "docs/user-manuals/screenshots"
-os.makedirs(OUT_DIR, exist_ok=True)
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page(viewport={"width": 1366, "height": 768})
-    for route, fname, desc in SCREENS:
-        page.goto(f"{BASE_URL}{route}")
-        page.wait_for_load_state("networkidle")
-        path = f"{OUT_DIR}/{fname}.png"
-        page.screenshot(path=path, full_page=True)
-        print(f"✅ {desc:30s} → {path}")
-    browser.close()
-print(f"\nHoàn thành: {len(SCREENS)} screenshots")
-PYEOF
-```
+> **[Progressive Disclosure]** Script PowerShell chụp WinForms và script Playwright chụp Web app đầy đủ:
+> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §C (WinForms) hoặc §D (Web) khi thực hiện bước này.
 
 **Quy tắc chụp màn hình:**
 - Chụp trên Release build (WinForms) hoặc staging/local (Web) — KHÔNG chụp Debug build, KHÔNG chụp production.
@@ -630,38 +462,23 @@ A: [...]
 ### Bước 4 — Xuất DOCX
 
 ```powershell
-# Cài đặt thư viện (lần đầu)
-pip install python-docx Pillow
-
-# Chạy script — BẮT BUỘC set encoding trước
-$env:PYTHONIOENCODING = "utf-8"
+$env:PYTHONIOENCODING = "utf-8"   # Windows: bắt buộc
 python scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-[feature-slug].md
 ```
 
-Script `scripts/md_to_docx_kztek.py` tự động áp dụng:
-- Logo KZTEK góc trên bên trái header
-- Màu heading Navy `#251C53`, accent Cam `#F05922`
-- Header bảng nền Navy, chữ trắng
-- Font, margin, page size chuẩn
+Script tự động áp dụng logo KZTEK, màu Navy/Cam, font, margin chuẩn.
 
 ---
 
 ### Bước 5 — Xuất PDF
 
-```powershell
-# Phương án 1: docx2pdf (Windows/macOS — cần MS Word)
-pip install docx2pdf
-$env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-[feature-slug].md
-# (script tự động xuất PDF nếu docx2pdf đã cài)
-
-# Phương án 2: LibreOffice (Linux)
+```bash
+# Linux (LibreOffice)
 soffice --headless --convert-to pdf docs/user-manuals/MANUAL-[feature-slug].docx --outdir docs/user-manuals/
-
-# Phương án 3: pypandoc (cần pandoc + LaTeX)
-pip install pypandoc
-python -c "import pypandoc; pypandoc.convert_file('docs/user-manuals/MANUAL-[feature-slug].md', 'pdf', outputfile='docs/user-manuals/MANUAL-[feature-slug].pdf', extra_args=['--pdf-engine=xelatex'])"
 ```
+
+> **[Progressive Disclosure]** Các phương án xuất PDF (docx2pdf, pypandoc, LibreOffice) và xử lý lỗi:
+> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §G.
 
 ---
 

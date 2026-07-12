@@ -5,7 +5,7 @@ date: 2026-07-12
 researcher: github-repo-researcher
 workflow: WF-GITHUB-RESEARCH
 branch: research/harness-2026-07-12
-status: draft — chờ user chọn đề xuất áp dụng
+status: applied — đã áp dụng tất cả P1–P8 (2026-07-12)
 ---
 
 # Nghiên cứu repo: revfactory/harness
@@ -164,16 +164,16 @@ Repo chị `revfactory/claude-code-harness` đo lường trên 15 task:
 
 ## 6. Trạng thái đề xuất
 
-| # | Tên | Trạng thái |
-|---|-----|-----------|
-| P1 | `_workspace/` convention | ⬜ Chờ user duyệt |
-| P2 | Progressive Disclosure | ⬜ Chờ user duyệt |
-| P3 | "Pushy" description | ⬜ Chờ user duyệt |
-| P4 | Phase 0 Audit | ⬜ Chờ user duyệt |
-| P5 | Skill trigger testing | ⬜ Chờ user duyệt |
-| P6 | Why-first writing | ⬜ Chờ user duyệt |
-| P7 | Fan-out implementation guide | ⬜ Chờ user duyệt |
-| P8 | Changelog harness trong CLAUDE.md | ⬜ Chờ user duyệt |
+| # | Tên | Trạng thái | File thay đổi |
+|---|-----|-----------|---------------|
+| P1 | `_workspace/` convention | ✅ Đã áp dụng | `CLAUDE.md` §11.0 (mục mới) |
+| P2 | Progressive Disclosure | ✅ Đã áp dụng | `documentation-writer.md` (761→578 dòng); `.claude/agents/references/documentation-writer-screenshot-guide.md` (mới) |
+| P3 | "Pushy" description | ✅ Đã áp dụng | `github-repo-researcher.md`, `documentation-writer.md`, `senior-developer.md`, `junior-developer.md`, `task-planner.md` |
+| P4 | Phase 0 Audit | ✅ Đã áp dụng | `CLAUDE.md` §4 WF-GITHUB-RESEARCH (Bước 0 mới) + WF-MIGRATE (Bước 0 mới) |
+| P5 | Skill trigger testing | ✅ Đã áp dụng | `.claude/commands/skill-trigger-test.md` (mới) |
+| P6 | Why-first writing | ✅ Đã áp dụng | `CLAUDE.md` §1 (quy tắc nhảy cấp), §3.0 (plan bắt buộc), §8 (Two-Eyes) |
+| P7 | Fan-out implementation guide | ✅ Đã áp dụng | `CLAUDE.md` §4 (ghi chú kỹ thuật `run_in_background` sau ký hiệu ∥) |
+| P8 | Changelog harness trong CLAUDE.md | ✅ Đã áp dụng | `CLAUDE.md` §21 (mục mới cuối file) |
 
 ---
 

@@ -51,7 +51,7 @@ CTO (L1)
 | Convert .md | WF-CONVERT | DOC-WRITER — CHỈ khi user yêu cầu |
 | Typo/UI nhỏ P3 | WF-FASTTRACK | JD→TL→[UXR nếu đổi UI]→QAE→DOE |
 | Migrate framework/ngôn ngữ | WF-MIGRATE | CODE-MIGRATOR (plan, Opus)→SD/JD (code, Sonnet)→CODE-MIGRATOR (review)→QAE — CHỈ khi user yêu cầu |
-| Nghiên cứu repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (nhánh→clone→nghiên cứu→đề xuất)→user duyệt→áp dụng→user xác nhận merge→main — CHỈ khi user gửi link |
+| Nghiên cứu repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (Phase 0→nhánh→clone→**phân tích repo**→**đề xuất riêng**)→user duyệt→áp dụng→user xác nhận merge→main — CHỈ khi user gửi link |
 
 `[UXR nếu đổi UI]` = chèn bước UX/UI REVIEWER (chạy app, chụp screenshot, đánh giá C1–C7) khi code vừa sửa/thêm giao diện. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 

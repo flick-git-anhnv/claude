@@ -391,9 +391,11 @@ sequenceDiagram
     Disp->>Disp: Có link GitHub → kích hoạt WF-GITHUB-RESEARCH
     Disp->>GRR: Giao task (Sonnet)
 
+    GRR->>GRR: Bước 0 — Phase 0 Audit (kiểm tra nhánh/plan/artifact đã có chưa)
     GRR->>GRR: Bước 1 — Tạo nhánh research/<repo-slug>-<date>
     GRR->>GRR: Bước 2 — Clone repo vào scratchpad (ngoài working tree), đọc & phân tích
-    GRR->>U: Bước 3 — Trình docs/research/RESEARCH-*.md + bảng đề xuất cải tiến
+    GRR->>U: Bước 3 — Viết phân tích repo (mục đích, cấu trúc, điểm nổi bật) — KHÔNG kèm đề xuất
+    GRR->>U: Bước 3b — Viết bảng đề xuất cải tiến riêng biệt (dựa trên Bước 3), trình user
     U->>GRR: Bước 4 — Chọn đề xuất được áp dụng
     GRR->>GRR: Bước 4b — Áp dụng đề xuất đã chọn, commit lên nhánh nghiên cứu
     opt Đề xuất đụng kiến trúc/logic nghiệp vụ đáng kể
@@ -408,6 +410,7 @@ sequenceDiagram
 **Bài học từ ví dụ này:**
 - GitHub Repo Researcher CHỈ kích hoạt khi user gửi link GitHub — không tự động chạy trong workflow khác.
 - Repo ngoài clone về thư mục scratchpad để đọc, không đưa `.git` của repo ngoài vào commit KZTEK.
+- **Bước 3 và 3b tách bạch hoàn toàn:** Bước 3 chỉ là phân tích trung lập (mô tả repo, không recommend); Bước 3b mới là đề xuất cải tiến dựa trên phân tích đó. Tách bạch giúp user đánh giá khách quan trước khi bị "push" vào đề xuất.
 - Không tự áp dụng đề xuất (Bước 4b) khi user chưa chọn ở Bước 4; không tự merge (Bước 5b) khi user chưa xác nhận rõ ràng tại đúng thời điểm merge — tuân thủ Git Safety Protocol chung của hệ thống.
 - Nếu thay đổi đụng kiến trúc/logic nghiệp vụ đáng kể → khuyến nghị Tech Lead review trước khi merge (Two-Eyes Principle).
 
