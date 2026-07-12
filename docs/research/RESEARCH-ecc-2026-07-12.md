@@ -181,12 +181,10 @@ Cho phép team chọn "profile" (full/minimal/custom) thay vì install all-or-no
 | URL | https://github.com/affaan-m/ecc |
 | License | MIT |
 | Version | 2.0.0 |
-| Stars | 211.9K+ |
-| Forks | 32.5K+ |
-| Contributors | 230+ |
+| Stars / Forks / Contributors | *Không xác minh được* — README dòng 28 tự khai "211.9K+ stars, 32.5K+ forks, 230+ contributors", nhưng đây là text tĩnh do tác giả viết (không lấy từ GitHub API), và tự mâu thuẫn với dòng khác trong cùng README ("30+ contributors" ở phần changelog release notes). KHÔNG dùng số liệu này làm căn cứ đánh giá độ phổ biến/uy tín repo. |
 | npm package | `ecc-universal` |
 | Ngôn ngữ chính | TypeScript, JavaScript, Markdown |
-| Độ trưởng thành | Cao — 10+ tháng phát triển thực tế, active community |
+| Độ trưởng thành | Chưa xác định độc lập — dựa trên nội dung repo (v2.0.0, changelog chi tiết, cấu trúc code hoàn chỉnh) cho thấy đầu tư nghiêm túc, nhưng số liệu "active community" trong README không được cross-check qua GitHub API thật |
 | Website | https://ecc.tools |
 
 ---
