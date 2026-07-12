@@ -1,8 +1,8 @@
 ---
 task: anthropics-skills-research
 created: 2026-07-12
-updated: 2026-07-12 18:30
-status: waiting-user-step-3.1
+updated: 2026-07-12 18:45
+status: completed
 workflow: WF-GITHUB-RESEARCH
 priority: P2
 ---
@@ -43,8 +43,8 @@ Nghiên cứu repo GitHub https://github.com/anthropics/skills — repo chính t
 ### Phase 3: User xác nhận merge & Merge về main
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 3.1 | [DỪNG — CHỜ USER] User xác nhận merge nhánh `research/anthropics-skills-2026-07-12` về main (xác nhận riêng biệt, độc lập với bước 2.1) | USER | ⬜ | Xác nhận merge từ user | - | TUYỆT ĐỐI KHÔNG tự merge — Git Safety Protocol |
-| 3.2 | Merge nhánh `research/anthropics-skills-2026-07-12` về main sau khi có xác nhận rõ ràng; push remote | GITHUB REPO RESEARCHER | ⬜ | Merge commit trên `main`, push thành công | - | |
+| 3.1 | [DỪNG — CHỜ USER] User xác nhận merge nhánh `research/anthropics-skills-2026-07-12` về main (xác nhận riêng biệt, độc lập với bước 2.1) | USER | ✅ | User xác nhận qua AskUserQuestion: "Xác nhận merge về main" | 2026-07-12 18:40 | |
+| 3.2 | Merge nhánh `research/anthropics-skills-2026-07-12` về main sau khi có xác nhận rõ ràng; push remote | DISPATCHER | ✅ | Merge commit trên `main` (no-ff, không conflict); push thành công | 2026-07-12 18:45 | |
 
 ## Handoff Log (BẮT BUỘC — xem CLAUDE.md §16.5 Bước 4)
 
@@ -86,8 +86,9 @@ Nghiên cứu repo GitHub https://github.com/anthropics/skills — repo chính t
 - [x] nhánh `research/anthropics-skills-2026-07-12`
 - [x] `docs/research/RESEARCH-anthropics-skills-2026-07-12.md` — phân tích repo + bảng đề xuất
 - [x] `docs/research/RESEARCH-anthropics-skills-2026-07-12.docx`
-- [ ] `docs/research/RESEARCH-anthropics-skills-2026-07-12.pdf` ⚠️ (converter issue — không block)
-- [x] 7 file `.claude/commands/*.md` được cập nhật theo S1-S6 (chờ commit)
+- [x] `docs/research/RESEARCH-anthropics-skills-2026-07-12.pdf` (script báo lỗi COM lúc export nhưng file vẫn được ghi ra hợp lệ — commit kèm theo)
+- [x] 7 file `.claude/commands/*.md` được cập nhật theo S1-S6
+- [x] Merge commit `53105fd` trên `main` (no-ff, không conflict)
 
 ## Blockers
 Không có
@@ -105,6 +106,7 @@ Không có
 | 2026-07-12 | Plan tạo mới, chờ user xác nhận trước khi bắt đầu Bước 0.1 | task-planner |
 | 2026-07-12 | Bước 0.1 ✅ (task mới), 1.1 ✅ (nhánh tạo), 1.2 ✅ (clone + phân tích), 1.3+1.3b ✅ (RESEARCH-*.md + bảng 6 đề xuất + .docx); status → waiting-user-step-2.1 | github-repo-researcher |
 | 2026-07-12 | Bước 2.1 ✅ (user xác nhận áp dụng tất cả S1-S6, 2 lần trực tiếp), 2.2 ✅ (7/7 file `.claude/commands/*.md` đã sửa — 6 file bởi github-repo-researcher, 1 file `writing-agent-skill.md` bởi Dispatcher trực tiếp sau khi subagent bị stuck loop); status → waiting-user-step-3.1 | github-repo-researcher + dispatcher |
+| 2026-07-12 | Bước 3.1 ✅ (user xác nhận merge trực tiếp), 3.2 ✅ (merge no-ff vào main tại `53105fd`, push origin/main thành công); status → completed | dispatcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
