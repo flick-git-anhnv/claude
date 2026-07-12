@@ -1,3 +1,8 @@
+---
+name: kztek-brand-info
+description: "PHẢI load khi: tạo hoặc sửa tài liệu/slide/báo cáo có logo KZTEK, áp dụng màu Navy #251C53 hoặc Cam #F05922, thiết kế slide/Word/Excel theo brand KZTEK, kiểm tra quy tắc đặt logo, chọn màu nền/heading/accent, hoặc bất kỳ output nào cần nhận diện thương hiệu KZTEK. Dùng cả khi agent chưa chắc màu nào là đúng — tốt hơn là load nhầm còn hơn bỏ sót brand. KHÔNG dùng khi: chỉ cần thông tin liên lạc/địa chỉ công ty (tra cứu trực tiếp) hoặc đang làm brand cho tổ chức khác."
+---
+
 # KZTEK Brand Info
 
 Hiển thị toàn bộ thông tin thương hiệu KZTEK để áp dụng vào tài liệu, slide, báo cáo.
@@ -61,3 +66,7 @@ Hiển thị toàn bộ thông tin thương hiệu KZTEK để áp dụng vào t
 - Dùng màu đỏ tươi (đó là màu FUTECH, không phải KZTEK)
 - Trộn bộ màu KZTEK với bộ màu khác
 - Thay đổi màu, tỉ lệ hoặc thêm hiệu ứng vào logo
+
+## Keywords
+
+brand KZTEK, màu sắc KZTEK, logo KZTEK, Navy #251C53, Cam #F05922, thiết kế tài liệu, brand colors, nhận diện thương hiệu, corporate identity, typography, header footer, màu nền, slide KZTEK, Word KZTEK, Excel KZTEK, brand guidelines, logo placement

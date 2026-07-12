@@ -1,5 +1,6 @@
 ---
-description: "Dùng khi muốn kiểm tra trigger accuracy của một agent hoặc skill mới/vừa sửa — chạy bộ test 'should-trigger' (8-10 query thực tế) và 'should-NOT-trigger' (8-10 near-miss query) để xác nhận Dispatcher routing đúng. Gọi sau khi tạo/sửa .claude/agents/*.md hoặc .claude/commands/*.md, hoặc khi nghi ngờ routing conflict giữa 2 agent."
+name: skill-trigger-test
+description: "PHẢI dùng khi: vừa tạo agent/skill mới, vừa sửa description frontmatter, nghi ngờ routing conflict giữa 2 agent, hoặc Dispatcher đang gọi sai agent lặp lại nhiều lần. Chạy bộ test 'should-trigger' (8-10 query thực tế có backstory cụ thể) và 'should-NOT-trigger' (8-10 near-miss query dùng cùng từ khóa nhưng khác context) để xác nhận Dispatcher routing đúng. KHÔNG dùng khi: chỉ sửa nội dung body skill (không đổi description) hoặc không có thay đổi agent/skill nào."
 ---
 
 # Skill: skill-trigger-test — Kiểm thử trigger accuracy của agent/skill
@@ -113,3 +114,7 @@ Nếu bước simulation cho thấy description không đủ "pushy" để trigg
 - Sau mỗi lần sửa `description:` frontmatter.
 - Khi nhận thấy Dispatcher routing sai lặp lại nhiều lần.
 - Không cần chạy định kỳ nếu không có thay đổi.
+
+## Keywords
+
+test trigger, kiểm tra routing, trigger accuracy, should-trigger, should-NOT-trigger, near-miss, dispatcher routing, description test, skill routing test, routing conflict, agent routing, trigger test

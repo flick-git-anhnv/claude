@@ -1,4 +1,5 @@
 ---
+name: security-audit-stride
 description: Chạy checklist bảo mật OWASP Top 10 + STRIDE trước bước review cuối của Tech Lead trong WF-REVIEW-CRIT (luôn chạy) và trong WF-FEATURE/WF-REFACTOR khi thay đổi đụng auth/payment/DB schema/dữ liệu nhạy cảm (có điều kiện).
 ---
 

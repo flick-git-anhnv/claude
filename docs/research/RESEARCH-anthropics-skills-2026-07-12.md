@@ -295,14 +295,20 @@ Khu vực tương ứng trong KZTEK: `.claude/commands/*.md` (skill definitions)
 
 ## PHẦN 3 — TRẠNG THÁI ÁP DỤNG
 
+User xác nhận trực tiếp (qua AskUserQuestion, ngày 2026-07-12): **áp dụng tất cả S1-S6**.
+
 | # | Đề xuất | Trạng thái | Ghi chú |
 |---|---------|-----------|---------|
-| S1 | Thêm `name:` field vào commands/*.md | Chờ user xác nhận | — |
-| S2 | Thêm frontmatter cho kztek-brand-info.md | Chờ user xác nhận | — |
-| S3 | Cập nhật description "pushy" | Chờ user xác nhận | — |
-| S4 | Thêm Keywords section | Chờ user xác nhận | — |
-| S5 | Thêm Agent Definition Testing step | Chờ user xác nhận | — |
-| S6 | Thêm Bundled Resources guidance | Chờ user xác nhận | — |
+| S1 | Thêm `name:` field vào commands/*.md | ✅ Đã áp dụng | 7/7 file |
+| S2 | Thêm frontmatter cho kztek-brand-info.md | ✅ Đã áp dụng | — |
+| S3 | Cập nhật description "pushy" | ✅ Đã áp dụng | `scope-check.md`, `skill-trigger-test.md`, `writing-agent-skill.md` |
+| S4 | Thêm Keywords section | ✅ Đã áp dụng | `kztek-brand-info.md`, `skill-trigger-test.md`, `writing-agent-skill.md` |
+| S5 | Thêm Agent Definition Testing step | ✅ Đã áp dụng | Bước 6 mới trong `writing-agent-skill.md` |
+| S6 | Thêm Bundled Resources guidance | ✅ Đã áp dụng | Mục mới trong `writing-agent-skill.md` |
+
+**File đã sửa (7/7 `.claude/commands/*.md`):** `security-audit-stride.md`, `ship.md`, `verify-pr.md`, `scope-check.md`, `skill-trigger-test.md`, `kztek-brand-info.md`, `writing-agent-skill.md`.
+
+**Ngày áp dụng:** 2026-07-12, trên nhánh `research/anthropics-skills-2026-07-12`.
 
 ---
 
