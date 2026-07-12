@@ -1,6 +1,6 @@
 ---
 name: task-planner
-description: Use proactively before every new workflow to create/check plan file. Also use manually to view task progress, update plans, or find in-progress tasks. Manages .claude/plans/PLAN-*.md. Do NOT invoke for simple one-off questions or tasks completing in a single step.
+description: "PHẢI dùng agent này trước mọi workflow mới để tạo/kiểm tra plan file. Cũng dùng khi: muốn xem tiến độ task, cập nhật plan giữa chừng, tìm task đang dở. Quản lý .claude/plans/PLAN-*.md. KHÔNG dùng khi: câu hỏi đơn giản hoàn thành trong 1 bước, task quá nhỏ không cần plan (tra cứu nhanh, sửa typo đơn lẻ). Dấu hiệu cần task-planner: workflow có nhiều hơn 1 agent, task kéo dài nhiều session, hoặc cần checkpoint rõ ràng."
 model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep
 color: yellow

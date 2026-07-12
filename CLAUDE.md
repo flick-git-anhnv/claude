@@ -68,6 +68,7 @@ CTO  (L1 - Executive)
 > **UX/UI Reviewer:** tự động chèn vào workflow (WF-FEATURE, WF-BUGFIX, WF-HOTFIX, WF-FASTTRACK, WF-REFACTOR) ngay sau khi code có **chỉnh sửa, làm mới, hoặc thêm giao diện** — chạy ứng dụng thật, chụp screenshot, đánh giá trực quan trước khi chuyển cho QA sign-off / DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 
 **Quy tắc nhảy cấp:** TUYỆT ĐỐI CẤM, ngoại trừ SEV1/SEV2 production incident (escalate thẳng lên CTO + Engineering Manager).
+> *Lý do (P6):* Nhảy cấp phá vỡ Two-Eyes Principle — khi agent cấp thấp gọi thẳng CTO, bỏ qua Tech Lead và Engineering Manager, không có người kiểm tra trung gian và quyết định thiếu context kỹ thuật. Ngoại lệ SEV1/SEV2 là cố ý: khi hệ thống down, tốc độ quan trọng hơn quy trình.
 
 ---
 
@@ -93,7 +94,7 @@ CTO  (L1 - Executive)
 | Chuyển đổi .md → DOCX/PDF | WF-CONVERT | DOC-WRITER (chạy `scripts/md_to_docx_kztek.py`) — **CHỈ khi user yêu cầu** |
 | Sửa lỗi UI nhỏ, typo, config sai không đụng logic (P3) | WF-FASTTRACK | JD (fix) → TL (review nhanh) → [UXR nếu đổi UI] → QAE (smoke test) → DOE (deploy) |
 | Chuyển đổi framework/ngôn ngữ/UI stack (migrate/port) | WF-MIGRATE | CODE-MIGRATOR (khảo sát + plan, Opus) → user duyệt → SD/JD (code, Sonnet) → CODE-MIGRATOR (review, Opus) → QAE (verify) — **CHỈ khi user yêu cầu rõ ràng** |
-| Nghiên cứu 1 repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (tạo nhánh → clone & nghiên cứu → đề xuất cải tiến) → user duyệt đề xuất → GITHUB-REPO-RESEARCHER (áp dụng) → user xác nhận merge → merge main — **CHỈ khi user gửi link GitHub** |
+| Nghiên cứu 1 repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (Phase 0 → nhánh → clone → **phân tích repo** → **đề xuất riêng biệt**) → user duyệt → GITHUB-REPO-RESEARCHER (áp dụng) → user xác nhận merge → merge main — **CHỈ khi user gửi link GitHub** |
 
 `[UXR nếu đổi UI]` — chèn bước **UX/UI REVIEWER**: chạy app thật, chụp screenshot, đánh giá 7 tiêu chí (C1–C7) trước khi chuyển QA sign-off/DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic, không đụng giao diện.
 
@@ -117,6 +118,7 @@ Trước khi hiển thị Dispatcher phân tích, PHẢI:
    - Đã load được plan hiện có (task đang dở).
 
 > **TUYỆT ĐỐI KHÔNG** bắt đầu bất kỳ bước workflow nào khi chưa có plan được xác nhận.
+> *Lý do (P6):* Plan file là "bộ nhớ chung" giữa các session — nếu bắt đầu không có plan, khi session bị gián đoạn (timeout, crash, chuyển context) sẽ mất toàn bộ tiến độ và không biết tiếp tục từ đâu. Plan đã xác nhận cũng ngăn chặn scope creep giữa chừng.
 
 ---
 
@@ -182,6 +184,17 @@ Bước tiếp theo: [hành động cần làm tiếp / "Không có — workflow
 ## 4. Chi tiết từng workflow bắt buộc
 
 > **Ký hiệu song song hoá (`∥`):** khi 2 bước được nối bằng `∥`, nghĩa là 2 bước đó ĐỘC LẬP nhau (không bước nào cần output của bước kia, cùng nhận input từ 1 bước trước) và ĐƯỢC PHÉP chạy đồng thời (Dispatcher gọi nhiều subagent trong CÙNG 1 lời gọi Agent tool) để rút ngắn thời gian workflow — lấy cảm hứng từ mô hình song song hoá của Ruflo/Claude Flow. TUYỆT ĐỐI KHÔNG áp dụng `∥` cho cặp bước có quan hệ review/approve (vi phạm Two-Eyes §8). Điều kiện đầy đủ + danh sách cặp đã duyệt: xem `RULES.md` §3.4. Minh họa: `WORKFLOW.md` Ví dụ 9.
+
+> **[P7 — Fan-out kỹ thuật] Triển khai `∥` bằng `run_in_background: true`:**
+> Khi Dispatcher cần chạy 2 bước song song, gọi Agent tool cho bước đầu tiên với `run_in_background: true`, sau đó gọi bước thứ hai ngay lập tức (không chờ kết quả bước 1). Cả hai chạy đồng thời; Dispatcher chờ cả hai hoàn thành rồi mới tổng hợp output.
+> ```
+> # Ví dụ fan-out Bước 10b ∥ Bước 11 (WF-FEATURE):
+> Agent(ux-ui-reviewer, run_in_background=true, prompt="Kiểm tra UI sau merge...")
+> Agent(qa-engineer, prompt="Thực thi test plan...")
+> # → Hai agent chạy song song; sau đó:
+> # Dispatcher đọc kết quả cả hai → tổng hợp → chuyển Bước 12 (QA Lead)
+> ```
+> Lưu ý: chỉ áp dụng cho các cặp đã được duyệt trong `RULES.md` §3.4. Không dùng `run_in_background` cho bước REVIEW/APPROVE (Two-Eyes §8 — cần kết quả tuần tự, không song song).
 
 ### WF-FEATURE — Yêu cầu tính năng mới
 
@@ -481,6 +494,7 @@ Bước 4 → DEVOPS ENGINEER  : Deploy (không cần DevOps Lead approve nếu 
 > ⚠️ **CHÚ Ý:** Workflow này **KHÔNG tự động kích hoạt** trong các workflow khác (WF-FEATURE, WF-BUGFIX, ...). Dispatcher CHỈ gọi khi user đặc biệt yêu cầu migrate/port codebase. KHÔNG dùng cho viết tính năng mới hay bug fix thông thường.
 
 ```
+Bước 0 → CODE MIGRATOR (Opus)     : [Phase 0 Audit] Kiểm tra inventory/plan/artifact đã có chưa; phát hiện drift giữa code nguồn và tài liệu migrate; xác định bước nào cần chạy vs bỏ qua
 Bước 1 → CODE MIGRATOR (Opus)     : Khảo sát source, lập bảng inventory (2 cấp) + mapping (3 bảng), lập plan có nhóm song song
 Bước 2 → USER                     : Duyệt plan — KHÔNG tự ý bắt đầu migrate khi chưa được duyệt
 Bước 3 → SENIOR/JUNIOR DEVELOPER  : Code migrate từng đơn vị theo task được giao (Sonnet) — UI/logic phức tạp → Senior, CRUD/UI đơn giản → Junior
@@ -503,12 +517,14 @@ Bước 6 → QA LEAD                  : Sign-off (P0/P1 phải sạch)
 > ⚠️ **CHÚ Ý:** Workflow này **KHÔNG tự động kích hoạt** trong các workflow khác. Dispatcher CHỈ gọi khi user gửi link GitHub kèm yêu cầu nghiên cứu. Không dùng để migrate/port codebase hiện tại (đó là WF-MIGRATE) hay để review PR nội bộ (WF-REVIEW-STD/CRIT).
 
 ```
-Bước 1 → GITHUB REPO RESEARCHER : Tạo nhánh nghiên cứu mới `research/<repo-slug>-<date>`
-Bước 2 → GITHUB REPO RESEARCHER : Clone repo về thư mục scratchpad (ngoài working tree KZTEK), đọc & phân tích
-Bước 3 → GITHUB REPO RESEARCHER : Viết `docs/research/RESEARCH-*.md` + bảng đề xuất cải tiến, trình user
-Bước 4 → USER                    : Xác nhận đề xuất nào được áp dụng
+Bước 0  → GITHUB REPO RESEARCHER : [Phase 0 Audit] Kiểm tra đã có nhánh/plan/artifact chưa; phát hiện drift; xác định đây là task mới hay nối tiếp — đưa ra ma trận các bước cần chạy vs bỏ qua
+Bước 1  → GITHUB REPO RESEARCHER : Tạo nhánh nghiên cứu mới `research/<repo-slug>-<date>`
+Bước 2  → GITHUB REPO RESEARCHER : Clone repo về thư mục scratchpad (ngoài working tree KZTEK), đọc & phân tích
+Bước 3  → GITHUB REPO RESEARCHER : Viết phần phân tích repo trong `docs/research/RESEARCH-*.md` — mục đích, cấu trúc, điểm nổi bật kỹ thuật; KHÔNG kèm đề xuất cải tiến ở bước này
+Bước 3b → GITHUB REPO RESEARCHER : Dựa trên phân tích Bước 3, viết bảng đề xuất cải tiến (từng đề xuất nêu rõ học từ đâu, áp dụng vào đâu, lợi ích, rủi ro/effort), trình user
+Bước 4  → USER                    : Xác nhận đề xuất nào được áp dụng
 Bước 4b → GITHUB REPO RESEARCHER : Áp dụng đề xuất đã chọn vào code/tài liệu KZTEK, commit lên nhánh nghiên cứu
-Bước 5 → USER                    : Xác nhận merge nhánh nghiên cứu về main
+Bước 5  → USER                    : Xác nhận merge nhánh nghiên cứu về main
 Bước 5b → GITHUB REPO RESEARCHER : Merge về main sau khi có xác nhận rõ ràng (không tự suy ra từ lần xác nhận trước)
 ```
 
@@ -606,6 +622,7 @@ Cấp dưới PHẢI escalate (không phải "nên") trong các trường hợp:
 | Deploy production | DevOps Engineer | DevOps Lead + EM + CTO |
 
 > **Nguyên tắc cứng:** Không ai được self-merge code của mình. Không ai được self-approve design của mình. QA có quyền VETO release khi còn P0/P1 bug.
+> *Lý do (P6):* Self-merge/self-approve tạo ra blind spot — người tạo ra artifact luôn có confirmation bias và không nhìn thấy lỗi của chính mình. Two-eyes không phải formalité mà là cơ chế phát hiện lỗi thực sự. QA veto tồn tại vì không ai được deploy khi biết có bug nghiêm trọng — đây là cam kết chất lượng tối thiểu với người dùng cuối.
 
 ---
 
@@ -650,6 +667,22 @@ Không được đánh dấu việc thêm agent là hoàn thành nếu còn dòn
 ## 11. BẮT BUỘC: Artifact file mỗi agent phải tạo
 
 > **Quy tắc cứng:** Agent KHÔNG được đánh dấu hoàn thành (✅) nếu chưa tạo đủ file bắt buộc. Dispatcher PHẢI kiểm tra artifact trước khi chuyển sang agent tiếp theo. Thiếu file = workflow bị BLOCK.
+
+### 11.0 Convention `_workspace/` cho artifact trung gian (P1 — học từ revfactory/harness)
+
+> **Mục đích:** Phân tách rõ artifact trung gian (nháp, dữ liệu trung chuyển giữa agents) với artifact cuối cùng (deliverable thực sự). Giúp audit trail, giúp agent sau tìm input từ agent trước mà không ô nhiễm `docs/`.
+
+**Quy tắc:**
+- Mọi file **trung gian** trong multi-agent workflow (WF-FEATURE, WF-MIGRATE, WF-GITHUB-RESEARCH, ...) được ghi vào `_workspace/` thay vì trực tiếp vào `docs/` hoặc `src/`.
+- Naming convention: `{phase}_{agent}_{artifact}.{ext}` — VD: `01_pm_prd-draft.md`, `02_ba_user-stories-draft.md`.
+- Chỉ **output cuối cùng** (đã được review + approve) mới ghi vào đường dẫn chính thức (`docs/prd/PRD-*.md`, `src/...`, ...).
+- Khi chạy lại workflow từ đầu: rename `_workspace/` → `_workspace_{YYYYMMDD_HHMMSS}/` trước khi tạo `_workspace/` mới — giữ lại lịch sử.
+- `_workspace/` KHÔNG commit vào git (thêm vào `.gitignore`) — đây là scratchpad cục bộ của workflow hiện tại.
+
+**Áp dụng vào workflow nào:**
+- WF-FEATURE: PM, BA, UX, TL dùng `_workspace/` cho draft PRD/US/TDD trước khi final-ize.
+- WF-MIGRATE: Code Migrator dùng `_workspace/` cho bảng inventory/mapping trước khi user duyệt plan.
+- WF-GITHUB-RESEARCH: Researcher dùng `_workspace/` để ghi chú phân tích trước khi viết báo cáo chính thức.
 
 ### Cấu trúc thư mục chuẩn
 
@@ -1284,3 +1317,14 @@ Agent PHẢI thêm vào phần artifact output:
 
 - User chỉ định rõ framework/UI stack khác (WPF, MAUI, Blazor, Console app, class library không UI, ...) → theo đúng yêu cầu đó.
 - Migrate sang stack khác (WF-MIGRATE) → theo mapping do Code Migrator lập, không bắt buộc dùng lại đúng `KztekComponent`/`KztekComponentAvalonia` nếu stack đích không phải WinForms/Avalonia.
+
+---
+
+## 21. Changelog — Lịch sử thay đổi hệ thống agent
+
+> Mục đích: Audit trail khi hệ thống agent phát triển. Ghi nhận mọi thay đổi đáng kể vào agent/workflow/rule để dễ onboarding, phát hiện regression, và hiểu lý do đằng sau các quyết định thiết kế.
+
+| Ngày | Phiên bản | Nội dung thay đổi | Đối tượng | Lý do |
+|------|-----------|------------------|-----------|-------|
+| 2026-07-12 | v1.1 | Áp dụng 8 đề xuất từ nghiên cứu revfactory/harness: P1 `_workspace/` convention (§11.0), P2 Progressive Disclosure cho documentation-writer.md, P3 pushy description cho agents, P4 Phase 0 Audit trong WF-GITHUB-RESEARCH + WF-MIGRATE, P5 tạo skill `skill-trigger-test`, P6 why-first cho quy tắc TUYỆT ĐỐI, P7 hướng dẫn fan-out `run_in_background` (§4), P8 Changelog (§21) | CLAUDE.md §4 §11 §21, `.claude/agents/`, `.claude/commands/` | Cải thiện Dispatcher routing accuracy, giảm context window per session, tăng maintainability. Xem `docs/research/RESEARCH-harness-2026-07-12.md` |
+| 2026-07-12 | v1.0 | Khởi tạo hệ thống agent KZTEK — 17 agents, 4 skills, routing table đầy đủ | Toàn bộ hệ thống | Tạo mới |

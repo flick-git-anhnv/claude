@@ -82,7 +82,7 @@ Engineering Manager / CTO (release sign-off)
 >
 > **Code Migrator:** KHÔNG nằm trong luồng "Yêu cầu mới" ở trên. Chỉ dùng cho yêu cầu riêng "chuyển đổi framework/ngôn ngữ/UI stack" (xem `CLAUDE.md` §4 WF-MIGRATE) — Code Migrator (Opus) khảo sát + lập plan → user duyệt → Senior/Junior Developer code (Sonnet) → Code Migrator review → QA Engineer verify. KHÔNG tự động chạy trong luồng feature/bug thông thường.
 >
-> **GitHub Repo Researcher:** KHÔNG nằm trong luồng "Yêu cầu mới" ở trên. Chỉ dùng khi user gửi link GitHub repo và yêu cầu nghiên cứu (xem `CLAUDE.md` §4 WF-GITHUB-RESEARCH) — tạo nhánh nghiên cứu → clone & nghiên cứu → đề xuất cải tiến → user duyệt → áp dụng → user xác nhận merge → merge main. KHÔNG tự merge khi chưa có xác nhận rõ ràng của user tại thời điểm merge.
+> **GitHub Repo Researcher:** KHÔNG nằm trong luồng "Yêu cầu mới" ở trên. Chỉ dùng khi user gửi link GitHub repo và yêu cầu nghiên cứu (xem `CLAUDE.md` §4 WF-GITHUB-RESEARCH) — Phase 0 audit → tạo nhánh → clone & phân tích → **viết phân tích repo TRƯỚC** (mục đích/cấu trúc/điểm nổi bật, không kèm đề xuất) → **sau đó mới viết bảng đề xuất riêng biệt** → user duyệt → áp dụng → user xác nhận merge → merge main. KHÔNG tự merge khi chưa có xác nhận rõ ràng của user tại thời điểm merge.
 
 ### 3.2. Luồng báo cáo (Reporting Flow)
 
