@@ -97,6 +97,8 @@ CTO  (L1 - Executive)
 
 ### 3.0 Bước Pre-0 — Kiểm tra / Tạo Plan File (LUÔN làm TRƯỚC Bước 0)
 
+**Pre-0a (điều kiện) — Scope Check:** Nếu yêu cầu user còn mơ hồ về phạm vi/priority/workflow áp dụng → chạy skill `scope-check` (`.claude/commands/scope-check.md`) TRƯỚC khi làm các bước dưới, để chốt scope + priority + workflow đề xuất bằng `AskUserQuestion`. Bỏ qua nếu yêu cầu đã rõ ràng (VD: SEV1 incident).
+
 Trước khi hiển thị Dispatcher phân tích, PHẢI:
 
 1. **Glob** `.claude/plans/PLAN-*.md` → tìm plan liên quan đến task hiện tại (so sánh bằng tên task / slug).
@@ -189,7 +191,8 @@ Bước 8  ∥ Bước 9 (song song — cùng nhận task breakdown từ Bước
 Bước 8  → SENIOR DEVELOPER     : Code phần phức tạp, mentor junior
 Bước 9  → JUNIOR DEVELOPER     : Code phần CRUD/UI đơn giản theo spec
 Bước 10 → TECH LEAD            : Code review cuối, merge decision
-Bước 10b ∥ Bước 11 (song song — cả hai cùng nhận code đã merge từ Bước 10, độc lập nhau):
+Bước 10a → TECH LEAD           : [CÓ ĐIỀU KIỆN — nếu đụng auth/payment/DB schema/dữ liệu nhạy cảm] Chạy skill `security-audit-stride` (OWASP + STRIDE), BLOCK merge nếu Fail nhóm rủi ro cao
+Bước 10b ∥ Bước 11 (song song — cả hai cùng nhận code đã merge từ Bước 10/10a, độc lập nhau):
 Bước 10b → UX/UI REVIEWER      : [CÓ ĐIỀU KIỆN — nếu feature có chỉnh sửa/thêm giao diện] Chạy app thật, chụp screenshot, đánh giá C1–C7 trước khi QA test
 Bước 11 → QA ENGINEER          : Thực thi test plan, log bug
 Bước 12 → QA LEAD              : Sign-off chất lượng, veto nếu còn P0/P1
@@ -201,6 +204,8 @@ Bước 15 → DEVOPS LEAD          : Approve và deploy production, monitor
 **Điều kiện bỏ qua Bước 5 (CTO):** Feature không liên quan đến kiến trúc lớn, bảo mật, hoặc quyết định chiến lược.
 
 **Điều kiện bỏ qua Bước 9 (Junior Dev):** Không có task phù hợp cấp Junior, hoặc deadline quá gấp.
+
+**Điều kiện bỏ qua Bước 10a (Security Audit):** Feature không đụng auth/payment/DB schema/dữ liệu nhạy cảm.
 
 **Điều kiện bỏ qua Bước 10b (UX/UI Reviewer):** Feature không đụng đến UI (chỉ backend/API/logic nội bộ).
 
@@ -263,6 +268,7 @@ Bước 2 → TECH LEAD        : Review cuối, quyết định merge
 
 ```
 Bước 1 → SENIOR DEVELOPER      : Review chi tiết + viết comment
+Bước 1b → SENIOR DEVELOPER     : Chạy skill `security-audit-stride` (OWASP + STRIDE) — BẮT BUỘC, không có điều kiện bỏ qua (WF-REVIEW-CRIT theo định nghĩa luôn đụng auth/payment/schema)
 Bước 2 → TECH LEAD             : Review + approve hoặc request changes
 Bước 3 → ENGINEERING MANAGER   : Review business risk + approve
 Bước 4 → CTO                   : [Tuỳ mức độ] Approve kiến trúc cuối
@@ -360,6 +366,7 @@ Bước 1 → SENIOR DEVELOPER     : Đề xuất phạm vi refactor, tác độ
 Bước 2 → TECH LEAD            : Review đề xuất, approve hoặc điều chỉnh scope
 Bước 3 → SENIOR DEVELOPER     : Thực hiện refactor, đảm bảo test coverage không giảm
 Bước 4 → TECH LEAD            : Code review cuối
+Bước 4a → TECH LEAD           : [CÓ ĐIỀU KIỆN — nếu refactor đụng auth/payment/DB schema/dữ liệu nhạy cảm] Chạy skill `security-audit-stride` (OWASP + STRIDE), BLOCK merge nếu Fail nhóm rủi ro cao
 Bước 4b → UX/UI REVIEWER      : [CÓ ĐIỀU KIỆN — nếu refactor đổi giao diện] Kiểm tra trực quan trước regression test
 Bước 5 → QA ENGINEER          : Regression test toàn bộ phần bị ảnh hưởng
 Bước 6 → ENGINEERING MANAGER  : Approve merge (vì refactor ảnh hưởng rộng)
