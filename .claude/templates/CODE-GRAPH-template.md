@@ -93,6 +93,15 @@
 
 ---
 
+## Lessons & Quyết định quan trọng (bộ nhớ bền vững — lấy cảm hứng từ GBrain của gstack)
+> Ghi lại QUYẾT ĐỊNH + LÝ DO, không chỉ trạng thái code — giúp agent sau không suy luận lại từ đầu hoặc lặp lại sai lầm đã biết.
+
+| Ngày | Quyết định / Bài học | Lý do (WHY) | Agent ghi nhận |
+|------|----------------------|--------------|-----------------|
+| YYYY-MM-DD | [vd: Chọn KzDataGrid thay vì DataGridView gốc] | [vd: đã thử DataGridView gốc, không hỗ trợ virtualization → lag với >10k dòng] | [agent-name] |
+
+---
+
 ## Ghi chú đặc biệt
 [Known issues, gotchas, constraints quan trọng không hiển nhiên từ code]
 
