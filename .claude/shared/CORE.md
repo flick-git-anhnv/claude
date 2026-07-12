@@ -127,6 +127,39 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 
 ---
 
+## 6b. Phân loại Agent: DAILY vs LIBRARY
+
+> **Mục đích:** Giúp tối ưu context window — chỉ agent DAILY xuất hiện mặc định trong mọi session; agent LIBRARY chỉ được gọi khi user yêu cầu rõ hoặc trigger từ khóa đặc thù. Học từ `agent-sort` skill của affaan-m/ecc. Đây là bảng tham khảo — chưa có cơ chế tự động ẩn LIBRARY khỏi danh sách mặc định; phân loại này dùng để routing có chủ đích.
+
+| Agent | Phân loại | Lý do |
+|-------|-----------|-------|
+| **CTO** | DAILY | Tham gia WF-FEATURE/ARCH/INCIDENT, quyết định kiến trúc |
+| **Engineering Manager** | DAILY | Tham gia WF-FEATURE/REFACTOR/RESOURCE, quản lý team |
+| **Product Manager** | DAILY | Tham gia WF-FEATURE/SPRINT/UI/DOCS, khởi đầu nhiều workflow |
+| **Business Analyst** | DAILY | Tham gia WF-FEATURE/SPRINT/STORY, AC của mọi feature |
+| **Tech Lead** | DAILY | Tham gia gần như mọi workflow (review/design/hotfix) |
+| **Senior Developer** | DAILY | Tham gia WF-FEATURE/BUGFIX/HOTFIX/REFACTOR — code chính |
+| **Junior Developer** | DAILY | Tham gia WF-FEATURE/BUGFIX/FASTTRACK — code CRUD/UI |
+| **QA Lead** | DAILY | Tham gia WF-FEATURE/BUGFIX/TEST/SPRINT, sign-off |
+| **QA Engineer** | DAILY | Tham gia hầu hết workflow, verify fix/feature |
+| **DevOps Lead** | DAILY | Tham gia deploy/incident, approve production |
+| **DevOps Engineer** | DAILY | Tham gia WF-DEVOPS/FEATURE/BUGFIX, CI/CD |
+| **Project Manager** | DAILY | Tham gia WF-FEATURE/SPRINT, tracking tiến độ |
+| **UI/UX Designer** | DAILY | Tham gia WF-FEATURE/UI — thiết kế mockup |
+| **UX/UI Reviewer** | DAILY (có điều kiện) | Tự động chèn vào workflow khi có thay đổi UI — không gọi nếu chỉ backend |
+| **task-planner** | DAILY | Chạy mỗi task mới để tạo/load plan file (Pre-0) |
+| **md-optimizer** | DAILY (khi cần) | Utility — tối ưu file .md mới tạo; gọi sau khi tạo agent/skill mới |
+| **code-migrator** | LIBRARY | CHỈ khi user yêu cầu rõ migrate framework/ngôn ngữ/UI stack (WF-MIGRATE) |
+| **github-repo-researcher** | LIBRARY | CHỈ khi user gửi link GitHub repo kèm yêu cầu nghiên cứu (WF-GITHUB-RESEARCH) |
+| **documentation-writer** | LIBRARY | CHỈ khi user yêu cầu rõ tạo tài liệu hướng dẫn/manual (WF-DOCS/WF-CONVERT) |
+
+**Nguyên tắc DAILY/LIBRARY:**
+- **DAILY**: agent xuất hiện trong ≥3 workflow thường xuyên hoặc là backbone của mọi task
+- **LIBRARY**: agent chỉ kích hoạt khi có từ khóa đặc thù ("migrate", "nghiên cứu repo", "tài liệu hướng dẫn")
+- Khi routing: nếu yêu cầu user không chứa trigger từ khóa LIBRARY → không gọi agent LIBRARY
+
+---
+
 ## 7. Model assignment
 
 | Agent | Model |
