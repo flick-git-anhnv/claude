@@ -1,8 +1,8 @@
 ---
 task: optimize-framework
 created: 2026-07-12
-updated: 2026-07-12 23:06
-status: in-progress
+updated: 2026-07-12 23:43
+status: completed
 workflow: WF-REFACTOR
 priority: P1
 ---
@@ -76,7 +76,7 @@ Kết quả khảo sát đã xác định:
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
 | 5.1 | QA Engineer smoke test toàn bộ thay đổi: (a) chạy `scripts/md_to_docx_kztek.py` với ≥2 file .md bất kỳ, xác nhận DOCX+PDF output; (b) đọc GOTCHAS.md G001 xác nhận nội dung đúng; (c) kiểm tra `.claude/evals/` có đủ 3 file eval; (d) kiểm tra `code-graph/CODE-GRAPH.md` có ghi chú trạng thái rõ ràng; (e) đọc CLAUDE.md §11 xác nhận ghi chú thư mục; (f) xác nhận CLAUDE.md §21 Changelog có entry mới | qa-engineer | ✅ | (a) RESEARCH-harness.docx 389KB + CLAUDE.docx 421KB OK; (b) G001 đúng thực tế; (c) 3 evals đủ CE-01/02/03; (d) CODE-GRAPH.md ghi chú rõ; (e) §11 dòng 755 "KHÔNG TỒN TẠI" OK; (f) v1.3 dòng 1401 OK; (g) settings.json JSON VALID; (h) code fence balanced, 1 H1 thật — TẤT CẢ 8/8 PASS | 2026-07-12 23:08 | Ghi log kết quả pass/fail từng mục (a)-(h) — TẤT CẢ PASS |
-| 5.2 | Engineering Manager approve merge nhánh `optimize` về `main` (vì refactor ảnh hưởng rộng: CLAUDE.md, GOTCHAS.md, CORE.md, RULES.md, script infrastructure, evals) | engineering-manager | ⬜ | - | - | WF-REFACTOR §4 bước 6 yêu cầu EM approve; không bỏ qua dù scope là nội bộ |
+| 5.2 | Engineering Manager approve merge nhánh `optimize` về `main` (vì refactor ảnh hưởng rộng: CLAUDE.md, GOTCHAS.md, CORE.md, RULES.md, script infrastructure, evals) | engineering-manager | ✅ | EM APPROVE — merge `--no-ff` thành công, merge commit `c1ce849`, đã push `origin main` | 2026-07-12 23:43 | Trước khi merge đã pull `origin/main` (fast-forward 28 commit từ nhánh khác), diff còn lại chỉ 9 file thuộc scope optimize-framework — không có gì bất thường, không conflict |
 
 ## Handoff Log (BẮT BUỘC — xem CLAUDE.md §16.5 Bước 4)
 
@@ -161,6 +161,13 @@ Kết quả khảo sát đã xác định:
 - Quyết định quan trọng: Không phát hiện regression nào từ toàn bộ Phase 1-4. Framework sẵn sàng để merge.
 - Bước sau cần biết: Bước 5.2 (Engineering Manager) là bước CUỐI CÙNG của plan — approve merge nhánh `optimize` → `main`. Toàn bộ artifact đã pass smoke test, không có blocker nào tồn đọng.
 
+### Bước 5.2 — Engineering Manager approve merge optimize → main
+
+- Đã làm: Đọc toàn bộ plan file + Handoff Log để nắm lịch sử quyết định (không đọc lại code gốc). Xác nhận Phase 1-5.1 đều ✅, không có bước nào 🛑 Blocked. Chạy `git log --oneline main..optimize` (17 commit) và `git diff main...optimize --stat`. Trước khi merge, phát hiện `origin/main` có 28 commit mới hơn local main (từ workflow nghiên cứu GitHub repo khác chạy song song) → `git pull origin main` trước (fast-forward, không conflict). Sau khi pull, diff còn lại đúng 9 file thuộc scope optimize-framework (`.claude/GOTCHAS.md`, `.claude/evals/*.md`, `.claude/plans/PLAN-optimize-framework-2026-07-12.md`, `.claude/settings.json`, `CLAUDE.md`+`.docx`, `code-graph/CODE-GRAPH.md`) — không có gì bất thường. Merge `--no-ff` thành công (merge commit `c1ce849`), push `origin main` thành công.
+- File/module đã đọc hoặc đổi: Toàn bộ 9 file trong diff (qua merge, không sửa tay), `.claude/plans/PLAN-optimize-framework-2026-07-12.md` (cập nhật status 5.2 + frontmatter `status: completed`)
+- Quyết định quan trọng: **APPROVE MERGE** — refactor nội bộ hoàn tất đúng scope đã duyệt (P1, WF-REFACTOR), không đụng kiến trúc sản phẩm/auth/payment/DB, tất cả Two-Eyes review đã qua đúng chain of command.
+- Bước sau cần biết: **PLAN ĐÃ HOÀN THÀNH TOÀN BỘ.** Nhánh `optimize` vẫn còn tồn tại (không xóa, để user tự quyết định dọn dẹp). `main` đã có đầy đủ artifact: GOTCHAS.md G001 đã sửa, `.claude/evals/` 3 file, `code-graph/CODE-GRAPH.md`, CLAUDE.md rút gọn + ghi chú docs/*, `.claude/settings.json` với Edit/Write allowlist.
+
 ## Artifacts dự kiến
 
 - [ ] `.claude/GOTCHAS.md` — G001 sửa đúng thực tế (LibreOffice có, python-docx thiếu)
@@ -200,6 +207,7 @@ Không có (Phase 2 bước 2.2 phụ thuộc Phase 1 xong trước để dùng 
 | 2026-07-12 22:49 | Bước 4.3 Done — Áp dụng rút gọn CLAUDE.md (1437→1403 dòng), §21 Changelog v1.3, CLAUDE.docx đồng bộ, commit e43e7b2 | Senior Developer |
 | 2026-07-12 23:06 | Bước 4.4 Done — Tech Lead APPROVE review cuối Phase 4: diff khớp quyết định 4.2, không nhầm P5/P10, §21 v1.3 đúng format, cấu trúc CLAUDE.md mạch lạc | Tech Lead |
 | 2026-07-12 23:08 | Bước 5.1 Done — QA smoke test 8/8 PASS (script DOCX, GOTCHAS G001, evals, code-graph, CLAUDE.md §11/§21, settings.json, Markdown structure) | QA Engineer |
+| 2026-07-12 23:43 | Bước 5.2 Done — EM APPROVE merge `optimize` → `main` (merge commit c1ce849, đã push). **PLAN HOÀN THÀNH TOÀN BỘ.** | Engineering Manager |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
