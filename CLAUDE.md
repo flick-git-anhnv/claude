@@ -66,7 +66,7 @@ CTO  (L1 - Executive)
 
 > **Code Migrator:** chỉ kích hoạt khi user yêu cầu rõ ràng chuyển đổi framework/ngôn ngữ/UI stack (xem WF-MIGRATE, §4). Không tự động chạy trong WF-FEATURE/WF-BUGFIX/... KHÔNG dùng để viết tính năng mới hay fix bug thông thường.
 >
-> **GitHub Repo Researcher:** chỉ kích hoạt khi user gửi link GitHub repo và yêu cầu nghiên cứu (xem WF-GITHUB-RESEARCH, §4). Không tự động chạy trong workflow khác.
+> **GitHub Repo Researcher:** chỉ kích hoạt khi user gửi link GitHub repo và yêu cầu nghiên cứu — dù để cải tiến KZTEK hay chỉ học tập/tham khảo cá nhân (xem WF-GITHUB-RESEARCH, §4). Không tự động chạy trong workflow khác.
 >
 > **UX/UI Reviewer:** tự động chèn vào workflow (WF-FEATURE, WF-BUGFIX, WF-HOTFIX, WF-FASTTRACK, WF-REFACTOR) ngay sau khi code có **chỉnh sửa, làm mới, hoặc thêm giao diện** — chạy ứng dụng thật, chụp screenshot, đánh giá trực quan trước khi chuyển cho QA sign-off / DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 
@@ -97,7 +97,7 @@ CTO  (L1 - Executive)
 | Chuyển đổi .md → DOCX/PDF | WF-CONVERT | DOC-WRITER (chạy `scripts/md_to_docx_kztek.py`) — **CHỈ khi user yêu cầu** |
 | Sửa lỗi UI nhỏ, typo, config sai không đụng logic (P3) | WF-FASTTRACK | JD (fix) → TL (review nhanh) → [UXR nếu đổi UI] → QAE (smoke test) → DOE (deploy) |
 | Chuyển đổi framework/ngôn ngữ/UI stack (migrate/port) | WF-MIGRATE | CODE-MIGRATOR (khảo sát + plan, Opus) → user duyệt → SD/JD (code, Sonnet) → CODE-MIGRATOR (review, Opus) → QAE (verify) — **CHỈ khi user yêu cầu rõ ràng** |
-| Nghiên cứu 1 repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (Phase 0 → nhánh → clone → **phân tích repo** → **đề xuất riêng biệt**) → user duyệt → GITHUB-REPO-RESEARCHER (áp dụng) → user xác nhận merge → merge main — **CHỈ khi user gửi link GitHub** |
+| Nghiên cứu 1 repo GitHub (user gửi link) — cải tiến KZTEK hoặc học tập/tham khảo | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (Phase 0 → nhánh → clone → **phân tích repo**) → hỏi user mục đích tiếp theo → **Mode A** (đề xuất riêng biệt → user duyệt → áp dụng → user xác nhận merge → merge main) HOẶC **Mode B** (giải thích nguyên lý/hướng dẫn áp dụng tương tác đến khi user xác nhận đã nắm rõ → tài liệu tổng hợp → merge) — **CHỈ khi user gửi link GitHub** |
 
 `[UXR nếu đổi UI]` — chèn bước **UX/UI REVIEWER**: chạy app thật, chụp screenshot, đánh giá 7 tiêu chí (C1–C7) trước khi chuyển QA sign-off/DevOps deploy. Bỏ qua nếu thay đổi chỉ ở backend/logic, không đụng giao diện.
 
@@ -504,26 +504,39 @@ Bước 6 → QA LEAD                  : Sign-off (P0/P1 phải sạch)
 
 ### WF-GITHUB-RESEARCH — Nghiên cứu 1 repo GitHub theo link user gửi
 
-**Trigger:** User gửi 1 (hoặc nhiều) link GitHub repo và yêu cầu nghiên cứu.
+**Trigger:** User gửi 1 (hoặc nhiều) link GitHub repo và yêu cầu nghiên cứu — dù mục đích là cải tiến KZTEK hay chỉ để học tập/tìm hiểu/tham khảo cá nhân.
 
 > ⚠️ **CHÚ Ý:** Workflow này **KHÔNG tự động kích hoạt** trong các workflow khác. Dispatcher CHỈ gọi khi user gửi link GitHub kèm yêu cầu nghiên cứu. Không dùng để migrate/port codebase hiện tại (đó là WF-MIGRATE) hay để review PR nội bộ (WF-REVIEW-STD/CRIT).
 
+> **Hai mục đích (Research Mode) — xác định ngay sau Bước 3:**
+> - **Mode A — Cải tiến KZTEK:** user muốn áp dụng bài học vào KZTEK (hoặc không nói rõ mục đích — mặc định). Đi hết Bước 3b → 5b.
+> - **Mode B — Học tập/Tham khảo cá nhân:** user chỉ muốn hiểu công nghệ/pattern mới, không (nhất thiết) liên quan KZTEK. Sau phân tích, agent hỏi user muốn tìm hiểu tiếp phần nào (nguyên lý hoạt động / hướng dẫn áp dụng-sử dụng / cả hai), giải thích tương tác nhiều vòng đến khi user xác nhận đã nắm rõ, rồi mới chốt tài liệu tổng hợp.
+
 ```
 Bước 0  → GITHUB REPO RESEARCHER : [Phase 0 Audit] Kiểm tra đã có nhánh/plan/artifact chưa; phát hiện drift; xác định đây là task mới hay nối tiếp — đưa ra ma trận các bước cần chạy vs bỏ qua
-Bước 1  → GITHUB REPO RESEARCHER : Tạo nhánh nghiên cứu mới `research/<repo-slug>-<date>`
+Bước 1  → GITHUB REPO RESEARCHER : Tạo nhánh nghiên cứu mới `research/<repo-slug>-<date>`; xác định Mode A/B nếu user đã nói rõ mục đích
 Bước 2  → GITHUB REPO RESEARCHER : Clone repo về thư mục scratchpad (ngoài working tree KZTEK), đọc & phân tích
 Bước 3  → GITHUB REPO RESEARCHER : Viết phần phân tích repo trong `docs/research/RESEARCH-*.md` — mục đích, cấu trúc, điểm nổi bật kỹ thuật; KHÔNG kèm đề xuất cải tiến ở bước này
+Bước 3* → USER                    : Nếu chưa rõ mục đích — chọn Mode A (đề xuất áp dụng KZTEK) hay Mode B (giải thích để học tập/tham khảo)
+
+── Nhánh Mode A ──
 Bước 3b → GITHUB REPO RESEARCHER : Dựa trên phân tích Bước 3, viết bảng đề xuất cải tiến (từng đề xuất nêu rõ học từ đâu, áp dụng vào đâu, lợi ích, rủi ro/effort), trình user
 Bước 4  → USER                    : Xác nhận đề xuất nào được áp dụng
 Bước 4b → GITHUB REPO RESEARCHER : Áp dụng đề xuất đã chọn vào code/tài liệu KZTEK, commit lên nhánh nghiên cứu
 Bước 5  → USER                    : Xác nhận merge nhánh nghiên cứu về main
 Bước 5b → GITHUB REPO RESEARCHER : Merge về main sau khi có xác nhận rõ ràng (không tự suy ra từ lần xác nhận trước)
+
+── Nhánh Mode B ──
+Bước 3c → GITHUB REPO RESEARCHER : Hỏi user muốn tìm hiểu tiếp phần nào — nguyên lý hoạt động / hướng dẫn áp dụng-sử dụng / cả hai
+Bước 3d → GITHUB REPO RESEARCHER : Giải thích tương tác (có ví dụ cụ thể từ repo nguồn), lặp lại hỏi-đáp đến khi user xác nhận đã nắm rõ nguyên lý/cách vận hành/áp dụng
+Bước 3e → GITHUB REPO RESEARCHER : Viết tài liệu tổng hợp cuối cùng (phân tích + nguyên lý + hướng dẫn áp dụng) → xuất DOCX/PDF → xin xác nhận merge nhánh về main
 ```
 
 **Nguyên tắc cứng (xem `.claude/agents/github-repo-researcher.md` chi tiết):**
 - Repo ngoài clone về CHỈ để đọc, không đưa `.git` của repo ngoài vào commit KZTEK.
-- Không tự áp dụng đề xuất khi chưa được user chọn ở Bước 4.
-- Không tự merge về main khi chưa có xác nhận rõ ràng tại đúng thời điểm merge (Git Safety Protocol).
+- Mode A: Không tự áp dụng đề xuất khi chưa được user chọn ở Bước 4.
+- Mode B: Không tự chốt tài liệu tổng hợp (Bước 3e) khi user chưa xác nhận đã nắm rõ ở Bước 3d.
+- Không tự merge về main khi chưa có xác nhận rõ ràng tại đúng thời điểm merge (Git Safety Protocol) — áp dụng cho cả 2 Mode.
 - Đề xuất đụng auth/payment/DB schema/dữ liệu nhạy cảm → chạy `security-audit-stride` trước khi merge.
 
 ---

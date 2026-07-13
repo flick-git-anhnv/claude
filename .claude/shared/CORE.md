@@ -51,7 +51,7 @@ CTO (L1)
 | Convert .md | WF-CONVERT | DOC-WRITER — CHỈ khi user yêu cầu |
 | Typo/UI nhỏ P3 | WF-FASTTRACK | JD→TL→[UXR nếu đổi UI]→QAE→DOE |
 | Migrate framework/ngôn ngữ | WF-MIGRATE | CODE-MIGRATOR (plan, Opus)→SD/JD (code, Sonnet)→CODE-MIGRATOR (review)→QAE — CHỈ khi user yêu cầu |
-| Nghiên cứu repo GitHub (user gửi link) | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (Phase 0→nhánh→clone→**phân tích repo**→**đề xuất riêng**)→user duyệt→áp dụng→user xác nhận merge→main — CHỈ khi user gửi link |
+| Nghiên cứu repo GitHub (user gửi link) — cải tiến KZTEK hoặc học tập/tham khảo | WF-GITHUB-RESEARCH | GITHUB-REPO-RESEARCHER (Phase 0→nhánh→clone→**phân tích repo**)→hỏi mục đích→**Mode A** (đề xuất riêng→user duyệt→áp dụng→user xác nhận merge→main) HOẶC **Mode B** (giải thích nguyên lý/áp dụng tương tác đến khi user nắm rõ→tài liệu tổng hợp→merge) — CHỈ khi user gửi link |
 
 `[UXR nếu đổi UI]` = chèn bước UX/UI REVIEWER (chạy app, chụp screenshot, đánh giá C1–C7) khi code vừa sửa/thêm giao diện. Bỏ qua nếu thay đổi chỉ ở backend/logic.
 
@@ -150,7 +150,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 | **task-planner** | DAILY | Chạy mỗi task mới để tạo/load plan file (Pre-0) |
 | **md-optimizer** | DAILY (khi cần) | Utility — tối ưu file .md mới tạo; gọi sau khi tạo agent/skill mới |
 | **code-migrator** | LIBRARY | CHỈ khi user yêu cầu rõ migrate framework/ngôn ngữ/UI stack (WF-MIGRATE) |
-| **github-repo-researcher** | LIBRARY | CHỈ khi user gửi link GitHub repo kèm yêu cầu nghiên cứu (WF-GITHUB-RESEARCH) |
+| **github-repo-researcher** | LIBRARY | CHỈ khi user gửi link GitHub repo kèm yêu cầu nghiên cứu (WF-GITHUB-RESEARCH) — dù để cải tiến KZTEK (Mode A) hay chỉ học tập/tham khảo (Mode B) |
 | **documentation-writer** | LIBRARY | CHỈ khi user yêu cầu rõ tạo tài liệu hướng dẫn/manual (WF-DOCS/WF-CONVERT) |
 
 **Nguyên tắc DAILY/LIBRARY:**

@@ -376,7 +376,7 @@ sequenceDiagram
 
 ---
 
-## Ví dụ 10: WF-GITHUB-RESEARCH — Nghiên cứu repo GitHub theo link user gửi
+## Ví dụ 10: WF-GITHUB-RESEARCH (Mode A) — Nghiên cứu repo GitHub để đề xuất cải tiến KZTEK
 
 **Tình huống:** Người dùng gửi "Nguồn: https://github.com/addyosmani/agent-skills — nghiên cứu github này giúp tôi, sau đó đề xuất cải tiến".
 
@@ -395,6 +395,7 @@ sequenceDiagram
     GRR->>GRR: Bước 1 — Tạo nhánh research/<repo-slug>-<date>
     GRR->>GRR: Bước 2 — Clone repo vào scratchpad (ngoài working tree), đọc & phân tích
     GRR->>U: Bước 3 — Viết phân tích repo (mục đích, cấu trúc, điểm nổi bật) — KHÔNG kèm đề xuất
+    Note over GRR,U: User đã nói rõ mục đích "đề xuất cải tiến" → Mode A
     GRR->>U: Bước 3b — Viết bảng đề xuất cải tiến riêng biệt (dựa trên Bước 3), trình user
     U->>GRR: Bước 4 — Chọn đề xuất được áp dụng
     GRR->>GRR: Bước 4b — Áp dụng đề xuất đã chọn, commit lên nhánh nghiên cứu
@@ -416,6 +417,44 @@ sequenceDiagram
 
 ---
 
+## Ví dụ 10b: WF-GITHUB-RESEARCH (Mode B) — Nghiên cứu repo GitHub để học tập/tham khảo
+
+**Tình huống:** Người dùng gửi "Nguồn: https://github.com/some-org/some-lib — mình muốn tìm hiểu, học tập cách họ làm, chưa cần áp dụng gì vào KZTEK cả".
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant Disp as Dispatcher
+    participant GRR as GitHub Repo Researcher
+
+    U->>Disp: Gửi link GitHub + yêu cầu "học tập/tìm hiểu"
+    Disp->>Disp: Có link GitHub, mục đích học tập → kích hoạt WF-GITHUB-RESEARCH (Mode B)
+    Disp->>GRR: Giao task (Sonnet)
+
+    GRR->>GRR: Bước 0 — Phase 0 Audit
+    GRR->>GRR: Bước 1 — Tạo nhánh research/<repo-slug>-<date>, xác định Mode B (user đã nói rõ mục đích học tập)
+    GRR->>GRR: Bước 2 — Clone repo vào scratchpad, đọc & phân tích
+    GRR->>U: Bước 3 — Viết phân tích repo (mục đích, cấu trúc, điểm nổi bật)
+    GRR->>U: Bước 3c — Hỏi user muốn tìm hiểu tiếp: nguyên lý hoạt động / hướng dẫn áp dụng-sử dụng / cả hai
+    U->>GRR: Chọn phần muốn tìm hiểu
+    loop Đến khi user xác nhận đã nắm rõ
+        GRR->>U: Bước 3d — Giải thích nguyên lý/cách áp dụng, có ví dụ cụ thể từ repo nguồn
+        U->>GRR: Hỏi thêm hoặc xác nhận "đã hiểu rõ"
+    end
+    GRR->>GRR: Bước 3e — Viết tài liệu tổng hợp (phân tích + nguyên lý + hướng dẫn áp dụng), xuất DOCX/PDF
+    GRR->>U: Xin xác nhận merge nhánh nghiên cứu về main
+    U->>GRR: Xác nhận merge
+    GRR->>GRR: Merge về main, báo cáo kết quả
+```
+
+**Bài học từ ví dụ này:**
+- Mode B phục vụ đúng nhu cầu học tập/tham khảo — không ép user phải nhận một bảng đề xuất áp dụng KZTEK mà họ không cần.
+- Mục tiêu Bước 3d là để **user tự tin nắm rõ nguyên lý, cách vận hành, cách áp dụng** — agent không tự ý chốt tài liệu tổng hợp khi user chưa xác nhận đã hiểu.
+- Tài liệu tổng hợp (Bước 3e) vẫn tuân thủ đầy đủ artifact bắt buộc (RESEARCH-*.md + .docx + .pdf, §19 CLAUDE.md) và Git Safety Protocol khi merge — chỉ khác nội dung (nguyên lý/hướng dẫn áp dụng thay vì bảng đề xuất).
+- Nếu giữa chừng user đổi ý muốn áp dụng vào KZTEK → agent chuyển sang Mode A (Bước 3b trở đi), không cần bắt đầu lại từ đầu.
+
+---
+
 ## Tóm tắt nguyên tắc xuyên suốt
 
 | # | Nguyên tắc | Áp dụng khi |
@@ -431,4 +470,4 @@ sequenceDiagram
 | 9 | UX/UI Reviewer bắt buộc khi đổi giao diện | Trước QA sign-off, nếu code sửa/thêm UI (feature, bugfix, hotfix, fast-track, refactor) |
 | 10 | Code Migrator chỉ dùng khi được yêu cầu | Không tự động chạy trong bất kỳ workflow nào khác; Opus chỉ dùng ở giai đoạn lập plan/review |
 | 11 | Song song hoá khi 2 bước độc lập, không quan hệ review | Tăng tốc workflow, không giảm chất lượng kiểm tra (xem `RULES.md` §3.4, ký hiệu `∥` trong `CLAUDE.md` §4) |
-| 12 | GitHub Repo Researcher chỉ dùng khi user gửi link GitHub | Không tự động chạy trong workflow khác; không tự áp dụng đề xuất hay tự merge khi chưa có xác nhận rõ ràng của user |
+| 12 | GitHub Repo Researcher chỉ dùng khi user gửi link GitHub | Không tự động chạy trong workflow khác; hỗ trợ cả 2 mục đích (Mode A cải tiến KZTEK, Mode B học tập/tham khảo); không tự áp dụng đề xuất/chốt tài liệu hay tự merge khi chưa có xác nhận rõ ràng của user |
