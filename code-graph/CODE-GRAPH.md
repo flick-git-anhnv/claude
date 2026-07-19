@@ -1,8 +1,15 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-07-12 | **Bởi:** senior-developer | **Version:** 1.0
+**Cập nhật lần cuối:** 2026-07-19 | **Bởi:** github-repo-researcher | **Version:** 1.1
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
+
+> **Quy ước nhãn Confidence (học từ graphify `validate.py`):**
+> Mỗi mối quan hệ dependency/inheritance trong tài liệu này được gắn 1 trong 2 nhãn:
+> - `[EXTRACTED]` — quan hệ thấy rõ trong source code/config (kế thừa C#, `using` statement, call tường minh, dependency khai báo trong `.csproj`)
+> - `[INFERRED]` — quan hệ suy luận từ workflow, tài liệu, hoặc convention (agent A "biết" kết quả của agent B nhưng không có binding code cứng)
+>
+> Phân biệt nhãn giúp developer biết relationship nào an toàn để refactor (INFERRED có thể thay đổi) và relationship nào sẽ gây lỗi compile nếu đổi (EXTRACTED).
 
 > **LƯU Ý QUAN TRỌNG:** Đây là AI Agent Framework workspace, KHÔNG phải codebase sản phẩm. Thư mục `src/` không tồn tại. File này mô tả cấu trúc framework agent orchestration + thư viện UI C# WinForms. **File này sẽ được điền đầy đủ chi tiết khi có project sản phẩm thực tế bắt đầu phát triển trong workspace này.**
 
@@ -62,47 +69,50 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | Shared Context | `.claude/shared/` | Context chung đọc đầu mỗi session | `CORE.md`, `GOTCHAS.md` |
 | Templates | `.claude/templates/` | Khung mẫu cho plan, eval, code-graph | `PLAN-template.md`, `EVAL-template.md`, `CODE-GRAPH-template.md` |
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
-| Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `review-package.sh` |
+| Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `review-package.sh`, `skillgen_kztek.py` |
+| graphify Graph | `KztekComponent/graphify-out/` | Đồ thị AST tự sinh (511 nodes, 814 edges, 31 communities) — dùng `graphify query/affected/path` để truy vấn | `graph.json`, `GRAPH_REPORT.md`, `graph.html` |
 
 ---
 
 ## KztekComponent — Controls có sẵn (C# WinForms)
 
 > **Coding agents BẮT BUỘC dùng các control này thay vì control .NET gốc** khi làm project C# WinForms (§20 CLAUDE.md).
+>
+> Kể từ 2026-07-19, `KztekComponent/graphify-out/graph.json` chứa đồ thị AST tự sinh (511 nodes, 814 edges) — chạy `graphify affected <file.cs>` để xem class/form nào bị ảnh hưởng khi sửa control. Nhãn confidence (EXTRACTED/INFERRED) theo quy ước phần đầu file.
 
-| Control | Path | Tương đương .NET gốc | Ghi chú |
-|---------|------|---------------------|---------|
-| `KzButton` | `Controls/KzButton.cs` | `Button` | Button theo brand KZTEK |
-| `KzTextBox` | `Controls/KzTextBox.cs` | `TextBox` | TextBox với validation |
-| `KzPasswordTextBox` | `Controls/KzPasswordTextBox.cs` | `TextBox (PasswordChar)` | Input mật khẩu |
-| `KzIPTextbox` | `Controls/KzIPTextbox.cs` | `TextBox` (custom) | Input địa chỉ IP |
-| `KzDataGrid` | `Controls/KzDataGrid.cs` | `DataGridView` | Grid với virtualization |
-| `KzCombobox` | `Controls/KzCombobox.cs` | `ComboBox` | Dropdown theo brand |
-| `KzCheckBox` | `Controls/KzCheckBox.cs` | `CheckBox` | Checkbox theo brand |
-| `KzCheckedListBox` | `Controls/KzCheckedListBox.cs` | `CheckedListBox` | Multi-select list |
-| `KzRadioButton` | `Controls/KzRadioButton.cs` | `RadioButton` | Radio theo brand |
-| `KzLabel` | `Controls/KzLabel.cs` | `Label` | Label theo brand |
-| `KzNumericUpDown` | `Controls/KzNumericUpDown.cs` | `NumericUpDown` | Numeric input |
-| `KzDateTimePicker` | `Controls/KzDateTimePicker.cs` | `DateTimePicker` | Date/time picker |
-| `KzPanel` | `Controls/KzPanel.cs` | `Panel` | Panel container |
-| `KzGroupBox` | `Controls/KzGroupBox.cs` | `GroupBox` | Group container |
-| `KzTabControl` | `Controls/KzTabControl.cs` | `TabControl` | Tab navigation |
-| `KzMenuStrip` | `Controls/KzMenuStrip.cs` | `MenuStrip` | Top menu |
-| `KzContextMenuStrip` | `Controls/KzContextMenuStrip.cs` | `ContextMenuStrip` | Right-click menu |
-| `KzProgressBar` | `Controls/KzProgressBar.cs` | `ProgressBar` | Progress indicator |
-| `KzToggleSwitch` | `Controls/KzToggleSwitch.cs` | (không có tương đương) | Toggle on/off |
-| `KzBadge` | `Controls/KzBadge.cs` | (không có tương đương) | Badge/tag hiển thị |
-| `KzCard` | `Controls/KzCard.cs` | (không có tương đương) | Card layout |
-| `KzKpiCard` | `Controls/KzKpiCard.cs` | (không có tương đương) | KPI metric card |
-| `KzPictureBox` | `Controls/KzPictureBox.cs` | `PictureBox` | Image display |
-| `KzNavigation` | `Controls/KzNavigation.cs` | (không có tương đương) | Navigation bar |
-| `KzSidebar` | `Controls/KzSidebar.cs` | (không có tương đương) | Sidebar layout |
-| `KzSidebarItem` | `Controls/KzSidebarItem.cs` | (không có tương đương) | Sidebar menu item |
-| `KzDeviceTreeview` | `Controls/KzDeviceTreeview.cs` | `TreeView` | Device tree KZTEK |
-| `KzKeyboard` | `Controls/KzKeyboard.cs` | (không có tương đương) | Soft keyboard |
-| `KzCountDown` | `Controls/KzCountDown.cs` | (không có tương đương) | Countdown timer |
-| `KzRoundCountdown` | `Controls/KzRoundCountdown.cs` | (không có tương đương) | Circular countdown |
-| `KzTelexEngine` | `Controls/KzTelexEngine.cs` | (không có tương đương) | Telex input engine |
+| Control | Path | Tương đương .NET gốc | Confidence | Ghi chú |
+|---------|------|---------------------|-----------|---------|
+| `KzButton` | `Controls/KzButton.cs` | `Button` | [EXTRACTED] | Button theo brand KZTEK |
+| `KzTextBox` | `Controls/KzTextBox.cs` | `TextBox` | [EXTRACTED] | TextBox với validation |
+| `KzPasswordTextBox` | `Controls/KzPasswordTextBox.cs` | `TextBox (PasswordChar)` | [EXTRACTED] | Input mật khẩu — kế thừa `KzTextBox` |
+| `KzIPTextbox` | `Controls/KzIPTextbox.cs` | `TextBox` (custom) | [EXTRACTED] | Input địa chỉ IP |
+| `KzDataGrid` | `Controls/KzDataGrid.cs` | `DataGridView` | [EXTRACTED] | Grid với virtualization |
+| `KzCombobox` | `Controls/KzCombobox.cs` | `ComboBox` | [EXTRACTED] | Dropdown theo brand |
+| `KzCheckBox` | `Controls/KzCheckBox.cs` | `CheckBox` | [EXTRACTED] | Checkbox theo brand |
+| `KzCheckedListBox` | `Controls/KzCheckedListBox.cs` | `CheckedListBox` | [EXTRACTED] | Multi-select list |
+| `KzRadioButton` | `Controls/KzRadioButton.cs` | `RadioButton` | [EXTRACTED] | Radio theo brand |
+| `KzLabel` | `Controls/KzLabel.cs` | `Label` | [EXTRACTED] | Label theo brand |
+| `KzNumericUpDown` | `Controls/KzNumericUpDown.cs` | `NumericUpDown` | [EXTRACTED] | Numeric input |
+| `KzDateTimePicker` | `Controls/KzDateTimePicker.cs` | `DateTimePicker` | [EXTRACTED] | Date/time picker |
+| `KzPanel` | `Controls/KzPanel.cs` | `Panel` | [EXTRACTED] | Panel container |
+| `KzGroupBox` | `Controls/KzGroupBox.cs` | `GroupBox` | [EXTRACTED] | Group container |
+| `KzTabControl` | `Controls/KzTabControl.cs` | `TabControl` | [EXTRACTED] | Tab navigation |
+| `KzMenuStrip` | `Controls/KzMenuStrip.cs` | `MenuStrip` | [EXTRACTED] | Top menu |
+| `KzContextMenuStrip` | `Controls/KzContextMenuStrip.cs` | `ContextMenuStrip` | [EXTRACTED] | Right-click menu |
+| `KzProgressBar` | `Controls/KzProgressBar.cs` | `ProgressBar` | [EXTRACTED] | Progress indicator |
+| `KzToggleSwitch` | `Controls/KzToggleSwitch.cs` | (không có tương đương) | [EXTRACTED] | Toggle on/off |
+| `KzBadge` | `Controls/KzBadge.cs` | (không có tương đương) | [EXTRACTED] | Badge/tag hiển thị |
+| `KzCard` | `Controls/KzCard.cs` | (không có tương đương) | [EXTRACTED] | Card layout |
+| `KzKpiCard` | `Controls/KzKpiCard.cs` | (không có tương đương) | [EXTRACTED] | KPI metric card — sử dụng `KzCard` [INFERRED từ tên/pattern] |
+| `KzPictureBox` | `Controls/KzPictureBox.cs` | `PictureBox` | [EXTRACTED] | Image display |
+| `KzNavigation` | `Controls/KzNavigation.cs` | (không có tương đương) | [EXTRACTED] | Navigation bar |
+| `KzSidebar` | `Controls/KzSidebar.cs` | (không có tương đương) | [EXTRACTED] | Sidebar layout — chứa `KzSidebarItem` [EXTRACTED] |
+| `KzSidebarItem` | `Controls/KzSidebarItem.cs` | (không có tương đương) | [EXTRACTED] | Sidebar menu item |
+| `KzDeviceTreeview` | `Controls/KzDeviceTreeview.cs` | `TreeView` | [EXTRACTED] | Device tree KZTEK |
+| `KzKeyboard` | `Controls/KzKeyboard.cs` | (không có tương đương) | [EXTRACTED] | Soft keyboard |
+| `KzCountDown` | `Controls/KzCountDown.cs` | (không có tương đương) | [EXTRACTED] | Countdown timer |
+| `KzRoundCountdown` | `Controls/KzRoundCountdown.cs` | (không có tương đương) | [EXTRACTED] | Circular countdown — [INFERRED: variant của KzCountDown theo naming] |
+| `KzTelexEngine` | `Controls/KzTelexEngine.cs` | (không có tương đương) | [EXTRACTED] | Telex input engine |
 
 **Theme files:**
 | File | Mục đích |
@@ -166,6 +176,10 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 |------|------------|------|------------|-------|
 | 2026-07-12 | `.claude/evals/` | Add | Tạo thư mục + 3 eval mẫu (task-planner, senior-developer, qa-engineer) | senior-developer |
 | 2026-07-12 | `code-graph/CODE-GRAPH.md` | Add | Tạo bản đồ codebase ban đầu cho workspace | senior-developer |
+| 2026-07-19 | `KztekComponent/graphify-out/` | Add | Sinh đồ thị AST tự động bằng `graphify .` — 511 nodes, 814 edges, 31 communities. Git hook post-commit auto-refresh đã cài. | github-repo-researcher |
+| 2026-07-19 | `code-graph/CODE-GRAPH.md` | Update | Thêm quy ước confidence labels [EXTRACTED]/[INFERRED]; cập nhật bảng controls với cột Confidence; thêm graphify-out vào Module chính | github-repo-researcher |
+| 2026-07-19 | `.claude/agents/tech-lead.md` | Update | Thêm bước checklist `graphify affected <file>` cho PR review C# KztekComponent | github-repo-researcher |
+| 2026-07-19 | `scripts/skillgen_kztek.py` | Add | Skill generator MVP — sinh skill file từ 1 source sang 2-3 platform (Claude Code, Cursor, Kiro) | github-repo-researcher |
 
 ---
 
