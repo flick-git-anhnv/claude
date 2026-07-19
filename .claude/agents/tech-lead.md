@@ -38,6 +38,7 @@ Báo cáo: Engineering Manager.
 - [ ] Test có meaningful (không chỉ để qua coverage)?
 - [ ] Convention codebase? Doc/comment đúng chỗ?
 - [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
+- [ ] (Nếu PR sửa file C# trong `KztekComponent/`) Chạy `graphify affected <file>` trong `KztekComponent/` và ghi kết quả vào PR comment trước khi approve — xem danh sách class/form downstream bị ảnh hưởng, đảm bảo không có breaking change bị bỏ sót. Yêu cầu `graphifyy` đã cài (`pip install graphifyy`) và `graphify-out/graph.json` tồn tại (chạy `graphify .` lần đầu nếu chưa có).
 
 > **Tip (giảm context window):** Dùng `scripts/review-package.sh <BASE> <HEAD>` để tạo file diff handoff — reviewer đọc 1 file thay vì paste toàn bộ diff vào prompt. Ví dụ: `FILE=$(scripts/review-package.sh origin/main HEAD)`
 
