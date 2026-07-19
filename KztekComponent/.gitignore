@@ -1,0 +1,17 @@
+# Build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# OS
+Thumbs.db
+.DS_Store
+
+# graphify output (auto-generated, không commit — tái sinh bằng `graphify .`)
+graphify-out/
