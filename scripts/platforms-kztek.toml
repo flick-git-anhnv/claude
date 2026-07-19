@@ -1,0 +1,54 @@
+# platforms-kztek.toml — Cấu hình platform cho KZTEK Skill Generator
+# Học từ tools/skillgen/platforms.toml của Graphify-Labs/graphify (MVP đơn giản hóa)
+#
+# Thêm platform mới: thêm [platform.<key>] block bên dưới
+# Sinh lại tất cả: python scripts/skillgen_kztek.py
+# Kiểm tra drift:  python scripts/skillgen_kztek.py --check
+
+# ──────────────────────────────────────────────────────────
+# Platform claude — Source gốc (identity transform)
+# ──────────────────────────────────────────────────────────
+[platform.claude]
+output_dir = ".claude/commands"
+file_ext = ".md"
+frontmatter_format = "claude"
+description = "Claude Code (claude.ai / VSCode Extension)"
+install_note = "Skill đặt trong .claude/commands/, Claude Code tự nhận diện qua frontmatter name+description."
+
+# ──────────────────────────────────────────────────────────
+# Platform cursor — Cursor AI IDE
+# ──────────────────────────────────────────────────────────
+# File sinh ra: .cursor/rules/{name}.mdc
+# Format: MDC với frontmatter YAML (description, alwaysApply)
+# Xem: https://docs.cursor.com/context/rules
+# ──────────────────────────────────────────────────────────
+[platform.cursor]
+output_dir = ".cursor/rules"
+file_ext = ".mdc"
+frontmatter_format = "cursor"
+description = "Cursor AI IDE"
+install_note = "Rule đặt trong .cursor/rules/, Cursor tự áp dụng khi mở project. Cần Cursor >= 0.43."
+
+# ──────────────────────────────────────────────────────────
+# Platform kiro — Kiro AI IDE (Amazon)
+# ──────────────────────────────────────────────────────────
+# File sinh ra: .kiro/steering/{name}.md
+# Format: Markdown với frontmatter (inclusion: manual|always|fileContext)
+# Xem: https://kiro.dev/docs/steering
+# ──────────────────────────────────────────────────────────
+[platform.kiro]
+output_dir = ".kiro/steering"
+file_ext = ".md"
+frontmatter_format = "kiro"
+description = "Kiro AI IDE (Amazon)"
+install_note = "Steering doc đặt trong .kiro/steering/, Kiro đọc khi khởi động project hoặc khi được gọi (inclusion: manual)."
+
+# ──────────────────────────────────────────────────────────
+# THÊM PLATFORM MỚI — template
+# ──────────────────────────────────────────────────────────
+# [platform.gemini]
+# output_dir = ".gemini/skills"
+# file_ext = ".md"
+# frontmatter_format = "none"          # thêm renderer vào _RENDERERS trong skillgen_kztek.py nếu cần format riêng
+# description = "Gemini CLI"
+# install_note = "..."
