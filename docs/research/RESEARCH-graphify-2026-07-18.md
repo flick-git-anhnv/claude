@@ -3,9 +3,10 @@ repo: Graphify-Labs/graphify
 url: https://github.com/Graphify-Labs/graphify
 slug: graphify
 researched: 2026-07-18
+applied: 2026-07-19
 researcher: github-repo-researcher
 branch: research/graphify-2026-07-18
-status: draft — awaiting user selection (Bước 3b hoàn thành)
+status: applied — G1-G5 đã áp dụng (2026-07-19), chờ user xác nhận merge
 ---
 
 # RESEARCH: Graphify-Labs/graphify
@@ -263,13 +264,13 @@ Thư mục `graphify/always_on/` chứa snippet Markdown nhỏ được inject v
 
 ## 8. Trạng thái áp dụng đề xuất
 
-| # | Đề xuất | Trạng thái |
-|---|---------|-----------|
-| G1 | Cài graphify vào KztekComponent | ⬜ Chờ user chọn (Bước 4) |
-| G2 | Git hook auto-refresh | ⬜ Chờ user chọn (Bước 4) |
-| G3 | Thêm `graphify affected` vào Tech Lead checklist | ⬜ Chờ user chọn (Bước 4) |
-| G4 | Confidence labels trong CODE-GRAPH + agent docs | ⬜ Chờ user chọn (Bước 4) |
-| G5 | Skill generator cho multi-platform | ⬜ Chờ user chọn (Bước 4) |
+| # | Đề xuất | Trạng thái | Chi tiết |
+|---|---------|-----------|---------|
+| G1 | Cài graphify vào KztekComponent | ✅ Đã áp dụng | `pip install graphifyy` thành công (v0.9.20). Chạy `graphify .` trong `KztekComponent/` → `graphify-out/graph.json` (511 nodes, 814 edges, 31 communities). Thêm `graphify-out/` vào `KztekComponent/.gitignore`. |
+| G2 | Git hook auto-refresh | ✅ Đã áp dụng | `graphify hook install` cài post-commit hook tại `.git/hooks/post-commit` + post-checkout + merge driver. Hook chạy detached sau mỗi `git commit`. |
+| G3 | Thêm `graphify affected` vào Tech Lead checklist | ✅ Đã áp dụng | Thêm bước checklist vào `.claude/agents/tech-lead.md` — "Nếu PR sửa file C# trong KztekComponent, chạy `graphify affected <file>` và ghi kết quả vào PR comment trước khi approve." |
+| G4 | Confidence labels trong CODE-GRAPH + agent docs | ✅ Đã áp dụng | Thêm quy ước `[EXTRACTED]`/`[INFERRED]` vào `code-graph/CODE-GRAPH.md` (giải thích ở đầu file + cột Confidence trong bảng 31 controls). Xuất lại DOCX. |
+| G5 | Skill generator cho multi-platform | ✅ Đã áp dụng | Tạo `scripts/skillgen_kztek.py` (MVP ~270 dòng) + `scripts/platforms-kztek.toml` (3 platform: claude, cursor, kiro). Test thành công với `verify-pr` skill — sinh `.cursor/rules/verify-pr.mdc` + `.kiro/steering/verify-pr.md`. |
 
 ---
 

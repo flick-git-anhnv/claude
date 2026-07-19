@@ -1,7 +1,7 @@
 ---
 task: graphify-research
 created: 2026-07-18
-updated: 2026-07-18 15:10
+updated: 2026-07-19 09:00
 status: in-progress
 workflow: WF-GITHUB-RESEARCH
 priority: P2
@@ -41,8 +41,8 @@ Nghiên cứu repo GitHub https://github.com/Graphify-Labs/graphify theo workflo
 ### Phase 3: User duyệt & Áp dụng
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
 |---|------|-------|--------|----------|-----------------|---------|
-| 3.1 | USER xác nhận đề xuất nào được áp dụng | User | ⬜ | Danh sách đề xuất được chọn | - | Chờ phản hồi từ user |
-| 3.2 | Áp dụng đề xuất đã chọn vào code/tài liệu KZTEK, commit lên nhánh `research/graphify-2026-07-18` | GitHub Repo Researcher | ⬜ | Commit trên nhánh nghiên cứu | - | Chỉ chạy nếu user chọn ít nhất 1 đề xuất |
+| 3.1 | USER xác nhận đề xuất nào được áp dụng | User | ✅ | Chọn tất cả G1-G5 | 2026-07-19 | User xác nhận áp dụng tất cả 5 đề xuất |
+| 3.2 | Áp dụng đề xuất đã chọn vào code/tài liệu KZTEK, commit lên nhánh `research/graphify-2026-07-18` | GitHub Repo Researcher | ✅ | G1-G5 đã áp dụng, commit trên nhánh | 2026-07-19 | Xem Handoff Log Bước 3.2 |
 
 ### Phase 4: Merge về main
 | # | Bước | Agent | Status | Artifact | Hoàn thành lúc | Ghi chú |
@@ -74,13 +74,29 @@ Nghiên cứu repo GitHub https://github.com/Graphify-Labs/graphify theo workflo
 - Quyết định quan trọng: Gộp Bước 2.1 và 2.2 vào cùng 1 file (§1-§5 là phân tích, §6 là bảng đề xuất) theo đặc tả WF-GITHUB-RESEARCH.
 - Bước sau cần biết: Chờ user chọn đề xuất nào trong G1-G5 tại Bước 3.1. KHÔNG áp dụng bất kỳ đề xuất nào trước khi có xác nhận.
 
+### Bước 3.2 — Áp dụng G1-G5
+- Đã làm: Áp dụng toàn bộ 5 đề xuất G1-G5. Chi tiết:
+  - G1: `pip install graphifyy` (v0.9.20 thành công) → `graphify .` trong KztekComponent/ → 511 nodes, 814 edges. Tạo `KztekComponent/.gitignore` với `graphify-out/`.
+  - G2: `graphify hook install` → `.git/hooks/post-commit` + post-checkout + merge driver. Hook chạy detached background.
+  - G3: Thêm bước checklist `graphify affected` vào `.claude/agents/tech-lead.md` Code Review Checklist.
+  - G4: Thêm quy ước `[EXTRACTED]/[INFERRED]` vào `code-graph/CODE-GRAPH.md` (giải thích đầu file + cột mới trong bảng controls). Xuất lại DOCX.
+  - G5: Tạo `scripts/skillgen_kztek.py` (MVP 3 platform) + `scripts/platforms-kztek.toml`. Test thành công với verify-pr skill → `.cursor/rules/verify-pr.mdc` + `.kiro/steering/verify-pr.md`.
+- File/module đã thay đổi: `KztekComponent/.gitignore`, `KztekComponent/graphify-out/` (auto-generated), `.git/hooks/post-commit`, `.claude/agents/tech-lead.md`, `code-graph/CODE-GRAPH.md`, `code-graph/CODE-GRAPH.docx`, `docs/research/RESEARCH-graphify-2026-07-18.md`, `docs/research/RESEARCH-graphify-2026-07-18.docx`, `scripts/skillgen_kztek.py`, `scripts/platforms-kztek.toml`, `.cursor/rules/verify-pr.mdc`, `.kiro/steering/verify-pr.md`.
+- Quyết định quan trọng: `graphify hook install` cài vào `.git/hooks/` root workspace (không phải subdir riêng của KztekComponent), vì KztekComponent nằm trong cùng git repo. Hook có filter riêng để chỉ chạy khi file trong `KztekComponent/` thay đổi.
+- Bước sau cần biết: Bước 4.1 cần user xác nhận rõ ràng "merge nhánh research/graphify-2026-07-18 về main" — KHÔNG tự suy ra từ lần xác nhận trước.
+
 ## Artifacts dự kiến
 - [x] Nhánh `research/graphify-2026-07-18` (git branch)
-- [x] `docs/research/RESEARCH-graphify-2026-07-18.md` — Báo cáo phân tích repo
+- [x] `docs/research/RESEARCH-graphify-2026-07-18.md` — Báo cáo phân tích repo (cập nhật §8 trạng thái G1-G5)
 - [x] `docs/research/RESEARCH-graphify-2026-07-18.docx` — Xuất DOCX theo brand KZTEK
 - [ ] `docs/research/RESEARCH-graphify-2026-07-18.pdf` — Xuất PDF từ DOCX (thiếu LibreOffice)
 - [x] Bảng đề xuất cải tiến G1-G5 (nhúng trong file RESEARCH §6)
-- [ ] Commit áp dụng đề xuất trên nhánh nghiên cứu (chờ user chọn Bước 3.1)
+- [x] G1: `KztekComponent/graphify-out/graph.json` (511 nodes, 814 edges) + `KztekComponent/.gitignore`
+- [x] G2: `.git/hooks/post-commit` (graphify hook auto-refresh)
+- [x] G3: `.claude/agents/tech-lead.md` (thêm bước checklist graphify affected)
+- [x] G4: `code-graph/CODE-GRAPH.md` + `code-graph/CODE-GRAPH.docx` (confidence labels [EXTRACTED]/[INFERRED])
+- [x] G5: `scripts/skillgen_kztek.py` + `scripts/platforms-kztek.toml` + `.cursor/rules/verify-pr.mdc` + `.kiro/steering/verify-pr.md`
+- [ ] Commit + push lên nhánh (bước tiếp theo)
 
 ## Blockers
 Không có
@@ -98,6 +114,7 @@ Không có
 |------|----------|-------|
 | 2026-07-18 | Plan tạo mới | task-planner |
 | 2026-07-18 15:10 | Hoàn thành Bước 0.1, 1.1, 1.2, 2.1, 2.2 — RESEARCH-graphify-2026-07-18.md + .docx tạo xong, đề xuất G1-G5 sẵn sàng trình user | github-repo-researcher |
+| 2026-07-19 | Hoàn thành Bước 3.1 (user xác nhận G1-G5) + Bước 3.2 (áp dụng G1-G5 thành công). Cập nhật RESEARCH §8, CODE-GRAPH.md, tech-lead.md, tạo skillgen_kztek.py. Chờ Bước 4.1 user xác nhận merge. | github-repo-researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
