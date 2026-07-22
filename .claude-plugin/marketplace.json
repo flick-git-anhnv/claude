@@ -1,5 +1,6 @@
 {
   "name": "kztek-marketplace",
+  "description": "Marketplace noi bo KZTEK - chua plugin kztek-agents (bo agents/skills/hooks dieu phoi da-agent dung chung cho moi project).",
   "owner": {
     "name": "KZTEK",
     "email": "admin@kztek.net",
@@ -9,7 +10,7 @@
     {
       "name": "kztek-agents",
       "description": "Bo agents/skills/hooks dieu phoi da-agent cua KZTEK (CTO, PM, BA, Tech Lead, Senior/Junior Developer, QA, DevOps, Code Migrator, GitHub Repo Researcher...) cung cac skill (verify-pr, security-audit-stride, ship, scope-check...) va hook config-protection.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": {
         "name": "KZTEK",
         "email": "admin@kztek.net"

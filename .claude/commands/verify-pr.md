@@ -1,6 +1,6 @@
 ---
 name: verify-pr
-description: Chạy checklist verification cố định trước khi submit PR để Tech Lead review — build, lint/type-check, test, security note, diff review. Output: VERIFICATION REPORT với mỗi mục PASS/FAIL/SKIP. Gọi trước khi đánh dấu code "sẵn sàng review".
+description: "Chạy checklist verification cố định trước khi submit PR để Tech Lead review — build, lint/type-check, test, security note, diff review. Output: VERIFICATION REPORT với mỗi mục PASS/FAIL/SKIP. Gọi trước khi đánh dấu code \"sẵn sàng review\"."
 ---
 
 # Skill: `/verify-pr` — Pre-PR Verification Checklist

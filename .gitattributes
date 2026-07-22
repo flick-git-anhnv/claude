@@ -1,0 +1,8 @@
+# Cac file plugin (agents/commands/hooks + manifest) BAT BUOC LF - Claude Code
+# YAML frontmatter parser fail voi CRLF ("Unexpected token"), khien agent/skill
+# load voi metadata rong (silent). Xac nhan qua test thuc te 2026-07-22.
+agents/*.md text eol=lf
+commands/*.md text eol=lf
+hooks/*.js text eol=lf
+hooks/*.json text eol=lf
+.claude-plugin/*.json text eol=lf

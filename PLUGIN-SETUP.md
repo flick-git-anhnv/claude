@@ -90,10 +90,15 @@ git submodule update --remote .claude-shared
 
 - [x] `/plugin marketplace add flick-git-anhnv/claude` — OK (qua GUI panel "Manage Plugins", `/plugin` slash command không chạy được trong VSCode extension, chỉ chạy ở terminal CLI thuần)
 - [x] Marketplace add cần source dạng HTTPS (`source: url`), KHÔNG dùng `source: github` mặc định — máy không có SSH key sẽ lỗi `Permission denied (publickey)` dù repo public
-- [ ] `/plugin install kztek-agents@kztek-marketplace` cài thành công, agent list xuất hiện đủ agent — **lần test đầu FAIL vì agents/commands lồng trong `.claude/`, đã sửa (xem "Cấu trúc & lưu ý kỹ thuật"), cần test lại bản `1.0.1`**
+- [x] Cấu trúc plugin: agents/commands/hooks PHẢI ở root (không lồng `.claude/`) — đã sửa, `claude plugin validate` pass
+- [x] **CRLF làm hỏng YAML frontmatter** — file có `\r\n` khiến parser fail ngầm (metadata rỗng). Đã thêm `.gitattributes` ép LF cho `agents/*.md`, `commands/*.md`, `hooks/*.js`, `hooks/*.json`, `.claude-plugin/*.json`
+- [x] **Colon (`:`) trong giá trị `description` phá YAML** (vd: "Do NOT call for: ...", "Output: ...") — YAML hiểu nhầm thành mapping mới → lỗi "mapping values are not allowed here". Đã tìm thấy + sửa 2 file (`agents/cto.md`, `commands/verify-pr.md`) bằng cách bọc description trong `"..."`. **Khi thêm/sửa agent hoặc skill mới, PHẢI kiểm tra: nếu description có dấu `:` theo sau bởi khoảng trắng, bắt buộc bọc value trong dấu ngoặc kép.**
+- [ ] `/plugin install kztek-agents@kztek-marketplace` cài thành công, agent list xuất hiện đủ agent — cần test lại bản `1.0.2`
 - [ ] Skill gọi được đúng — kiểm tra có bị namespace hóa thành `/kztek-agents:ship`, `/kztek-agents:verify-pr` thay vì `/ship`, `/verify-pr` không
 - [ ] Hook `config-protection.js` vẫn chạy khi Edit/Write vào file bảo vệ (đã thêm `hooks/hooks.json` khai báo PreToolUse — CHƯA test thực tế)
 - [ ] Submodule + symlink CLAUDE.md hoạt động đúng, nội dung khớp
 - [ ] Sửa nội dung ở repo gốc → bump version + `/plugin marketplace update` (hoặc nút refresh trong panel) → project đích nhận bản mới
+
+**Trước khi push, LUÔN chạy `claude plugin validate .claude-plugin/plugin.json` cục bộ** — bắt được cả lỗi cấu trúc lẫn lỗi YAML frontmatter mà không cần chờ user test trên máy khác.
 
 *Cập nhật checklist này sau khi test thực tế — phần nào fail cần ghi rõ lỗi để fix ở lần commit sau.*

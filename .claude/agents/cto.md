@@ -1,6 +1,6 @@
 ---
 name: cto
-description: Use this agent for architecture approval, strategic technology decisions (stack selection, vendor decisions, 1-3yr roadmap), SEV1/SEV2 production incidents, or critical release sign-off. CTO (L1). Do NOT call for: daily tasks, routine code review, feature work not touching core architecture/security/strategy.
+description: "Use this agent for architecture approval, strategic technology decisions (stack selection, vendor decisions, 1-3yr roadmap), SEV1/SEV2 production incidents, or critical release sign-off. CTO (L1). Do NOT call for: daily tasks, routine code review, feature work not touching core architecture/security/strategy."
 model: claude-opus-4-7
 tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash
 color: red
