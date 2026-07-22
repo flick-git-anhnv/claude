@@ -15,8 +15,8 @@
         "email": "admin@kztek.net"
       },
       "source": {
-        "source": "github",
-        "repo": "flick-git-anhnv/claude",
+        "source": "url",
+        "url": "https://github.com/flick-git-anhnv/claude.git",
         "ref": "main"
       }
     }
