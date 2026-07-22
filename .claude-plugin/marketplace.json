@@ -9,7 +9,7 @@
     {
       "name": "kztek-agents",
       "description": "Bo agents/skills/hooks dieu phoi da-agent cua KZTEK (CTO, PM, BA, Tech Lead, Senior/Junior Developer, QA, DevOps, Code Migrator, GitHub Repo Researcher...) cung cac skill (verify-pr, security-audit-stride, ship, scope-check...) va hook config-protection.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "KZTEK",
         "email": "admin@kztek.net"

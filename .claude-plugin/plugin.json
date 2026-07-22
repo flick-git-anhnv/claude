@@ -1,7 +1,7 @@
 {
   "name": "kztek-agents",
   "description": "Bo agents/skills/hooks dieu phoi da-agent cua KZTEK dung chung cho moi project (Dispatcher, CTO, PM, BA, Tech Lead, Senior/Junior Developer, QA Lead/Engineer, DevOps Lead/Engineer, UI/UX Designer, Code Migrator, GitHub Repo Researcher, Documentation Writer, UX/UI Reviewer, Project Manager).",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "KZTEK",
     "email": "admin@kztek.net",
