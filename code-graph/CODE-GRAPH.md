@@ -32,7 +32,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 │   ├── commands/                ← Skills/commands (/ship, /verify-pr, scope-check, ...)
 │   ├── evals/                   ← Eval files theo EDD (task-planner, senior-developer, qa-engineer)
 │   ├── hooks/                   ← Hook bảo vệ config (config-protection.js)
-│   ├── plans/                   ← Plan files (.claude/plans/PLAN-*.md) — runtime, không commit
+│   ├── plans/                   ← Plan files (docs/plans/PLAN-*.md) — runtime, không commit
 │   ├── shared/                  ← CORE.md (context chung), GOTCHAS.md
 │   └── templates/               ← PLAN-template.md, EVAL-template.md, CODE-GRAPH-template.md
 ├── KztekComponent/              ← Thư viện C# WinForms components (xem chi tiết bên dưới)
@@ -183,4 +183,4 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 - **Không có codebase sản phẩm:** `src/`, `tests/` không tồn tại trong workspace này. Tất cả code sản phẩm nằm trong project riêng được quản lý bởi workspace này.
 - **KztekComponent là shared library thật:** Các controls trong `KztekComponent/Controls/` là C# WinForms components thực tế, dùng chung cho tất cả project C# KZTEK. Mọi coding agent PHẢI tra cứu trước khi tự viết control mới.
 - **PDF export là optional trong sandbox:** Môi trường cloud không có LibreOffice — chỉ xuất DOCX; PDF có thể xuất ở môi trường local với `docx2pdf` hoặc LibreOffice.
-- **Plan files không commit:** `.claude/plans/PLAN-*.md` là scratchpad runtime — đã thêm vào `.gitignore` (hoặc cần thêm nếu chưa có).
+- **Plan files không commit:** `docs/plans/PLAN-*.md` là scratchpad runtime — đã thêm vào `.gitignore` (hoặc cần thêm nếu chưa có).

@@ -62,14 +62,14 @@ Chi tiết từng workflow: `CLAUDE.md` §4
 ## 4. Quy trình bắt buộc mỗi task
 
 ```
-Pre-0 → Glob .claude/plans/PLAN-*.md
-       ├── Có plan → đọc, tiếp tục từ bước ⬜/🔄
+Pre-0 → Glob docs/plans/PLAN-*.md (cũ) VÀ docs/plans/PLAN-*/PLAN-MASTER.md (mới)
+       ├── Có plan → đọc MASTER (hoặc file cũ), tiếp tục từ bước ⬜/🔄
        └── Chưa có → gọi task-planner → xin xác nhận user → chờ OK
 
 Bước 0 → Dispatcher hiển thị phân tích (xem format §5)
 Bước N → Mỗi bước ⬜/🔄 trong plan chạy TÁCH biệt session chính (xem §16.5 CLAUDE.md):
          LOCAL → Agent tool (subagent) | WEB → RemoteTrigger
-         → agent/trigger tự commit+push+cập nhật plan, trả tóm tắt ngắn về session chính
+         → agent/trigger tự commit+push+cập nhật step file (chi tiết) + PLAN-MASTER.md (1 dòng status), trả tóm tắt ngắn về session chính
 Cuối   → Dispatcher tổng kết + phân tích tái sử dụng (§18 CLAUDE.md)
 ```
 
@@ -122,8 +122,9 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 | R7 | Mọi quyết định phải có log: ai quyết, vì sao, khi nào |
 | R8 | Thay đổi tính năng → cập nhật tài liệu tương ứng trong cùng session (xem §15 CLAUDE.md) |
 | R9 | Project C# không chỉ định rõ → **WinForms** + tối đa component `KztekComponent`. Project C# Avalonia → tối đa component `KztekComponentAvalonia`. Chi tiết §20 CLAUDE.md |
-| R10 | Mỗi bước trong plan PHẢI chạy session riêng (LOCAL: Agent subagent \| WEB: RemoteTrigger), tự commit+push+cập nhật plan, không dồn hết vào session chính. Chi tiết §16.5 CLAUDE.md |
-| R11 | Mỗi bước xong PHẢI ghi "Handoff Log" vào plan file; bước sau PHẢI được nhúng Handoff Log vào prompt — KHÔNG tự đọc lại/suy luận lại điều bước trước đã xác định. Chi tiết §16.5 Bước 4 CLAUDE.md |
+| R10 | Mỗi bước trong plan PHẢI chạy session riêng (LOCAL: Agent subagent \| WEB: RemoteTrigger), tự commit+push+cập nhật step file + PLAN-MASTER.md, không dồn hết vào session chính. Chi tiết §16.5 CLAUDE.md |
+| R11 | Mỗi bước xong PHẢI ghi "Handoff Log" vào CHÍNH step file của bước đó (không phải MASTER); bước sau PHẢI được nhúng Handoff Log của bước liền trước vào prompt — KHÔNG tự đọc lại/suy luận lại điều bước trước đã xác định. Chi tiết §16.2 + §16.5 Bước 4 CLAUDE.md |
+| R12 | Plan MỚI dùng cấu trúc folder `PLAN-[slug]-[date]/PLAN-MASTER.md` + `steps/STEP-*.md` (§16.2 CLAUDE.md). Plan cũ (1 file) đang dở → giữ nguyên định dạng cũ đến khi xong, KHÔNG ép migrate giữa chừng. |
 
 ---
 

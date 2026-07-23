@@ -14,7 +14,7 @@ status: active
 
 ## 1. Mô tả năng lực (Capability Statement)
 
-`task-planner` quản lý vòng đời plan file (`.claude/plans/PLAN-*.md`): tạo plan mới cho task chưa có plan, đọc và tiếp tục đúng từ plan đang dở, và chặn (BLOCK) khi thiếu thông tin bắt buộc từ user trước khi bắt đầu bất kỳ workflow nào. Agent KHÔNG tự thực hiện task — chỉ quản lý kế hoạch và phân công.
+`task-planner` quản lý vòng đời plan file (`docs/plans/PLAN-*.md`): tạo plan mới cho task chưa có plan, đọc và tiếp tục đúng từ plan đang dở, và chặn (BLOCK) khi thiếu thông tin bắt buộc từ user trước khi bắt đầu bất kỳ workflow nào. Agent KHÔNG tự thực hiện task — chỉ quản lý kế hoạch và phân công.
 
 ---
 
@@ -25,14 +25,14 @@ status: active
 **Input:**
 ```
 User: "Tôi muốn thêm tính năng đăng nhập SSO cho hệ thống KZTEK Access Control. Workflow: WF-FEATURE."
-Context: Glob ".claude/plans/PLAN-*.md" trả về empty (không có plan liên quan).
+Context: Glob "docs/plans/PLAN-*.md" trả về empty (không có plan liên quan).
 ```
 
 **Output mong đợi:**
-- [ ] Agent chạy `Glob ".claude/plans/PLAN-*.md"` để kiểm tra plan cũ trước
+- [ ] Agent chạy `Glob "docs/plans/PLAN-*.md"` để kiểm tra plan cũ trước
 - [ ] Agent hiển thị block xác nhận đúng format (`╔══...║  📋 TASK PLANNER — Đề xuất kế hoạch`) với nội dung plan hoàn chỉnh (slug, phases, agent chain theo WF-FEATURE)
 - [ ] File plan CHƯA được `Write` cho đến khi user gõ "yes/ok"
-- [ ] Tên file tuân theo convention: `.claude/plans/PLAN-sso-login-YYYY-MM-DD.md` (hoặc slug tương đương)
+- [ ] Tên file tuân theo convention: `docs/plans/PLAN-sso-login-YYYY-MM-DD.md` (hoặc slug tương đương)
 - [ ] Plan chứa đủ các phases: PM → BA → UX → EM → TL → SD/JD → TL review → QA → DevOps
 - [ ] Agent hỏi user xác nhận trước khi lưu file
 
@@ -45,7 +45,7 @@ Context: Glob ".claude/plans/PLAN-*.md" trả về empty (không có plan liên 
 **Input:**
 ```
 User: "Tiếp tục task SSO login."
-Context: File `.claude/plans/PLAN-sso-login-2026-07-12.md` tồn tại, có nội dung:
+Context: File `docs/plans/PLAN-sso-login-2026-07-12.md` tồn tại, có nội dung:
   - Bước 1 (PM): ✅ Done, artifact: docs/prd/PRD-sso-login.md
   - Bước 2 (BA): ✅ Done, artifact: docs/user-stories/US-sso-001.md
   - Bước 3 (UX): 🔄 In Progress

@@ -91,7 +91,7 @@ Mapping category theo cặp migration:
 - [ ] **Đọc source gốc & lập bảng inventory chi tiết đủ Cấp 0–2 (§2A) — BẮT BUỘC trước khi viết bất kỳ dòng code đích nào.** Không đoán hành vi, không chọn mẫu — số dòng inventory phải khớp số file/control/event thực đếm được (Cấp 0).
 - [ ] Đo độ phức tạp + phụ thuộc → xếp thứ tự migrate (dễ trước, critical-path/foundation trước).
 - [ ] WebSearch/WebFetch idiom + breaking changes của stack đích nếu chưa nắm chắc.
-- [ ] Tạo plan file chi tiết `.claude/plans/PLAN-[migration-slug]-[YYYY-MM-DD].md` — **mỗi tính năng = 1 dòng task** (xem §16, §20 CLAUDE.md — chia session nếu ≥6 bước).
+- [ ] Tạo plan file chi tiết `docs/plans/PLAN-[migration-slug]-[YYYY-MM-DD].md` — **mỗi tính năng = 1 dòng task** (xem §16, §20 CLAUDE.md — chia session nếu ≥6 bước).
 - [ ] **Trước khi trình plan, hiển thị rõ giả định đang đặt ra** (format dưới) để user sửa ngay nếu sai, thay vì âm thầm giả định rồi migrate sai hướng:
   ```
   ASSUMPTIONS I'M MAKING:
@@ -362,7 +362,7 @@ Hiển thị BLOCK khi:
 
 ## 5b. Progress Ledger (bổ sung — học từ obra/superpowers)
 
-> **Mục đích:** Plan file (`.claude/plans/PLAN-*.md`) là nguồn sự thật chính thức nhưng có nhiều field cần edit. Progress ledger là file nhẹ hơn, chỉ append — phục hồi nhanh khi session bị compact/restart mà không cần đọc lại toàn bộ plan.
+> **Mục đích:** Plan file (`docs/plans/PLAN-*.md`) là nguồn sự thật chính thức nhưng có nhiều field cần edit. Progress ledger là file nhẹ hơn, chỉ append — phục hồi nhanh khi session bị compact/restart mà không cần đọc lại toàn bộ plan.
 
 **Quy tắc:** Sau mỗi giai đoạn (G1–G7) hoàn thành, append 1 dòng vào `_workspace/progress.md`:
 
@@ -391,7 +391,7 @@ Hiển thị BLOCK khi:
 ## 7. Artifact bắt buộc
 
 Agent KHÔNG được đánh dấu hoàn thành nếu thiếu:
-- `.claude/plans/PLAN-[migration-slug]-[YYYY-MM-DD].md` — plan + Session Handoff (multi-session).
+- `docs/plans/PLAN-[migration-slug]-[YYYY-MM-DD].md` — plan + Session Handoff (multi-session).
 - `docs/architecture/[migration-slug]/ADR-*.md` — chiến lược migration + **bảng inventory chi tiết** (§2A, đủ Cấp 0–2, có số đếm N file nguồn / M control-timer-event khớp số dòng inventory) + **3 bảng mapping** (§2 G2) + **kết quả re-check dependency cuối (G6)**.
 - Plan đã được **user xác nhận** trước khi thực thi (§2B), mỗi tính năng 1 task, có nhóm song song.
 - Source đích đã migrate (build sạch) trong **folder/project MỚI** (§1A) — project cũ giữ nguyên, không bị sửa.

@@ -113,8 +113,8 @@ CTO  (L1 - Executive)
 
 Trước khi hiển thị Dispatcher phân tích, PHẢI:
 
-1. **Glob** `.claude/plans/PLAN-*.md` → tìm plan liên quan đến task hiện tại (so sánh bằng tên task / slug).
-2. **Nếu có plan phù hợp** → đọc file plan, hiển thị tiến độ, tiếp tục từ bước chưa làm (🔄 hoặc ⬜).
+1. **Glob** `docs/plans/PLAN-*.md` (plan cũ, 1 file) VÀ `docs/plans/PLAN-*/PLAN-MASTER.md` (plan mới, cấu trúc folder) → tìm plan liên quan đến task hiện tại (so sánh bằng tên task / slug).
+2. **Nếu có plan phù hợp** → đọc file plan (hoặc PLAN-MASTER.md), hiển thị tiến độ, tiếp tục từ bước chưa làm (🔄 hoặc ⬜).
 3. **Nếu chưa có plan** → gọi `task-planner` agent để tạo plan mới và xin xác nhận user.
 4. **CHỈ tiến hành Bước 0 (Dispatcher) SAU KHI:**
    - Có plan đã được user xác nhận (task mới), HOẶC
@@ -798,7 +798,7 @@ tests/                      ← Senior Developer + Junior Developer + QA Enginee
 | WF-DEVOPS | DevOps Engineer | `docs/devops/INFRA-*.md` |
 | WF-DOCS | Documentation Writer | `docs/user-manuals/MANUAL-*.md` + `*.docx` + `*.pdf` + `screenshots/` |
 | WF-CONVERT | Documentation Writer | `[name].docx` + `[name].pdf` (cùng thư mục hoặc `exports/`) |
-| WF-MIGRATE | Code Migrator | `.claude/plans/PLAN-[migration-slug]-*.md`, `docs/architecture/[migration-slug]/ADR-*.md` (inventory + mapping) |
+| WF-MIGRATE | Code Migrator | `docs/plans/PLAN-[migration-slug]-*/PLAN-MASTER.md` + `steps/`, `docs/architecture/[migration-slug]/ADR-*.md` (inventory + mapping) |
 | WF-GITHUB-RESEARCH | GitHub Repo Researcher | `docs/research/RESEARCH-[repo-slug]-*.md` + `*.docx` + `*.pdf`, nhánh `research/[repo-slug]-*` |
 | (điều kiện) UXR trong WF-FEATURE/BUGFIX/HOTFIX/FASTTRACK/REFACTOR | UX/UI Reviewer | `docs/ux-review/UX-REVIEW-*.md` + `*.docx` + `*.pdf` + `screenshots/` |
 
@@ -1018,21 +1018,33 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 
 ## 16. BẮT BUỘC: Quản lý Plan File (Tiến độ task)
 
-> **Quy tắc cứng:** Mọi task mới PHẢI có plan file được user xác nhận trước khi thực hiện. Khi tiếp tục task, PHẢI đọc plan cũ và tiếp tục từ bước chưa làm. KHÔNG được bắt đầu workflow khi chưa có plan.
+> **Quy tắc cứng:** Mọi task mới PHẢI có plan (MASTER + step files) được user xác nhận trước khi thực hiện. Khi tiếp tục task, PHẢI đọc MASTER cũ và tiếp tục từ bước chưa làm. KHÔNG được bắt đầu workflow khi chưa có plan.
+
+> **Plan file cũ (1 file `.md` duy nhất, tạo trước khi §16 v2 áp dụng):** KHÔNG bắt buộc migrate sang cấu trúc folder mới — tiếp tục dùng đúng định dạng cũ (`PLAN-template.md`) cho đến khi task đó hoàn thành. Cấu trúc MASTER + step file dưới đây CHỈ áp dụng cho plan tạo MỚI.
 
 ### 16.1 Nguyên tắc hoạt động
 
 | Tình huống | Hành động bắt buộc |
 |---|---|
-| Task mới, chưa có plan | Tạo plan → xin xác nhận user → CHỈ bắt đầu sau khi được OK |
-| Task đang dở, có plan | Đọc plan → hiển thị tiến độ → tiếp tục từ bước chưa làm |
-| Sau mỗi bước hoàn thành | Cập nhật plan ngay (⬜ → ✅, ghi artifact, cập nhật updated:) |
+| Task mới, chưa có plan | Tạo folder plan (MASTER + step files) → xin xác nhận user → CHỈ bắt đầu sau khi được OK |
+| Task đang dở, có plan | Đọc MASTER → hiển thị tiến độ → tiếp tục từ bước chưa làm (đọc thêm step file nếu cần chi tiết) |
+| Sau mỗi bước hoàn thành | Cập nhật CẢ HAI: step file (chi tiết đầy đủ) + đúng 1 dòng status trong MASTER (⬜ → ✅, link step file, thời gian hoàn thành) |
 
-### 16.2 Naming convention
+### 16.2 Cấu trúc thư mục & naming convention
+
+> **Lý do (P6):** 1 file plan gộp chung tiến độ + chi tiết + Handoff Log của mọi bước ngày càng phình to theo số bước, khiến agent bước sau phải đọc toàn bộ lịch sử không liên quan. Tách MASTER (tổng quan, nhẹ) khỏi step file (chi tiết, riêng từng bước) giữ mỗi file gọn và chỉ nạp đúng phần cần thiết.
 
 ```
-.claude/plans/PLAN-[task-slug]-[YYYY-MM-DD].md
+docs/plans/PLAN-[task-slug]-[YYYY-MM-DD]/
+├── PLAN-MASTER.md              ← tổng quan: mô tả, bảng phases/steps (status + link), blockers, lịch sử cập nhật
+└── steps/
+    ├── STEP-1.1-[ten].md       ← chi tiết bước 1.1: nhiệm vụ, Đã làm, artifact, Handoff Log riêng
+    ├── STEP-1.2-[ten].md
+    └── STEP-N.M-[ten].md
 ```
+
+- MASTER KHÔNG chứa chi tiết từng bước — chỉ 1 dòng trạng thái + link tới step file tương ứng.
+- Mỗi step file độc lập, tự chứa đủ context Handoff Log của riêng bước đó.
 
 ### 16.3 Status icons bắt buộc
 
@@ -1044,15 +1056,15 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 | 🛑 | Blocked — bị chặn, cần giải quyết trước |
 | ⏭️ | Skipped — bỏ qua có lý do ghi rõ |
 
-### 16.4 Cách Dispatcher cập nhật plan sau mỗi bước
+### 16.4 Cách cập nhật plan sau mỗi bước
 
-Sau khi mỗi agent hoàn thành, Dispatcher PHẢI dùng `Edit` để cập nhật file plan:
-1. Đổi trạng thái bước vừa xong: `⬜` → `✅`
-2. Điền tên artifact vào cột Artifact
-3. Cập nhật trường `updated:` trong frontmatter
-4. Thêm dòng vào bảng "Lịch sử cập nhật"
+Sau khi 1 bước hoàn thành, PHẢI `Edit` cả 2 file theo đúng thứ tự:
+1. **Step file trước:** điền "Đã làm", artifact, quyết định quan trọng, Handoff Log, commit hash, đổi `status:` trong frontmatter → `done`, điền `completed_at`.
+2. **MASTER sau:** đổi đúng 1 dòng status trong bảng Phases & Steps (`⬜`/`🔄` → `✅`), điền cột "Hoàn thành lúc", cập nhật `updated:` ở frontmatter MASTER, thêm 1 dòng vào "Lịch sử cập nhật".
 
-**Template plan file:** xem `.claude/templates/PLAN-template.md`
+KHÔNG chép lại nội dung chi tiết của step file vào MASTER — MASTER chỉ link tới.
+
+**Template:** `.claude/templates/PLAN-MASTER-template.md` + `.claude/templates/PLAN-STEP-template.md`
 **Agent quản lý plan:** `task-planner`
 
 ---
@@ -1073,17 +1085,18 @@ Nếu không chắc chắn → hỏi user xác nhận môi trường trước kh
 #### Bước 2a — Cơ chế LOCAL (dùng `Agent` tool)
 
 Với mỗi bước ⬜/🔄 kế tiếp trong plan:
-1. Gọi `Agent` với `subagent_type` đúng vai trò phụ trách bước đó (VD: `senior-developer`, `junior-developer`, `qa-engineer`...). Prompt PHẢI tự chứa đủ context: mô tả bước, đường dẫn plan file, artifact mong đợi — vì subagent không thấy lịch sử session chính.
+1. Gọi `Agent` với `subagent_type` đúng vai trò phụ trách bước đó (VD: `senior-developer`, `junior-developer`, `qa-engineer`...). Prompt PHẢI tự chứa đủ context: mô tả bước, đường dẫn PLAN-MASTER.md, đường dẫn step file (`steps/STEP-N.M-*.md`) cần điền, artifact mong đợi, và nguyên văn Handoff Log của bước liền trước (nếu có) — vì subagent không thấy lịch sử session chính.
 2. Subagent thực hiện xong bước PHẢI tự:
    a. `git add` + `git commit` — message chi tiết theo format ở Bước 3 dưới.
    b. `git push` lên remote/nhánh hiện tại (nếu remote đã cấu hình và user đã cho phép push trong phạm vi task).
-   c. `Edit` plan file: đổi status bước đó ⬜/🔄 → ✅, điền artifact, điền **thời gian hoàn thành thực tế** (`YYYY-MM-DD HH:mm`, lấy từ lệnh hệ thống — KHÔNG tự đoán).
+   c. `Edit` step file (`steps/STEP-N.M-*.md`): điền "Đã làm", artifact, quyết định quan trọng, Handoff Log, commit hash, `status: done`, **thời gian hoàn thành thực tế** (`YYYY-MM-DD HH:mm`, lấy từ lệnh hệ thống — KHÔNG tự đoán) vào `completed_at`.
+   d. `Edit` PLAN-MASTER.md: đổi đúng 1 dòng status bước đó ⬜/🔄 → ✅, điền cột "Hoàn thành lúc".
 3. Subagent trả về **tóm tắt ngắn** (≤ 5 dòng: đã làm gì, artifact nào, đã commit/push chưa) — KHÔNG trả nguyên log/tool-call chi tiết về session chính.
 4. Session chính chỉ hiển thị tóm tắt đó theo format §5 CORE.md, không giữ lại toàn bộ quá trình subagent đã chạy.
 
 #### Bước 2b — Cơ chế WEB (dùng `RemoteTrigger`)
 
-Tương tự Bước 2a với 2 điều chỉnh: **(1)** Dùng `RemoteTrigger` action `create` (bước đầu) hoặc `run` (các lần sau) thay `Agent` tool — trigger chạy như session Web độc lập (xuất hiện ở tab "Web"/"Routines"). Body chứa prompt tương đương yêu cầu tự commit + push + cập nhật plan như mục LOCAL. **(2)** Sau khi trigger xong, `task-planner` PHẢI `Read` lại plan file để xác nhận bước đã ✅ trước khi tiếp tục — trigger không trả kết quả trực tiếp, KHÔNG tự đoán trạng thái.
+Tương tự Bước 2a với 2 điều chỉnh: **(1)** Dùng `RemoteTrigger` action `create` (bước đầu) hoặc `run` (các lần sau) thay `Agent` tool — trigger chạy như session Web độc lập (xuất hiện ở tab "Web"/"Routines"). Body chứa prompt tương đương yêu cầu tự commit + push + cập nhật step file + MASTER như mục LOCAL. **(2)** Sau khi trigger xong, `task-planner` PHẢI `Read` lại PLAN-MASTER.md (và step file nếu cần chi tiết) để xác nhận bước đã ✅ trước khi tiếp tục — trigger không trả kết quả trực tiếp, KHÔNG tự đoán trạng thái.
 
 #### Bước 3 — Format commit message bắt buộc (áp dụng cả 2 môi trường)
 
@@ -1093,21 +1106,20 @@ Tương tự Bước 2a với 2 điều chỉnh: **(1)** Dùng `RemoteTrigger` a
 - <chi tiết thay đổi 1>
 - <chi tiết thay đổi 2>
 
-Plan: .claude/plans/PLAN-[slug]-[date].md
+Plan: docs/plans/PLAN-[slug]-[date]/steps/STEP-N.M-[ten].md
 ```
 
 #### Bước 4 — BẮT BUỘC: Handoff Log (tránh bước sau phải đọc lại / nghiên cứu lại)
 
-1. Ngay sau khi hoàn thành bước (cùng lúc với Bước 2a.c / 2b tương ứng), agent/trigger PHẢI `Edit` thêm 1 entry vào mục **"## Handoff Log"** của plan file (xem cấu trúc ở `PLAN-template.md`), theo format:
+1. Ngay sau khi hoàn thành bước (cùng lúc với Bước 2a.c / 2b tương ứng), agent/trigger PHẢI điền mục **"## Handoff Log — bước sau cần biết"** trong CHÍNH step file của bước đó (`steps/STEP-N.M-*.md`, xem cấu trúc ở `PLAN-STEP-template.md`), theo format:
    ```
-   ### Bước N.M — [tên bước ngắn]
    - Đã làm: [tóm tắt 2-3 câu, KHÔNG chép lại toàn bộ log]
    - File/module đã đọc hoặc đổi: [đường dẫn cụ thể]
    - Quyết định quan trọng: [nếu có — vd: chọn cách A vì lý do X]
    - Bước sau cần biết: [cảnh báo / gotcha / điều KHÔNG cần làm lại — nếu có, ghi rõ; nếu không có → "Không có"]
    ```
-2. Trước khi giao bước kế tiếp cho subagent/trigger mới, `task-planner`/Dispatcher PHẢI `Read` toàn bộ mục "Handoff Log" hiện có trong plan file, và **nhúng nguyên văn nội dung đó vào đầu prompt** của bước kế tiếp — coi như "bối cảnh đã biết", không để agent mới tự đọc lại toàn bộ codebase để suy ra lại những gì bước trước đã xác định.
-3. Agent bước sau CHỈ đọc thêm file/code ngoài phạm vi Handoff Log đã cung cấp — không đọc lại phần đã được tóm tắt rõ.
+2. Trước khi giao bước kế tiếp cho subagent/trigger mới, `task-planner`/Dispatcher PHẢI `Read` mục "Handoff Log" trong step file của bước LIỀN TRƯỚC (không cần đọc toàn bộ các step file cũ hơn), và **nhúng nguyên văn nội dung đó vào đầu prompt** của bước kế tiếp — coi như "bối cảnh đã biết", không để agent mới tự đọc lại toàn bộ codebase để suy ra lại những gì bước trước đã xác định.
+3. Agent bước sau CHỈ đọc thêm file/code ngoài phạm vi Handoff Log đã cung cấp — không đọc lại phần đã được tóm tắt rõ. Nếu nghi ngờ cần bối cảnh từ bước xa hơn (không phải bước liền trước) → agent tự `Read` thêm đúng step file đó, không đọc toàn bộ `steps/`.
 
 #### Ngoại lệ — KHÔNG áp dụng session isolation khi:
 - Plan chỉ có 1 bước duy nhất (không đáng tách session).
@@ -1403,6 +1415,21 @@ Agent PHẢI thêm vào phần artifact output:
 - User chỉ định rõ framework/UI stack khác (WPF, MAUI, Blazor, Console app, class library không UI, ...) → theo đúng yêu cầu đó.
 - Migrate sang stack khác (WF-MIGRATE) → theo mapping do Code Migrator lập, không bắt buộc dùng lại đúng `KztekComponent`/`KztekComponentAvalonia` nếu stack đích không phải WinForms/Avalonia.
 
+### 20.4 BẮT BUỘC: Tách UI thành từng item/UserControl riêng — KHÔNG viết gộp
+> **Nguồn gốc:** Rule phát sinh từ thực tế `LaneSettingsWindow.axaml`/`.axaml.cs` phình to (gộp cả 7 tab cấu hình lane vào 1 file duy nhất qua nhiều phase phát triển) — khó review, khó maintain, dễ xung đột khi nhiều agent/dev sửa song song.
+**Quy tắc cứng:** Khi thiết kế màn hình có nhiều đơn vị lặp lại về mặt cấu trúc (tab, step, card, section, dòng danh sách, panel cấu hình con...), PHẢI tách MỖI đơn vị đó thành 1 UserControl/View riêng — KHÔNG được viết gộp toàn bộ nội dung trực tiếp vào 1 file View cha, kể cả khi mỗi đơn vị chỉ vài chục dòng.
+| Tình huống | Bắt buộc |
+|---|---|
+| Cửa sổ có N tab (TabControl) | Mỗi `TabItem` → 1 UserControl riêng (`XxxTabView.axaml`/`.axaml.cs`), View cha chỉ còn `TabControl` host + khai báo N `<TabItem><views:XxxTabView/></TabItem>` |
+| Danh sách item lặp lại có logic riêng (step, dòng cấu hình, card) | Mỗi loại item → 1 UserControl/DataTemplate tách file riêng (không viết `DataTemplate` khổng lồ inline trong View cha nếu nội dung > ~30-40 dòng hoặc có code-behind riêng) |
+| Panel cấu hình con có thể bật/tắt độc lập (Expander, section có thể collapse) | Tách UserControl riêng, View cha chỉ compose lại |
+**Nguyên tắc áp dụng:**
+1. **Ngay từ đầu khi thiết kế mới** — Tech Lead/Senior Developer PHẢI đánh giá "nội dung này có tách được thành item riêng không?" TRƯỚC khi viết code, không đợi file phình to rồi mới refactor.
+2. **DataContext dùng chung** — các UserControl con dùng chung ViewModel của View cha qua binding kế thừa `DataContext` (không tạo ViewModel riêng cho mỗi UserControl con trừ khi thực sự cần state độc lập) — tránh vỡ binding hiện có.
+3. **Đặt tên nhất quán:** `{TênNộiDung}TabView`/`{TênNộiDung}ItemView`/`{TênNộiDung}Card` theo đúng vai trò, đặt trong thư mục con cùng cấp (VD: `Views/LaneSettingsTabs/`, `Views/Blocks/`).
+4. **Review checklist bắt buộc:** Tech Lead/Senior Developer review PR có thêm UI mới PHẢI kiểm tra mục "Đã tách item/tab thành UserControl riêng chưa, hay đang viết gộp?" — REQUEST-CHANGES nếu phát hiện gộp không cần thiết.
+5. **Refactor code cũ đã gộp:** Khi chạm vào 1 file View đã gộp nhiều đơn vị (do lịch sử phát triển trước khi rule này có hiệu lực), nếu task hiện tại có sửa đổi đáng kể trong đó → tách ra theo rule này trong cùng lần sửa (không để nợ kỹ thuật tích lũy thêm); nếu chỉ sửa nhỏ không liên quan → có thể hoãn tách sang task refactor riêng, nhưng PHẢI ghi chú lại việc này chưa tách.
+**Ngoại lệ:** Nội dung thực sự chỉ có 1 instance duy nhất, không lặp lại, không có khả năng tái sử dụng, và ngắn (< 30 dòng) — có thể giữ inline nếu tách ra sẽ tạo thêm file không cần thiết chỉ vì rule, không phải vì lợi ích thực sự.
 ---
 
 ## 21. Changelog — Lịch sử thay đổi hệ thống agent

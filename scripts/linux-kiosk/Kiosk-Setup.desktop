@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Kiosk Setup iPGS
+Comment=Tool GUI setup ẩn top bar + cấu hình kiosk iPGS
+# LƯU Ý: sửa lại đường dẫn tuyệt đối bên dưới cho đúng vị trí thực tế của
+# thư mục scripts/linux-kiosk/ trên máy kiosk này (VD: /opt/kztek/scripts/linux-kiosk).
+Exec=bash /opt/kztek/scripts/linux-kiosk/kiosk-setup-gui.sh
+Icon=preferences-system
+Terminal=false
+Categories=System;
