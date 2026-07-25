@@ -69,7 +69,8 @@ ORANGE_HEX    = "F05922"
 WHITE_HEX     = "FFFFFF"
 GRAY_HEX      = "CBCBCB"
 
-# Logo — tìm theo thứ tự ưu tiên
+# Logo — tìm theo thứ tự ưu tiên, TƯƠNG ĐỐI theo thư mục hiện hành (CWD).
+# Chỉ tìm thấy khi chạy script từ chính repo config KZTEK.
 LOGO_CANDIDATES = [
     "Kztek_Logo.png",
     "Kztek_Logo.jpg",
@@ -77,13 +78,32 @@ LOGO_CANDIDATES = [
     ".claude/commands/Kztek_Logo.png",
 ]
 
+# Repo gốc chứa script này. `.resolve()` đi xuyên junction/symlink nên khi script
+# được gọi qua ~/.claude/scripts (junction) vẫn ra đúng đường dẫn thật trong repo.
+_SCRIPT_ROOT = Path(__file__).resolve().parent.parent
+
+# Ứng viên tuyệt đối theo vị trí script — cần thiết khi chạy từ project khác
+# (user-level scope), lúc đó CWD không phải repo config nên các path tương đối
+# ở trên đều không tồn tại và tài liệu sẽ mất logo mà không báo lỗi.
+LOGO_CANDIDATES_ABS = [
+    _SCRIPT_ROOT / "Kztek_Logo.png",
+    _SCRIPT_ROOT / "Kztek_Logo.jpg",
+    _SCRIPT_ROOT / ".claude" / "commands" / "Kztek_Logo.jpg",
+    _SCRIPT_ROOT / ".claude" / "commands" / "Kztek_Logo.png",
+]
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def find_logo() -> str | None:
+    # Ưu tiên logo của project hiện tại (cho phép project override logo riêng)
     for path in LOGO_CANDIDATES:
         if os.path.exists(path):
             return path
+    # Fallback: logo trong repo config KZTEK — luôn có, kể cả khi chạy từ project khác
+    for abs_path in LOGO_CANDIDATES_ABS:
+        if abs_path.exists():
+            return str(abs_path)
     return None
 
 
