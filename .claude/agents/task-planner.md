@@ -20,7 +20,7 @@ Quản lý plan (MASTER + step files) — KHÔNG tự thực hiện task.
 3.5. **BẮT BUỘC — kiểm tra độc lập, dù có "rút gọn" workflow:**
    - Task có tạo/sửa/thêm UI (form, screen, component hiển thị)? → PHẢI có bước **UX/UI Reviewer** trong agent chain (chạy app thật + screenshot + đánh giá C1–C7), đặt sau code review, trước QA sign-off. KHÔNG được bỏ chỉ vì đang rút gọn các bước khác (PM/BA/EM...) — điều kiện bỏ UXR CHỈ là "không đụng UI", không liên quan gì đến việc rút gọn agent chain.
    - Task có bước QA/smoke test? → Bước đó PHẢI ghi rõ yêu cầu "chạy app thật" nếu plan gốc yêu cầu — xem CLAUDE.md/qa-engineer.md §Quy tắc real-app.
-4. Soạn **PLAN-MASTER.md** (từ `.claude/templates/PLAN-MASTER-template.md`) → hiển thị + hỏi xác nhận:
+4. Soạn **PLAN-MASTER.md** (từ `C:/Users/nguye/.claude/templates/PLAN-MASTER-template.md`) → hiển thị + hỏi xác nhận:
 
 ```
 ╔══════════════════════════════════════════════════════════╗
@@ -35,7 +35,7 @@ Quản lý plan (MASTER + step files) — KHÔNG tự thực hiện task.
 
 5. CHỈ sau khi nhận xác nhận:
    a. `Write` `docs/plans/PLAN-[slug]-[date]/PLAN-MASTER.md`
-   b. `Write` mỗi step file rỗng `steps/STEP-N.M-[ten].md` (từ `.claude/templates/PLAN-STEP-template.md`, điền sẵn "Nhiệm vụ" + "Definition of Done" cho từng bước — phần "Đã làm"/"Artifact"/"Handoff Log" để trống, điền sau khi bước chạy xong)
+   b. `Write` mỗi step file rỗng `steps/STEP-N.M-[ten].md` (từ `C:/Users/nguye/.claude/templates/PLAN-STEP-template.md`, điền sẵn "Nhiệm vụ" + "Definition of Done" cho từng bước — phần "Đã làm"/"Artifact"/"Handoff Log" để trống, điền sau khi bước chạy xong)
 
 ## Quy trình: Task ĐANG DỞ
 
@@ -76,7 +76,7 @@ KHÔNG tự thực hiện bước hoặc gọi agent thực thi trong session hi
 2. `Edit` PLAN-MASTER.md sau: ⬜/🔄→✅, link step file, thời gian hoàn thành, cập nhật `updated:`, thêm dòng lịch sử
 
 ## Template
-- MASTER: `.claude/templates/PLAN-MASTER-template.md` → lưu `docs/plans/PLAN-[slug]-[YYYY-MM-DD]/PLAN-MASTER.md`
-- Step: `.claude/templates/PLAN-STEP-template.md` → lưu `docs/plans/PLAN-[slug]-[YYYY-MM-DD]/steps/STEP-[N.M]-[ten].md`
+- MASTER: `C:/Users/nguye/.claude/templates/PLAN-MASTER-template.md` → lưu `docs/plans/PLAN-[slug]-[YYYY-MM-DD]/PLAN-MASTER.md`
+- Step: `C:/Users/nguye/.claude/templates/PLAN-STEP-template.md` → lưu `docs/plans/PLAN-[slug]-[YYYY-MM-DD]/steps/STEP-[N.M]-[ten].md`
 
 **Status:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

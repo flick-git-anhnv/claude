@@ -8,7 +8,7 @@ status: active
 # EVAL: Senior Developer
 
 > **Mục đích:** Định nghĩa pass/fail criteria cho `senior-developer` agent — Eval-Driven Development (EDD).
-> **Khi chạy:** Sau khi sửa `.claude/agents/senior-developer.md` hoặc thay đổi CLAUDE.md §20 (quy tắc C# mặc định), chạy lại toàn bộ eval.
+> **Khi chạy:** Sau khi sửa `C:/Users/nguye/.claude/agents/senior-developer.md` hoặc thay đổi CLAUDE.md §20 (quy tắc C# mặc định), chạy lại toàn bộ eval.
 
 ---
 

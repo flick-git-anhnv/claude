@@ -55,4 +55,4 @@ Yêu cầu QA Engineer trình bày bằng chứng đã chạy app thật (screen
 ## Artifact bắt buộc
 - `docs/test-plans/TEST-PLAN-[feature-slug].md`
 - Release sign-off nhúng trong test plan (mục Sign-off)
-Template: `.claude/templates/TEST-PLAN-template.md`
+Template: `C:/Users/nguye/.claude/templates/TEST-PLAN-template.md`

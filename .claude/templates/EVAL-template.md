@@ -8,7 +8,7 @@ status: draft | active | deprecated
 # EVAL: [Tên Agent/Skill]
 
 > **Mục đích:** Định nghĩa pass/fail criteria cho agent/skill trước khi implement — Eval-Driven Development (EDD). Học từ `eval-harness` skill của affaan-m/ecc.
-> **Khi tạo:** PHẢI tạo file này TRƯỚC khi viết file định nghĩa agent `.claude/agents/[name].md` hoặc skill `.claude/commands/[name].md`.
+> **Khi tạo:** PHẢI tạo file này TRƯỚC khi viết file định nghĩa agent `C:/Users/nguye/.claude/agents/[name].md` hoặc skill `C:/Users/nguye/.claude/commands/[name].md`.
 > **Khi chạy:** Sau khi implement, chạy thử từng example và ghi kết quả vào bảng "Kết quả chạy thử".
 
 ---
@@ -109,5 +109,5 @@ status: draft | active | deprecated
 
 ---
 
-> **Vị trí lưu:** `.claude/evals/[agent-or-skill-name].md`
-> **Liên quan:** `.claude/agents/[name].md` hoặc `.claude/commands/[name].md`
+> **Vị trí lưu:** `C:/Users/nguye/.claude/evals/[agent-or-skill-name].md`
+> **Liên quan:** `C:/Users/nguye/.claude/agents/[name].md` hoặc `C:/Users/nguye/.claude/commands/[name].md`

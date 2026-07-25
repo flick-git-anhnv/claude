@@ -41,4 +41,4 @@ Link Figma: ...
 
 ## Artifact bắt buộc
 `docs/design/DESIGN-[feature-slug].md` — user flow (mermaid) + wireframe + spec hand-off.
-Template: `.claude/templates/DESIGN-template.md`
+Template: `C:/Users/nguye/.claude/templates/DESIGN-template.md`

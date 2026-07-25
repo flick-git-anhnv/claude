@@ -18,7 +18,7 @@ Xác nhận rằng một agent/skill mới hoặc vừa sửa:
 ### Bước 1 — Xác định đối tượng test
 
 ```
-Agent/skill cần test : [tên file, VD: .claude/agents/code-migrator.md]
+Agent/skill cần test : [tên file, VD: C:/Users/nguye/.claude/agents/code-migrator.md]
 Phiên bản            : [mới tạo / vừa sửa description ngày ...]
 Trigger chính        : [tóm tắt 1 câu điều kiện kích hoạt]
 ```

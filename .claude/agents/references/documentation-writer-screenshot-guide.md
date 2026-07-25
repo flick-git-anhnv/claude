@@ -179,7 +179,7 @@ Get-ChildItem -Recurse -Filter "*.cshtml" | Select-Object FullName
 # Phương án 1: docx2pdf (Windows/macOS — cần MS Word)
 pip install docx2pdf
 $env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-[feature-slug].md
+python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-[feature-slug].md
 
 # Phương án 2: LibreOffice (Linux)
 soffice --headless --convert-to pdf docs/user-manuals/MANUAL-[feature-slug].docx --outdir docs/user-manuals/

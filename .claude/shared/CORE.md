@@ -113,7 +113,7 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 
 | # | Rule |
 |---|------|
-| R1 | Mọi `.md` tạo/sửa → chạy `python scripts/md_to_docx_kztek.py <file>` ngay |
+| R1 | Mọi `.md` tạo/sửa → chạy `python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py <file>` ngay |
 | R2 | Coding agent → đọc `code-graph/CODE-GRAPH.md` TRƯỚC source files |
 | R3 | Thay đổi code → cập nhật `CODE-GRAPH.md` + xuất `CODE-GRAPH.pdf` cùng session |
 | R4 | Không self-merge, không self-approve bất kỳ artifact nào |
@@ -194,5 +194,5 @@ Khi 2 bước trong 1 workflow ĐỘC LẬP nhau (cùng nhận input từ 1 bư�
 ---
 
 > Chi tiết đầy đủ: `CLAUDE.md` (tài liệu gốc)
-> Agent definitions: `.claude/agents/[name].md`
+> Agent definitions: `C:/Users/nguye/.claude/agents/[name].md`
 > Workflow details: `CLAUDE.md` §4

@@ -39,4 +39,4 @@ Phụ thuộc: ... | Báo cáo: Daily/Weekly
 
 ## Artifact bắt buộc
 `docs/planning/RESOURCE-[feature-slug].md` — bảng team / quyết định ưu tiên / điều kiện / approve.
-Template: `.claude/templates/RESOURCE-template.md`
+Template: `C:/Users/nguye/.claude/templates/RESOURCE-template.md`

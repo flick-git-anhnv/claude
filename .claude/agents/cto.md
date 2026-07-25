@@ -31,4 +31,4 @@ Quản lý: Engineering Manager, Product Manager.
 `docs/architecture/ADR-[NNN]-[topic].md`
 
 ADR phải có: Trạng thái, Bối cảnh, Phương án xem xét (ưu/nhược), Quyết định + lý do, Hệ quả, Người thực thi, Ký duyệt CTO.
-Template: `.claude/templates/ADR-template.md`
+Template: `C:/Users/nguye/.claude/templates/ADR-template.md`

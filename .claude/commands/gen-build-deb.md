@@ -7,7 +7,7 @@ description: "PHẢI dùng khi user muốn tạo/sinh script đóng gói .deb (b
 
 > **Nguồn gốc:** Đúc kết từ nhiều vòng fix thực tế trên ParkingV8 Avalonia (`scripts/linux-deb/build-deb.sh`) — icon không hiện do dùng `.ico` thay vì `.png`, app chậm/đơ do `postinst` chỉ chmod mà không chown, chown thiếu cấp thư mục cha, lỗi `dpkg-deb` khi build dir nằm trên `/mnt/<ổ Windows>` qua WSL.
 >
-> **Eval:** `.claude/evals/gen-build-deb.md` — chạy thử theo CE-01/CE-02/CE-03 trước khi coi skill này APPROVED.
+> **Eval:** `C:/Users/nguye/.claude/evals/gen-build-deb.md` — chạy thử theo CE-01/CE-02/CE-03 trước khi coi skill này APPROVED.
 
 ---
 

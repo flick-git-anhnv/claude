@@ -42,4 +42,4 @@ Given ... When ... Then ...
 
 ## Artifact bắt buộc
 `docs/user-stories/US-[XXX]-[feature-slug].md` — US + business flow (mermaid) + câu hỏi mở nhúng trong.
-Template: `.claude/templates/US-template.md`
+Template: `C:/Users/nguye/.claude/templates/US-template.md`

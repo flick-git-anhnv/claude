@@ -83,22 +83,22 @@ Khi user yêu cầu:
 
 ### B.2 — Chạy script chuyển đổi
 
-Script `scripts/md_to_docx_kztek.py` đã có sẵn, xử lý toàn bộ branding KZTEK tự động.
+Script `C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py` đã có sẵn, xử lý toàn bộ branding KZTEK tự động.
 
 > **[Progressive Disclosure]** Tiền điều kiện Windows (encoding, file lock check), lệnh script đầy đủ (batch/single/export-dir), và các lỗi thường gặp:
-> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §E khi gặp vấn đề.
+> Đọc `C:/Users/nguye/.claude/agents/references/documentation-writer-screenshot-guide.md` §E khi gặp vấn đề.
 
 ```powershell
 # Cú pháp cơ bản (Linux/macOS — không cần set encoding)
-python scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md
+python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md
 
 # Windows — LUÔN set encoding trước
 $env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md
+python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py docs/prd/PRD-iled-parking.md
 
 # Batch toàn bộ thư mục
 $env:PYTHONIOENCODING = "utf-8"
-python scripts/md_to_docx_kztek.py docs/ --batch --output-dir exports/
+python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py docs/ --batch --output-dir exports/
 ```
 
 ### B.3 — Danh sách file có thể chuyển đổi
@@ -144,7 +144,7 @@ Với mỗi file `docs/[folder]/[name].md`, script tạo ra:
 Trước khi tạo bất kỳ tài liệu nào, PHẢI đọc file brand info:
 
 ```
-Read: .claude/commands/kztek-brand-info.md
+Read: C:/Users/nguye/.claude/commands/kztek-brand-info.md
 ```
 
 Áp dụng toàn bộ quy tắc màu sắc và logo KZTEK vào mọi tài liệu:
@@ -206,7 +206,7 @@ Select-String -Path "**/*.csproj" -Pattern "WinForms|UseWindowsForms|OutputType.
 ```
 
 > **[Progressive Disclosure]** Script build, khởi động, và xác nhận chi tiết:
-> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §A + §B khi thực hiện bước này.
+> Đọc `C:/Users/nguye/.claude/agents/references/documentation-writer-screenshot-guide.md` §A + §B khi thực hiện bước này.
 
 **Quy tắc bắt buộc:**
 - Phải chạy đến khi xuất hiện thông báo **Build succeeded** — KHÔNG tiếp tục nếu có lỗi build.
@@ -216,7 +216,7 @@ Select-String -Path "**/*.csproj" -Pattern "WinForms|UseWindowsForms|OutputType.
 #### Nếu là ứng dụng Web
 
 > **[Progressive Disclosure]** Script khởi động và kiểm tra HTTP 200:
-> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §B.
+> Đọc `C:/Users/nguye/.claude/agents/references/documentation-writer-screenshot-guide.md` §B.
 
 #### Bước B — XÁC NHẬN ỨNG DỤNG ĐANG CHẠY (Điền trước khi tiếp tục)
 
@@ -243,7 +243,7 @@ Select-String -Path "**/*.csproj" -Pattern "WinForms|UseWindowsForms|OutputType.
 #### Quét danh sách màn hình theo loại ứng dụng
 
 > **[Progressive Disclosure]** Lệnh PowerShell đầy đủ để quét Forms (WinForms) và routes (Web/ASP.NET):
-> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §F.
+> Đọc `C:/Users/nguye/.claude/agents/references/documentation-writer-screenshot-guide.md` §F.
 
 #### Điền vào Screen Inventory trước khi tiếp tục
 
@@ -315,7 +315,7 @@ Select-String -Path "**/*.csproj" -Pattern "WinForms|UseWindowsForms|OutputType.
 #### Cách chụp màn hình
 
 > **[Progressive Disclosure]** Script PowerShell chụp WinForms và script Playwright chụp Web app đầy đủ:
-> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §C (WinForms) hoặc §D (Web) khi thực hiện bước này.
+> Đọc `C:/Users/nguye/.claude/agents/references/documentation-writer-screenshot-guide.md` §C (WinForms) hoặc §D (Web) khi thực hiện bước này.
 
 **Quy tắc chụp màn hình:**
 - Chụp trên Release build (WinForms) hoặc staging/local (Web) — KHÔNG chụp Debug build, KHÔNG chụp production.
@@ -463,7 +463,7 @@ A: [...]
 
 ```powershell
 $env:PYTHONIOENCODING = "utf-8"   # Windows: bắt buộc
-python scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-[feature-slug].md
+python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py docs/user-manuals/MANUAL-[feature-slug].md
 ```
 
 Script tự động áp dụng logo KZTEK, màu Navy/Cam, font, margin chuẩn.
@@ -478,7 +478,7 @@ soffice --headless --convert-to pdf docs/user-manuals/MANUAL-[feature-slug].docx
 ```
 
 > **[Progressive Disclosure]** Các phương án xuất PDF (docx2pdf, pypandoc, LibreOffice) và xử lý lỗi:
-> Đọc `.claude/agents/references/documentation-writer-screenshot-guide.md` §G.
+> Đọc `C:/Users/nguye/.claude/agents/references/documentation-writer-screenshot-guide.md` §G.
 
 ---
 
@@ -573,6 +573,6 @@ run_num = p.add_run(f"{num}.\t")     # "1.\t", "2.\t" ... không bao giờ sai
 ## Tuân thủ
 
 Đọc `RULES.md`. Quy tắc bắt buộc:
-- Tải brand info từ `.claude/commands/kztek-brand-info.md` trước khi làm bất kỳ tài liệu nào.
+- Tải brand info từ `C:/Users/nguye/.claude/commands/kztek-brand-info.md` trước khi làm bất kỳ tài liệu nào.
 - KHÔNG tự khởi động khi không được yêu cầu.
 - KHÔNG xuất file mà chưa có đủ screenshot thực tế.

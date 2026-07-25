@@ -1,6 +1,6 @@
 # Reference: OWASP Top 10 + STRIDE Checklist chi tiết
 
-> Tách từ `.claude/commands/security-audit-stride.md` (§5 đề xuất cải tiến — nghiên cứu `addyosmani/agent-skills`, xem `docs/research/RESEARCH-agent-skills-2026-07-12.md`). File này là nguồn chi tiết duy nhất — `security-audit-stride.md` link tới đây thay vì lặp lại nội dung.
+> Tách từ `C:/Users/nguye/.claude/commands/security-audit-stride.md` (§5 đề xuất cải tiến — nghiên cứu `addyosmani/agent-skills`, xem `docs/research/RESEARCH-agent-skills-2026-07-12.md`). File này là nguồn chi tiết duy nhất — `security-audit-stride.md` link tới đây thay vì lặp lại nội dung.
 
 ## OWASP Top 10 — checklist đầy đủ
 
@@ -31,7 +31,7 @@
 | Elevation of Privilege | User thường có thể leo quyền admin qua lỗ hổng nào không (IDOR, JWT chưa verify role)? |
 
 ## Cách dùng
-1. Người thực hiện `security-audit-stride` copy 2 bảng trên thành checklist `- [ ]` khi audit thực tế (xem format ở `.claude/commands/security-audit-stride.md`).
+1. Người thực hiện `security-audit-stride` copy 2 bảng trên thành checklist `- [ ]` khi audit thực tế (xem format ở `C:/Users/nguye/.claude/commands/security-audit-stride.md`).
 2. Ghi Pass/Fail/N-A cho từng dòng — không được bỏ trống.
 3. Fail ở A01/A02/A03/A07 (nhóm rủi ro cao) → BLOCK merge.
 

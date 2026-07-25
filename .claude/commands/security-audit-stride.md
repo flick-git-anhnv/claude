@@ -30,7 +30,7 @@ description: Chạy checklist bảo mật OWASP Top 10 + STRIDE trước bước
 
 ## Quy trình bắt buộc
 
-> **Xem thêm:** checklist chi tiết đầy đủ (mô tả từng hạng mục) tại `.claude/references/security-audit-checklist.md` — dùng bảng rút gọn dưới đây khi audit nhanh.
+> **Xem thêm:** checklist chi tiết đầy đủ (mô tả từng hạng mục) tại `C:/Users/nguye/.claude/references/security-audit-checklist.md` — dùng bảng rút gọn dưới đây khi audit nhanh.
 
 ### Bước 1 — OWASP Top 10 checklist
 Với mỗi PR/diff liên quan, kiểm tra và ghi Pass/Fail/N-A:

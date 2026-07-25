@@ -12,7 +12,7 @@
 ## 2. Quality
 - [ ] Test có ý nghĩa (không chỉ viết để đạt coverage) — unit + integration cho logic mới.
 - [ ] Code review đã qua đúng chain (Two-Eyes §8 CLAUDE.md) — không self-merge, không self-approve.
-- [ ] Security audit đã chạy nếu đụng auth/payment/DB schema/dữ liệu nhạy cảm (`security-audit-stride`, xem `.claude/references/security-audit-checklist.md`).
+- [ ] Security audit đã chạy nếu đụng auth/payment/DB schema/dữ liệu nhạy cảm (`security-audit-stride`, xem `C:/Users/nguye/.claude/references/security-audit-checklist.md`).
 - [ ] Không còn P0/P1 bug mở liên quan đến task này (QA có quyền VETO — §8, §9 CLAUDE.md).
 
 ## 3. Integration

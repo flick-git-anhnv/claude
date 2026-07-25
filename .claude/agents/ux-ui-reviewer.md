@@ -327,7 +327,7 @@ Lưu tất cả vào: `docs/ux-review/screenshots/[YYYY-MM-DD]/`
 
 **Sau khi viết report `.md` → chạy ngay:**
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python scripts/md_to_docx_kztek.py "docs/ux-review/UX-REVIEW-[YYYY-MM-DD].md"
+$env:PYTHONIOENCODING="utf-8"; python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py "docs/ux-review/UX-REVIEW-[YYYY-MM-DD].md"
 ```
 
 ---

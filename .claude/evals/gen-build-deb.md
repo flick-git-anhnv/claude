@@ -8,7 +8,7 @@ status: draft
 # EVAL: gen-build-deb
 
 > **Mục đích:** Định nghĩa pass/fail criteria cho skill `/gen-build-deb` trước khi implement — Eval-Driven Development (EDD).
-> **Khi tạo:** File này PHẢI có TRƯỚC `.claude/commands/gen-build-deb.md`.
+> **Khi tạo:** File này PHẢI có TRƯỚC `C:/Users/nguye/.claude/commands/gen-build-deb.md`.
 > **Khi chạy:** Sau khi implement, chạy thử từng example và ghi kết quả vào bảng "Kết quả chạy thử".
 
 ---
@@ -102,5 +102,5 @@ status: draft
 
 ---
 
-> **Vị trí lưu:** `.claude/evals/gen-build-deb.md`
-> **Liên quan:** `.claude/commands/gen-build-deb.md`, `scripts/linux-deb/build-deb.sh` (bản gốc ParkingV8 dùng làm template)
+> **Vị trí lưu:** `C:/Users/nguye/.claude/evals/gen-build-deb.md`
+> **Liên quan:** `C:/Users/nguye/.claude/commands/gen-build-deb.md`, `scripts/linux-deb/build-deb.sh` (bản gốc ParkingV8 dùng làm template)

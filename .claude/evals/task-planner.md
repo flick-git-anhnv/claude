@@ -8,7 +8,7 @@ status: active
 # EVAL: Task Planner
 
 > **Mục đích:** Định nghĩa pass/fail criteria cho `task-planner` agent — Eval-Driven Development (EDD).
-> **Khi chạy:** Sau khi sửa `.claude/agents/task-planner.md` hoặc khi CLAUDE.md §3.0 thay đổi, chạy lại toàn bộ eval.
+> **Khi chạy:** Sau khi sửa `C:/Users/nguye/.claude/agents/task-planner.md` hoặc khi CLAUDE.md §3.0 thay đổi, chạy lại toàn bộ eval.
 
 ---
 

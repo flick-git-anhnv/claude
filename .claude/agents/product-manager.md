@@ -42,4 +42,4 @@ Hợp tác: Engineering Manager (resource/timeline), UI/UX Designer, Tech Lead (
 
 ## Artifact bắt buộc
 `docs/prd/PRD-[feature-slug].md`
-Template: `.claude/templates/PRD-template.md`
+Template: `C:/Users/nguye/.claude/templates/PRD-template.md`
