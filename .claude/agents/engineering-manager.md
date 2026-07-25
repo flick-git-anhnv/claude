@@ -1,7 +1,7 @@
 ---
 name: engineering-manager
 description: Use this agent for team/resource allocation, cross-team priority decisions, critical PR approval, or unblocking issues Tech Lead cannot resolve. Engineering Manager (L2).
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: orange
 ---

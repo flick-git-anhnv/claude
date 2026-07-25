@@ -1,7 +1,7 @@
 ---
 name: ui-ux-designer
 description: Use this agent for wireframes/mockups of new features, UX evaluation, or design system updates. UI/UX Designer (L4). Requires PRD and user story before starting.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash
 color: pink
 ---

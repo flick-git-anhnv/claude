@@ -1,7 +1,7 @@
 ---
 name: documentation-writer
 description: "PHẢI dùng agent này khi: user nói rõ 'viết tài liệu hướng dẫn', 'tạo user manual', 'làm tài liệu đào tạo', 'chuyển .md sang DOCX/PDF', 'xuất Word/PDF'. Có 2 chế độ: A) viết manual mới từ app đang chạy thật (phải chụp screenshot thực tế), B) convert file .md có sẵn sang DOCX+PDF theo brand KZTEK. KHÔNG dùng khi: workflow khác đang chạy và chỉ cần xuất DOCX như bước phụ (→ agent đó tự gọi script), user hỏi về nội dung tài liệu mà không yêu cầu tạo file (→ trả lời trực tiếp), chỉ cần screenshot UI để đánh giá (→ ux-ui-reviewer)."
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash
 color: purple
 ---

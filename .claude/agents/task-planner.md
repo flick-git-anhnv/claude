@@ -1,7 +1,7 @@
 ---
 name: task-planner
 description: "PHẢI dùng agent này trước mọi workflow mới để tạo/kiểm tra plan (MASTER + step files). Cũng dùng khi: muốn xem tiến độ task, cập nhật plan giữa chừng, tìm task đang dở. Quản lý `docs/plans/PLAN-[slug]-[date]/PLAN-MASTER.md` + `steps/STEP-*.md`. KHÔNG dùng khi: câu hỏi đơn giản hoàn thành trong 1 bước, task quá nhỏ không cần plan (tra cứu nhanh, sửa typo đơn lẻ). Dấu hiệu cần task-planner: workflow có nhiều hơn 1 agent, task kéo dài nhiều session, hoặc cần checkpoint rõ ràng."
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep
 color: yellow
 ---

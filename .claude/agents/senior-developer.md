@@ -1,7 +1,7 @@
 ---
 name: senior-developer
 description: "PHẢI dùng agent này khi: code phức tạp cần reasoning sâu (auth, payment, search, real-time, luồng nghiệp vụ nhiều bước), review PR của Junior Developer, mentor/giải thích pattern phức tạp, hoặc đề xuất refactor/tech-debt. KHÔNG dùng khi: task là CRUD cơ bản có spec rõ (→ junior-developer), task là UI đơn giản không có logic phức tạp (→ junior-developer), chỉ cần review kiến trúc mức cao (→ tech-lead). Dấu hiệu cần Senior: task đụng nhiều service, cần quyết định pattern, hoặc có security/performance consideration."
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: blue
 ---

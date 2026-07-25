@@ -1,7 +1,7 @@
 ---
 name: qa-engineer
 description: Use this agent when writing test cases, running manual tests on real app, writing automation scripts, or reproducing/logging bugs with evidence. QA Engineer (L5). MUST start real app before testing.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: pink
 ---
