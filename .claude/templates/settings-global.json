@@ -1,0 +1,43 @@
+{
+  "//": "MẪU cho ~/.claude/settings.json — KHÔNG copy đè, phải MERGE vào file đang có.",
+  "//_huong_dan": [
+    "File này chỉ chứa phần config KZTEK cần có ở user-level scope.",
+    "Trên máy mới: chạy scripts/link-global.ps1 trước, rồi merge 2 mục dưới đây",
+    "vào C:/Users/<user>/.claude/settings.json — giữ nguyên mọi mục sẵn có của máy",
+    "(model, theme, enabledPlugins, hooks.PostToolUse riêng của máy, ...).",
+    "Chi tiết: docs/SETUP-GLOBAL.md"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(git *)",
+      "Bash(python *)",
+      "Bash(pip *)",
+      "Bash(node *)",
+      "Glob",
+      "Grep",
+      "Read",
+      "WebSearch",
+      "WebFetch",
+      "Edit",
+      "Write"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/nguye/.claude/hooks-kztek/config-protection.js\"",
+            "shell": "bash",
+            "timeout": 10,
+            "statusMessage": "Kiểm tra config-protection..."
+          }
+        ]
+      }
+    ]
+  }
+}
