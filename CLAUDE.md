@@ -9,12 +9,12 @@
 
 ```
 Read: .claude/shared/CORE.md
-Read: .claude/GOTCHAS.md
+Read: .claude/shared/GOTCHAS.md
 ```
 
 File `CORE.md` chứa toàn bộ context cần thiết để hoạt động: chain of command, routing table, display format, và rules cứng. **Dispatcher và mọi agent PHẢI đọc file này một lần khi bắt đầu session.** Không cần đọc lại trong cùng session.
 
-File `GOTCHAS.md` ghi lại các lỗi ngầm đã gặp — đọc khi bắt đầu session để tránh lặp lại các lỗi đã biết. **Mọi agent fix xong 1 lỗi ngầm (không có trong docs chính thức) PHẢI thêm 1 entry vào `.claude/GOTCHAS.md` trước khi đánh dấu task hoàn thành.**
+File `GOTCHAS.md` ghi lại các lỗi ngầm đã gặp — đọc khi bắt đầu session để tránh lặp lại các lỗi đã biết. **Mọi agent fix xong 1 lỗi ngầm (không có trong docs chính thức) PHẢI thêm 1 entry vào `.claude/shared/GOTCHAS.md` trước khi đánh dấu task hoàn thành.**
 
 > File này là tài liệu gốc đầy đủ dành cho người đọc và tham chiếu. Agents dùng `.claude/shared/CORE.md` — không cần đọc lại toàn bộ file này mỗi lần.
 
@@ -660,7 +660,7 @@ Dừng retry, ghi lại:
 ### Phase 2 — Diagnose (Đối chiếu pattern đã biết)
 
 Tra cứu theo thứ tự:
-1. `.claude/GOTCHAS.md` — lỗi này có trong danh sách lỗi ngầm đã biết không?
+1. `.claude/shared/GOTCHAS.md` — lỗi này có trong danh sách lỗi ngầm đã biết không?
 2. Đối chiếu pattern phổ biến:
    - `ModuleNotFoundError` / `ImportError` → thiếu dependency → chạy `pip install` / `npm install`
    - `FileNotFoundError` / `ENOENT` → path sai → kiểm tra lại đường dẫn tuyệt đối
@@ -695,7 +695,7 @@ Hiển thị theo format BLOCK chuẩn (§6) với thông tin đủ để user h
 
 Sau khi báo cáo: DỪNG. KHÔNG tự retry. KHÔNG im lặng tiếp tục. Chờ user hoặc cấp trên phản hồi.
 
-**Sau khi vấn đề được giải quyết:** Nếu đây là lỗi ngầm chưa có trong GOTCHAS.md → thêm entry G00N mới vào `.claude/GOTCHAS.md` trước khi đóng task.
+**Sau khi vấn đề được giải quyết:** Nếu đây là lỗi ngầm chưa có trong GOTCHAS.md → thêm entry G00N mới vào `.claude/shared/GOTCHAS.md` trước khi đóng task.
 
 ---
 
@@ -1438,6 +1438,7 @@ Agent PHẢI thêm vào phần artifact output:
 
 | Ngày | Phiên bản | Nội dung thay đổi | Đối tượng | Lý do |
 |------|-----------|------------------|-----------|-------|
+| 2026-07-25 | v1.5 | **Chuyển config sang user-level scope — mọi project trên máy dùng chung, không copy tay.** (1) Thêm `scripts/link-global.ps1` tạo 8 junction từ `~/.claude` → repo (`agents`, `commands`, `shared`, `templates`, `references`, `evals`, `hooks-kztek`, `scripts`). (2) `git mv .claude/GOTCHAS.md` → `.claude/shared/GOTCHAS.md` (file lẻ không junction được; `shared/` đã junction). (3) Đổi mọi path hạ tầng trong 31 file `.md` thuộc thư mục đã junction sang tuyệt đối `C:/Users/nguye/.claude/...`; path sản phẩm (`docs/plans/`, `src/`, `code-graph/`) giữ tương đối. (4) Fix `find_logo()` trong `md_to_docx_kztek.py` — phân giải theo `Path(__file__).resolve()` (G003). (5) Thêm skill `/sync-global` commit+push config từ bất kỳ project. (6) Bỏ tracking `.docx`/`.pdf` của tài liệu hạ tầng (110→8 file binary tracked). (7) Thêm `docs/SETUP-GLOBAL.md`. **KHÔNG junction `CLAUDE.md`** — quy trình 17-agent chỉ áp cho project phần mềm. | `scripts/link-global.ps1`, `.claude/shared/GOTCHAS.md`, `.claude/{agents,commands,shared,references,evals,templates}/*.md`, `.claude/commands/sync-global.md`, `.claude/templates/settings-global.json`, `scripts/md_to_docx_kztek.py`, `.gitignore`, `docs/SETUP-GLOBAL.md`, `~/.claude/settings.json`, `~/.claude/CLAUDE.md` | Trước đây mỗi project phải copy tay `.claude/` → nhiều bản sao lệch phiên bản, sửa một chỗ không lan sang chỗ khác. Junction cho một nguồn duy nhất do git quản lý đầy đủ; `.git` đang phình 162 MB cho 71 file text vì §19 commit lại DOCX+PDF (~1,2 MB mỗi lần sửa `CLAUDE.md`) nên bỏ tracking binary sinh tự động |
 | 2026-07-25 | v1.4 | Cập nhật model sang thế hệ Claude 5: `claude-opus-4-7` → `claude-opus-5`, `claude-sonnet-4-6` → `claude-sonnet-5` trên toàn bộ 19 file agent, CORE.md, writing-agent-skill.md, agents-view.html, CLAUDE.md §13.1/§13.1b/§18.5. Tầng 3 giữ `claude-haiku-4-5` (vẫn là bản Haiku mới nhất) | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | Anthropic ra mắt Claude Opus 5 và Sonnet 5 — giữ hệ thống agent luôn dùng model mới nhất, mạnh hơn ở cùng tầng chi phí |
 | 2026-07-12 | v1.3 | Rút gọn CLAUDE.md: xóa 7 đoạn overhead/trùng lặp (P1,P3,P4,P6,P7,P8,P9 + Modify P2), tiết kiệm 34 dòng thực tế — xem `_workspace` phân tích WF-REFACTOR optimize-framework | CLAUDE.md | Giảm overhead quy trình, loại bỏ nội dung trùng lặp giữa các §, không đổi nguyên tắc cứng nào |
 | 2026-07-12 | v1.2 | Áp dụng 7 đề xuất E1-E7 từ nghiên cứu affaan-m/ecc: E1 hook bảo vệ config (`.claude/hooks/config-protection.js` + `settings.json`), E2 GOTCHAS.md + yêu cầu đọc khi khởi động (§KHỞI ĐỘNG), E3 bảng DAILY/LIBRARY (CORE.md §6b), E4 skill `/verify-pr` + yêu cầu trong WF-BUGFIX/WF-FEATURE, E5 EVAL-template.md + EDD requirement (§18.5), E6 Agent Introspection Debugging 4-phase (§9a), E7 Strategic Compact gợi ý (§16.5) | CLAUDE.md §KHỞI ĐỘNG §9a §16.5 §18.5 §WF-FEATURE §WF-BUGFIX §21; CORE.md §6b; `.claude/hooks/`; `.claude/commands/`; `.claude/templates/` | Tăng safety (config protection), giảm lỗi lặp (GOTCHAS), tối ưu context window (compact/DAILY-LIBRARY), chuẩn hoá pre-PR (verify-pr), chuẩn hoá tạo agent (EDD). Xem `docs/research/RESEARCH-ecc-2026-07-12.md` |

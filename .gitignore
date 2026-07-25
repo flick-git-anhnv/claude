@@ -21,3 +21,26 @@ Thumbs.db
 # Workspace scratchpad (artifact trung gian, không commit — §11.0 CLAUDE.md)
 _workspace/
 _workspace_*/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# ── Tài liệu SINH RA TỰ ĐỘNG từ .md (phương án b — §21 CLAUDE.md v1.5) ──
+# Lý do: §19 bắt xuất DOCX+PDF sau mỗi lần sửa .md. Binary không delta được nên
+# mỗi lần sửa CLAUDE.md cộng thêm ~1,2 MB vĩnh viễn vào .git (đã lên 162 MB cho
+# 71 file text). Các file này sinh lại được bằng:
+#     python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py <file.md>
+# Chỉ bỏ tracking cho tài liệu HẠ TẦNG; deliverable trong docs/ vẫn tracked.
+.claude/**/*.docx
+.claude/**/*.pdf
+scripts/**/*.docx
+scripts/**/*.pdf
+/CLAUDE.docx
+/CLAUDE.pdf
+/RULES.docx
+/RULES.pdf
+/WORKFLOW.docx
+/WORKFLOW.pdf
+code-graph/*.docx
+code-graph/*.pdf

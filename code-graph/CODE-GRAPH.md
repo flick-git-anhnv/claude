@@ -42,8 +42,9 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 ├── code-graph/                  ← Bản đồ codebase (file này)
 ├── docs/                        ← Tài liệu dự án (agents, research, planning)
 │   └── research/                ← Báo cáo nghiên cứu repo ngoài (RESEARCH-*.md)
-├── scripts/                     ← Helper scripts
+├── scripts/                     ← Helper scripts (junction: ~/.claude/scripts)
 │   ├── md_to_docx_kztek.py     ← Xuất .md → .docx + .pdf với brand KZTEK
+│   ├── link-global.ps1          ← Tạo 8 junction ~/.claude → repo (user-level scope)
 │   └── review-package.sh        ← Tạo diff handoff cho code review
 ├── CLAUDE.md                    ← Quy tắc bắt buộc cho Claude Code (agent config gốc)
 ├── RULES.md                     ← Quy tắc tổ chức, phân cấp, luồng giao việc
@@ -62,7 +63,31 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | Shared Context | `.claude/shared/` | Context chung đọc đầu mỗi session | `CORE.md`, `GOTCHAS.md` |
 | Templates | `.claude/templates/` | Khung mẫu cho plan, eval, code-graph | `PLAN-template.md`, `EVAL-template.md`, `CODE-GRAPH-template.md` |
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
-| Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `review-package.sh` |
+| Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
+
+---
+
+## User-level scope — config dùng chung mọi project (từ 2026-07-25)
+
+Repo này là **nguồn duy nhất** của config KZTEK. `~/.claude` chứa 8 junction trỏ vào đây,
+nên mọi project trên máy dùng chung một bộ agents/skills/templates/scripts — không copy tay.
+
+| Junction `~/.claude\` | → Nguồn trong repo |
+|---|---|
+| `agents`, `commands`, `shared`, `templates`, `references`, `evals` | `.claude/<tên>` |
+| `hooks-kztek` | `.claude/hooks` (tên khác vì `~/.claude/hooks` đã có hook riêng của máy) |
+| `scripts` | `scripts/` (repo root) |
+
+**Quy tắc đường dẫn khi sửa file trong các thư mục trên:**
+
+| Loại path | Cách viết | Ví dụ |
+|---|---|---|
+| Hạ tầng dùng chung | Tuyệt đối | `C:/Users/nguye/.claude/templates/PRD-template.md` |
+| Sản phẩm của project | Tương đối | `docs/plans/`, `src/`, `code-graph/` |
+
+Cài đặt / rollback: `scripts/link-global.ps1` + `docs/SETUP-GLOBAL.md`.
+Commit thay đổi config từ project khác: skill `/sync-global`.
+`CLAUDE.md` **không** junction — quy trình 17-agent chỉ áp cho project phần mềm.
 
 ---
 
