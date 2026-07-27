@@ -15,6 +15,61 @@
 | G001 | `C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py` — thiếu `python-docx`/`Pillow`; PDF không cần trên cloud/sandbox | 2026-07-12 |
 | G002 | File `.ps1` có chữ Việt mà **không có BOM** → PowerShell 5.1 parse lỗi `Missing '=' operator` | 2026-07-25 |
 | G003 | `find_logo()` chỉ tìm theo CWD → xuất tài liệu từ project khác **mất logo mà không báo lỗi** | 2026-07-25 |
+| G004 | `KzPasswordTextBox` (UserControl): binding `Text` mặc định OneWay → VM **không nhận giá trị gõ vào, không báo lỗi**; Watermark mặc định "Nhập mật khẩu"; CornerRadius/FontSize set ngoài bị bỏ qua | 2026-07-26 |
+| G005 | `md_to_docx_kztek.py` báo `✗ PDF thất bại` (RPC failed) nhưng PDF **vẫn được tạo hợp lệ** — cảnh báo sai | 2026-07-27 |
+
+---
+
+## G004 — `KzPasswordTextBox`: binding `Text` phải `Mode=TwoWay` tường minh, Watermark có default, CornerRadius/FontSize không forward
+
+**Ngày phát hiện:** 2026-07-26
+**Môi trường:** KztekComponentAvalonia (Avalonia 12.1.0), Windows 11
+**Vấn đề:** Bind `Text="{Binding Password}"` trên `KzPasswordTextBox` → UI hiển thị giá trị ban đầu đúng nhưng VM KHÔNG nhận giá trị user gõ vào — save ra rỗng, không có lỗi binding nào. Ngoài ra placeholder tự hiện "Nhập mật khẩu" dù không set, và `CornerRadius`/`FontSize` set trong XAML không có tác dụng.
+**Nguyên nhân:** `KzPasswordTextBox` là **UserControl** (không phải TextBox): `TextProperty` tự đăng ký bằng `AvaloniaProperty.Register` KHÔNG có `defaultBindingMode: TwoWay` → binding ngoài mặc định OneWay (khác `TextBox.Text` vốn default TwoWay như `KzTextBox : TextBox`). `WatermarkProperty` có default value `"Nhập mật khẩu"`. `CornerRadius`/`FontSize` của UserControl không được forward vào `PART_Border`/`PART_Input` (ApplySize ghi đè FontSize theo KzSize).
+**Cách xử lý:** Luôn viết `Text="{Binding X, Mode=TwoWay}"`; set `Watermark=""` khi nguồn không có placeholder; điều chỉnh kích thước qua `KzSize`/`Height`, không set CornerRadius/FontSize trực tiếp.
+**Lần đầu gặp:** STEP-3.2 PLAN-migrate-avalonia (migrate ucServerConfig — field RabbitMQ password)
+**Không cần làm lại:** Không cần sửa library 5.BaseUI (workaround XAML đủ dùng); `KzTextBox` KHÔNG bị vấn đề này (kế thừa TextBox — TwoWay mặc định, nhận CornerRadius/FontSize/Height bình thường).
+
+---
+
+## G005 — `md_to_docx_kztek.py` báo "PDF thất bại" nhưng file PDF vẫn được tạo hợp lệ
+
+**Ngày phát hiện:** 2026-07-27
+**Môi trường:** Windows 11, `docx2pdf` + Microsoft Word COM Automation
+
+**Vấn đề:**
+Script in ra:
+```
+[docx2pdf] Lỗi: (-2147023170, 'The remote procedure call failed.', None, None)
+[WARNING] Không thể xuất PDF. Cài thêm: docx2pdf | LibreOffice | pypandoc+pandoc
+✗ PDF  thất bại (xem hướng dẫn ở trên)
+```
+Nhưng kiểm tra đĩa thì **file `.pdf` CÓ, kích thước bình thường, timestamp mới hơn `.docx` vài giây,
+và hợp lệ** (header `%PDF-`, trailer `%%EOF`). Đã xác nhận lặp lại trên nhiều file khác nhau
+(≥ 2 project độc lập, iPGSv4 và DoorAlarm v3), luôn cùng mã lỗi COM `-2147023170`.
+
+**Nguyên nhân:**
+`-2147023170` = `RPC_E_SERVER_DIED`. `docx2pdf` điều khiển Word qua COM; Word **xuất PDF xong rồi
+mới** làm hỏng/ngắt kết nối RPC ở bước dọn dẹp/đóng instance, nên `docx2pdf` nhận exception ở bước
+cleanup và báo thất bại — dù công việc chính (ghi file PDF) đã hoàn tất. Hay xảy ra khi Word bị gọi
+liên tiếp nhiều lần trong thời gian ngắn (nhiều file `.md` chuyển đổi liên tục trong 1 phiên).
+
+**Cách xử lý:**
+1. **Luôn kiểm tra đĩa trước khi tin thông báo lỗi:**
+   ```bash
+   ls -la <file>.pdf   # có file + timestamp mới hơn .docx = đã xuất xong
+   ```
+   Kiểm hợp lệ nhanh: 5 byte đầu = `%PDF-`, vài byte cuối chứa `%%EOF`.
+2. Nếu file có và hợp lệ → **coi như xong**, KHÔNG chạy lại script.
+3. Chỉ khi file thật sự thiếu mới retry, và **tối đa 1–2 lần** (§9a: đừng retry vòng).
+
+**Lần đầu gặp:** WF-MIGRATE DoorAlarmv3 → Avalonia (STEP-1.2/1.3, 2026-07-26); tái xác nhận khi xuất
+UX-REVIEW payment-flow (iPGSv4, 2026-07-27).
+
+**Không cần làm lại:**
+- KHÔNG cài thêm LibreOffice/pypandoc theo gợi ý của script — `docx2pdf` vốn đã hoạt động.
+- KHÔNG chạy lại script nhiều lần: mỗi lần lại mở/đóng Word, càng dễ gây lại lỗi RPC, trong khi
+  PDF của lần trước đã đúng.
 
 ---
 

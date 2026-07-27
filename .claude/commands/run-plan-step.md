@@ -40,13 +40,19 @@ description: "PHẢI dùng khi cần thực thi 1 bước (STEP-N.M) trong plan 
 6. Cập nhật plan:       "Cập nhật step file (Đã làm, artifact, Handoff Log 4 dòng, status: done,
                          completed_at lấy giờ thật `Get-Date -Format "yyyy-MM-dd HH:mm"`);
                          cập nhật PLAN-MASTER (1 dòng status → ✅, updated:, +1 dòng Lịch sử);
-                         chạy script md_to_docx cho MASTER (R1). Cập nhật CODE-GRAPH nếu đổi public API (R3)."
+                         chạy script md_to_docx cho MASTER (R1). Cập nhật CODE-GRAPH nếu đổi public API (R3); nếu thay đổi chỉ là logic nội bộ
+                         không đổi interface, thêm dòng `no-codegraph: <lý do ngắn>` vào commit message
+                         (§17.6 CLAUDE.md) thay vì cập nhật CODE-GRAPH."
 7. Commit:              Format cố định:
                          [<plan-slug>] Bước N.M: <mô tả ngắn>
                          - <chi tiết>
                          Plan: <đường dẫn step file>
                          Co-Authored-By: Claude <model> <noreply@anthropic.com>
                          + "KHÔNG push" nếu không có credential.
+                         Push: thử `git push` ĐÚNG 1 LẦN, giới hạn thời gian chờ ~15-20 giây
+                         (`timeout 15 git push` trên Bash hoặc tương đương). Treo/timeout/lỗi credential
+                         → KHÔNG retry, ghi nhận "đã commit local, push thất bại — cần xác thực/push
+                         thủ công" và tiếp tục bước kế tiếp — KHÔNG để việc push chặn tiến độ.
 8. Yêu cầu trả về:      "Trả về tóm tắt ≤5 dòng: đã làm gì, quyết định, build/test, commit hash."
 ```
 **Nếu bước làm dở** → chèn thêm TRƯỚC phần Nhiệm vụ: "**QUAN TRỌNG — bước này ĐANG LÀM DỞ.** Working tree có: <danh sách file>. Nhiệm vụ đầu tiên: `git diff` từng file để hiểu phần đã làm, rồi HOÀN TẤT phần thiếu — KHÔNG làm lại từ đầu, KHÔNG vứt code dở trừ khi sai."
