@@ -52,6 +52,7 @@ $Links = [ordered]@{
     'evals'       = (Join-Path $RepoClaude 'evals')
     'hooks-kztek' = (Join-Path $RepoClaude 'hooks')
     'scripts'     = (Join-Path $RepoRoot   'scripts')
+    'lessons'     = (Join-Path $RepoClaude 'lessons')
 }
 
 # ============================================================================

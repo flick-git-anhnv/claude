@@ -32,6 +32,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 │   ├── commands/                ← Skills/commands (/ship, /verify-pr, scope-check, ...)
 │   ├── evals/                   ← Eval files theo EDD (task-planner, senior-developer, qa-engineer)
 │   ├── hooks/                   ← Hook bảo vệ config (config-protection.js)
+│   ├── lessons/                 ← Kinh nghiệm/gotcha kỹ thuật theo category (junction: ~/.claude/lessons)
 │   ├── plans/                   ← Plan files (docs/plans/PLAN-*.md) — runtime, không commit
 │   ├── shared/                  ← CORE.md (context chung), GOTCHAS.md
 │   └── templates/               ← PLAN-template.md, EVAL-template.md, CODE-GRAPH-template.md
@@ -44,7 +45,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 │   └── research/                ← Báo cáo nghiên cứu repo ngoài (RESEARCH-*.md)
 ├── scripts/                     ← Helper scripts (junction: ~/.claude/scripts)
 │   ├── md_to_docx_kztek.py     ← Xuất .md → .docx + .pdf với brand KZTEK
-│   ├── link-global.ps1          ← Tạo 8 junction ~/.claude → repo (user-level scope)
+│   ├── link-global.ps1          ← Tạo 9 junction ~/.claude → repo (user-level scope)
 │   └── review-package.sh        ← Tạo diff handoff cho code review
 ├── CLAUDE.md                    ← Quy tắc bắt buộc cho Claude Code (agent config gốc)
 ├── RULES.md                     ← Quy tắc tổ chức, phân cấp, luồng giao việc
@@ -61,6 +62,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | Skills/Commands | `.claude/commands/` | Các skill có thể gọi qua slash command | `ship.md`, `verify-pr.md`, `scope-check.md`, `security-audit-stride.md` |
 | Eval Files | `.claude/evals/` | Capability Eval theo EDD cho từng agent | `task-planner.md`, `senior-developer.md`, `qa-engineer.md` |
 | Shared Context | `.claude/shared/` | Context chung đọc đầu mỗi session | `CORE.md`, `GOTCHAS.md` |
+| Lessons Learned | `.claude/lessons/` | Kinh nghiệm/gotcha kỹ thuật theo category, đọc trước khi làm task liên quan | `INDEX.md`, `LESSONS-LOG.md`, `avalonia/`, `camera-integration/`, ... |
 | Templates | `.claude/templates/` | Khung mẫu cho plan, eval, code-graph | `PLAN-template.md`, `EVAL-template.md`, `CODE-GRAPH-template.md` |
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
@@ -69,7 +71,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 
 ## User-level scope — config dùng chung mọi project (từ 2026-07-25)
 
-Repo này là **nguồn duy nhất** của config KZTEK. `~/.claude` chứa 8 junction trỏ vào đây,
+Repo này là **nguồn duy nhất** của config KZTEK. `~/.claude` chứa 9 junction trỏ vào đây,
 nên mọi project trên máy dùng chung một bộ agents/skills/templates/scripts — không copy tay.
 
 | Junction `~/.claude\` | → Nguồn trong repo |

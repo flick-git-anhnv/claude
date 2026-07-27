@@ -27,6 +27,10 @@ Claude Code đọc config theo 3 tầng, hợp nhất tự động:
 
 Junction là **thư mục giả** ở tầng User, chuyển tiếp mọi truy cập về file thật trong repo:
 
+> **Lessons Learned:** `~/.claude/lessons/` (kinh nghiệm/gotcha kỹ thuật theo dự án — Avalonia, WinForms, camera SDK...)
+> trước đây là thư mục **thật, chỉ nằm trên máy, không có trong git** — không backup, không đồng bộ máy khác.
+> Từ 2026-07-27 đã chuyển vào repo (`.claude/lessons/`) và junction như 8 mục còn lại (xem bảng §3).
+
 ```
 C:\Users\nguye\.claude\agents          ← junction (~0 byte)
         │  mọi truy cập chuyển tiếp tới ↓
@@ -61,7 +65,7 @@ Get-ChildItem C:\Users\<user>\.claude -Force | Where-Object { $_.LinkType -eq 'J
 
 ---
 
-## 3. Bảng 8 junction
+## 3. Bảng 9 junction
 
 | Junction tại `~/.claude\` | Nguồn trong repo | Nội dung |
 |---|---|---|
@@ -73,6 +77,7 @@ Get-ChildItem C:\Users\<user>\.claude -Force | Where-Object { $_.LinkType -eq 'J
 | `evals` | `.claude/evals` | Eval của agent/skill |
 | `hooks-kztek` | `.claude/hooks` | `config-protection.js` |
 | `scripts` | `scripts` (repo root) | `md_to_docx_kztek.py`, linux-deb, kiosk... |
+| `lessons` | `.claude/lessons` | Kinh nghiệm/gotcha kỹ thuật theo category (avalonia, csharp-winforms, camera-integration...) — chuyển vào repo 2026-07-27, trước đó là thư mục thật chỉ có trên máy |
 
 **Vì sao tên `hooks-kztek` mà không phải `hooks`:** `~/.claude/hooks/` đã có hook riêng của máy
 (`code-graph-lesson-reminder.js`) không thuộc repo này. Dùng tên khác để hai bộ cùng tồn tại.
@@ -159,3 +164,4 @@ từng có bug xoá xuyên sang target ở PowerShell cũ).
 | Ngày | Nội dung | Người |
 |---|---|---|
 | 2026-07-25 | Tạo mới — chuyển config sang user-level scope bằng 8 junction | Claude Code |
+| 2026-07-27 | Thêm junction thứ 9 `lessons` — chuyển `~/.claude/lessons/` (429 file, ~87MB, trước đó là thư mục thật chỉ có trên máy, không backup/không đồng bộ) vào `.claude/lessons/` trong repo | Claude Code |
