@@ -70,7 +70,7 @@ Dựa trên test scenarios, viết file agent/skill mới:
 ---
 name: [kebab-case-name]
 description: "[Use when/PHẢI dùng khi] [điều kiện trigger cụ thể từ Bước 1]. KHÔNG dùng khi: [near-miss cases]."
-model: [claude-sonnet-5 hoặc claude-opus-5]
+model: [claude-sonnet-4-6 hoặc claude-opus-4-7]
 tools: [danh sách tools cần thiết]
 ---
 

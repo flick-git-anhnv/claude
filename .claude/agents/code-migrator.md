@@ -1,7 +1,7 @@
 ---
 name: code-migrator
 description: Use this agent để LẬP KẾ HOẠCH & ĐIỀU PHỐI chuyển đổi (migrate/port) codebase giữa hai framework, ngôn ngữ, hoặc UI stack bất kỳ — ví dụ WinForms → Avalonia, Flutter → Java, WPF → MAUI, jQuery → React, .NET Framework → .NET 8. Agent (Opus) khảo sát source, lập bảng inventory + mapping, lập plan có nhóm song song, xin user duyệt, rồi GIAO việc code từng đơn vị cho senior-developer (Sonnet) và review lại. KHÔNG dùng cho viết tính năng mới hoặc bug fix thông thường. CHỈ được kích hoạt khi user yêu cầu rõ ràng việc chuyển đổi framework/ngôn ngữ — KHÔNG tự động chạy trong bất kỳ workflow nào khác (WF-FEATURE, WF-BUGFIX, ...).
-model: claude-opus-5
+model: claude-opus-4-7
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 color: purple
 ---

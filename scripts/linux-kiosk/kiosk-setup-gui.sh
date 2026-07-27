@@ -49,7 +49,7 @@ CHOICE=$(zenity --list --checklist \
     --width=520 --height=280 \
     --column="Chọn" --column="Bước" \
     TRUE  "1. Cài phần mềm (extension ẩn top bar + unclutter)" \
-    TRUE  "2. Cấu hình hệ thống (autologin, autostart, tắt dock/sleep/update popup...)" \
+    TRUE  "2. Cấu hình hệ thống (autologin, autostart, tắt dock/sleep/update popup/bàn phím ảo...)" \
     --separator=";")
 
 if [ -z "$CHOICE" ]; then

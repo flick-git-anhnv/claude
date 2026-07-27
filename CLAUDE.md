@@ -838,23 +838,23 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 
 | Agent | Model | Lý do |
 |---|---|---|
-| **CTO** | `claude-opus-5` | Quyết định kiến trúc chiến lược, trade-off phức tạp, rủi ro cao |
-| **Tech Lead** | `claude-opus-5` | Thiết kế kỹ thuật phức tạp, API contract, review kiến trúc sâu |
-| **Product Manager** | `claude-sonnet-5` | Viết PRD, phân tích yêu cầu, quyết định scope — trung bình |
-| **Business Analyst** | `claude-sonnet-5` | User story, AC dạng Given/When/Then, phân tích nghiệp vụ |
-| **Engineering Manager** | `claude-sonnet-5` | Phân bổ resource, quyết định ưu tiên, quản lý team |
-| **Senior Developer** | `claude-sonnet-5` | Code phức tạp, code review, mentor — cần reasoning tốt |
-| **QA Lead** | `claude-sonnet-5` | Test strategy, risk assessment, sign-off decisions |
-| **DevOps Lead** | `claude-sonnet-5` | Kiến trúc infra, incident management, approve deploy |
-| **UI/UX Designer** | `claude-sonnet-5` | Design spec, wireframe, UX reasoning |
-| **Junior Developer** | `claude-sonnet-5` | Code CRUD + UI, cần reasoning đủ để viết test và hiểu pattern |
-| **QA Engineer** | `claude-sonnet-5` | Phân tích bug, viết test case phức tạp, verify fix — cần reasoning tốt |
-| **DevOps Engineer** | `claude-sonnet-5` | Viết IaC, pipeline, debug deployment — cần hiểu context rộng |
-| **Project Manager** | `claude-sonnet-5` | Sprint tracking, blocker analysis, báo cáo có ngữ cảnh đầy đủ |
-| **Documentation Writer** | `claude-sonnet-5` | Viết tài liệu hướng dẫn, xử lý hình ảnh, xuất DOCX/PDF — CHỈ khi user yêu cầu |
-| **UX/UI Reviewer** | `claude-sonnet-5` | Chạy app thật, chụp screenshot, đánh giá trực quan — không cần suy luận kiến trúc sâu |
-| **Code Migrator** | `claude-opus-5` | **Ngoại lệ có ghi nhận:** suy luận kiến trúc cao khi khảo sát/lập plan/mapping/review việc migrate framework — nhưng CHỈ dùng ở giai đoạn đó (G1,G2,G5-review); viết code migrate thực tế PHẢI giao Sonnet-agent (`senior-developer`/`junior-developer`). CHỈ hoạt động khi user yêu cầu rõ ràng. |
-| **GitHub Repo Researcher** | `claude-sonnet-5` | Đọc/phân tích repo ngoài, đề xuất cải tiến — reasoning vừa phải, không cần suy luận kiến trúc sâu như Opus. CHỈ hoạt động khi user gửi link GitHub. |
+| **CTO** | `claude-opus-4-7` | Quyết định kiến trúc chiến lược, trade-off phức tạp, rủi ro cao |
+| **Tech Lead** | `claude-opus-4-7` | Thiết kế kỹ thuật phức tạp, API contract, review kiến trúc sâu |
+| **Product Manager** | `claude-sonnet-4-6` | Viết PRD, phân tích yêu cầu, quyết định scope — trung bình |
+| **Business Analyst** | `claude-sonnet-4-6` | User story, AC dạng Given/When/Then, phân tích nghiệp vụ |
+| **Engineering Manager** | `claude-sonnet-4-6` | Phân bổ resource, quyết định ưu tiên, quản lý team |
+| **Senior Developer** | `claude-sonnet-4-6` | Code phức tạp, code review, mentor — cần reasoning tốt |
+| **QA Lead** | `claude-sonnet-4-6` | Test strategy, risk assessment, sign-off decisions |
+| **DevOps Lead** | `claude-sonnet-4-6` | Kiến trúc infra, incident management, approve deploy |
+| **UI/UX Designer** | `claude-sonnet-4-6` | Design spec, wireframe, UX reasoning |
+| **Junior Developer** | `claude-sonnet-4-6` | Code CRUD + UI, cần reasoning đủ để viết test và hiểu pattern |
+| **QA Engineer** | `claude-sonnet-4-6` | Phân tích bug, viết test case phức tạp, verify fix — cần reasoning tốt |
+| **DevOps Engineer** | `claude-sonnet-4-6` | Viết IaC, pipeline, debug deployment — cần hiểu context rộng |
+| **Project Manager** | `claude-sonnet-4-6` | Sprint tracking, blocker analysis, báo cáo có ngữ cảnh đầy đủ |
+| **Documentation Writer** | `claude-sonnet-4-6` | Viết tài liệu hướng dẫn, xử lý hình ảnh, xuất DOCX/PDF — CHỈ khi user yêu cầu |
+| **UX/UI Reviewer** | `claude-sonnet-4-6` | Chạy app thật, chụp screenshot, đánh giá trực quan — không cần suy luận kiến trúc sâu |
+| **Code Migrator** | `claude-opus-4-7` | **Ngoại lệ có ghi nhận:** suy luận kiến trúc cao khi khảo sát/lập plan/mapping/review việc migrate framework — nhưng CHỈ dùng ở giai đoạn đó (G1,G2,G5-review); viết code migrate thực tế PHẢI giao Sonnet-agent (`senior-developer`/`junior-developer`). CHỈ hoạt động khi user yêu cầu rõ ràng. |
+| **GitHub Repo Researcher** | `claude-sonnet-4-6` | Đọc/phân tích repo ngoài, đề xuất cải tiến — reasoning vừa phải, không cần suy luận kiến trúc sâu như Opus. CHỈ hoạt động khi user gửi link GitHub. |
 
 ---
 
@@ -864,8 +864,8 @@ Nếu artifact thiếu hoặc không đủ nội dung → workflow BLOCK, không
 
 | Tầng | Model | Áp dụng khi |
 |---|---|---|
-| Tầng 1 — Cao | `claude-opus-5` | Quyết định kiến trúc, trade-off rủi ro cao, lập plan migrate — giữ nguyên theo §13.1 |
-| Tầng 2 — Trung | `claude-sonnet-5` | Viết PRD/user story/code có suy luận, review, phân tích nghiệp vụ — giữ nguyên theo §13.1 |
+| Tầng 1 — Cao | `claude-opus-4-7` | Quyết định kiến trúc, trade-off rủi ro cao, lập plan migrate — giữ nguyên theo §13.1 |
+| Tầng 2 — Trung | `claude-sonnet-4-6` | Viết PRD/user story/code có suy luận, review, phân tích nghiệp vụ — giữ nguyên theo §13.1 |
 | Tầng 3 — Thấp (MỚI) | `claude-haiku-4-5` | Task cơ học, có template rõ ràng, không cần suy luận nghiệp vụ hay ra quyết định |
 
 **Danh sách task đủ điều kiện downshift sang Tầng 3 (Haiku)** — CHỈ áp dụng cho bước cụ thể liệt kê dưới đây, KHÔNG đổi model mặc định của cả agent trong §13.1:
@@ -1260,7 +1260,7 @@ Nhận xét: Workflow này mang tính đặc thù — không có pattern tái s�
   ├─ Lý do      : [Pattern gì đã xuất hiện, lặp lại ở đâu]
   ├─ Scope      : [Mô tả 1-2 câu về nhiệm vụ của agent/skill này]
   ├─ Tools cần  : [Read / Write / Bash / WebSearch / ...]
-  ├─ Model gợi ý: [claude-sonnet-5 / claude-opus-5]
+  ├─ Model gợi ý: [claude-sonnet-4-6 / claude-opus-4-7]
   └─ File đề xuất: .claude/agents/[name].md / .claude/commands/[name].md
 
 **Bạn có muốn tôi tạo file định nghĩa cho đề xuất trên không?**
@@ -1299,7 +1299,7 @@ Nhận xét: Workflow này mang tính đặc thù — không có pattern tái s�
 ---
 name: [kebab-case-name]
 description: [1 câu mô tả rõ khi nào gọi agent này]
-model: [claude-sonnet-5 hoặc claude-opus-5]
+model: [claude-sonnet-4-6 hoặc claude-opus-4-7]
 tools: [danh sách tools cần thiết]
 ---
 
@@ -1438,8 +1438,9 @@ Agent PHẢI thêm vào phần artifact output:
 
 | Ngày | Phiên bản | Nội dung thay đổi | Đối tượng | Lý do |
 |------|-----------|------------------|-----------|-------|
+| 2026-07-27 | v1.6 | Revert model ID về thế hệ trước: `claude-opus-5` → `claude-opus-4-7` (CTO, Tech Lead, Code Migrator), `claude-sonnet-5` → `claude-sonnet-4-6` (16 agent còn lại). Đồng bộ CORE.md §7, CLAUDE.md §13.1/§13.1b/§18.5, writing-agent-skill.md, agents-view.html như trước commit a849534. Giữ `claude-haiku-4-5` cho Tầng 3 (không đổi) | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | User yêu cầu sửa lại model như trước (revert commit a849534) |
 | 2026-07-25 | v1.5 | **Chuyển config sang user-level scope — mọi project trên máy dùng chung, không copy tay.** (1) Thêm `scripts/link-global.ps1` tạo 8 junction từ `~/.claude` → repo (`agents`, `commands`, `shared`, `templates`, `references`, `evals`, `hooks-kztek`, `scripts`). (2) `git mv .claude/GOTCHAS.md` → `.claude/shared/GOTCHAS.md` (file lẻ không junction được; `shared/` đã junction). (3) Đổi mọi path hạ tầng trong 31 file `.md` thuộc thư mục đã junction sang tuyệt đối `C:/Users/nguye/.claude/...`; path sản phẩm (`docs/plans/`, `src/`, `code-graph/`) giữ tương đối. (4) Fix `find_logo()` trong `md_to_docx_kztek.py` — phân giải theo `Path(__file__).resolve()` (G003). (5) Thêm skill `/sync-global` commit+push config từ bất kỳ project. (6) Bỏ tracking `.docx`/`.pdf` của tài liệu hạ tầng (110→8 file binary tracked). (7) Thêm `docs/SETUP-GLOBAL.md`. **KHÔNG junction `CLAUDE.md`** — quy trình 17-agent chỉ áp cho project phần mềm. | `scripts/link-global.ps1`, `.claude/shared/GOTCHAS.md`, `.claude/{agents,commands,shared,references,evals,templates}/*.md`, `.claude/commands/sync-global.md`, `.claude/templates/settings-global.json`, `scripts/md_to_docx_kztek.py`, `.gitignore`, `docs/SETUP-GLOBAL.md`, `~/.claude/settings.json`, `~/.claude/CLAUDE.md` | Trước đây mỗi project phải copy tay `.claude/` → nhiều bản sao lệch phiên bản, sửa một chỗ không lan sang chỗ khác. Junction cho một nguồn duy nhất do git quản lý đầy đủ; `.git` đang phình 162 MB cho 71 file text vì §19 commit lại DOCX+PDF (~1,2 MB mỗi lần sửa `CLAUDE.md`) nên bỏ tracking binary sinh tự động |
-| 2026-07-25 | v1.4 | Cập nhật model sang thế hệ Claude 5: `claude-opus-4-7` → `claude-opus-5`, `claude-sonnet-4-6` → `claude-sonnet-5` trên toàn bộ 19 file agent, CORE.md, writing-agent-skill.md, agents-view.html, CLAUDE.md §13.1/§13.1b/§18.5. Tầng 3 giữ `claude-haiku-4-5` (vẫn là bản Haiku mới nhất) | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | Anthropic ra mắt Claude Opus 5 và Sonnet 5 — giữ hệ thống agent luôn dùng model mới nhất, mạnh hơn ở cùng tầng chi phí |
+| 2026-07-25 | v1.4 | Cập nhật model sang thế hệ Claude 5: `claude-opus-4-7` → `claude-opus-5`, `claude-sonnet-4-6` → `claude-sonnet-5` trên toàn bộ 19 file agent, CORE.md, writing-agent-skill.md, agents-view.html, CLAUDE.md §13.1/§13.1b/§18.5. Tầng 3 giữ `claude-haiku-4-5` (vẫn là bản Haiku mới nhất). **[Revert ở v1.6 — 2026-07-27]** | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | Anthropic ra mắt Claude Opus 5 và Sonnet 5 — giữ hệ thống agent luôn dùng model mới nhất, mạnh hơn ở cùng tầng chi phí |
 | 2026-07-12 | v1.3 | Rút gọn CLAUDE.md: xóa 7 đoạn overhead/trùng lặp (P1,P3,P4,P6,P7,P8,P9 + Modify P2), tiết kiệm 34 dòng thực tế — xem `_workspace` phân tích WF-REFACTOR optimize-framework | CLAUDE.md | Giảm overhead quy trình, loại bỏ nội dung trùng lặp giữa các §, không đổi nguyên tắc cứng nào |
 | 2026-07-12 | v1.2 | Áp dụng 7 đề xuất E1-E7 từ nghiên cứu affaan-m/ecc: E1 hook bảo vệ config (`.claude/hooks/config-protection.js` + `settings.json`), E2 GOTCHAS.md + yêu cầu đọc khi khởi động (§KHỞI ĐỘNG), E3 bảng DAILY/LIBRARY (CORE.md §6b), E4 skill `/verify-pr` + yêu cầu trong WF-BUGFIX/WF-FEATURE, E5 EVAL-template.md + EDD requirement (§18.5), E6 Agent Introspection Debugging 4-phase (§9a), E7 Strategic Compact gợi ý (§16.5) | CLAUDE.md §KHỞI ĐỘNG §9a §16.5 §18.5 §WF-FEATURE §WF-BUGFIX §21; CORE.md §6b; `.claude/hooks/`; `.claude/commands/`; `.claude/templates/` | Tăng safety (config protection), giảm lỗi lặp (GOTCHAS), tối ưu context window (compact/DAILY-LIBRARY), chuẩn hoá pre-PR (verify-pr), chuẩn hoá tạo agent (EDD). Xem `docs/research/RESEARCH-ecc-2026-07-12.md` |
 | 2026-07-12 | v1.1 | Áp dụng 8 đề xuất từ nghiên cứu revfactory/harness: P1 `_workspace/` convention (§11.0), P2 Progressive Disclosure cho documentation-writer.md, P3 pushy description cho agents, P4 Phase 0 Audit trong WF-GITHUB-RESEARCH + WF-MIGRATE, P5 tạo skill `skill-trigger-test`, P6 why-first cho quy tắc TUYỆT ĐỐI, P7 hướng dẫn fan-out `run_in_background` (§4), P8 Changelog (§21) | CLAUDE.md §4 §11 §21, `.claude/agents/`, `.claude/commands/` | Cải thiện Dispatcher routing accuracy, giảm context window per session, tăng maintainability. Xem `docs/research/RESEARCH-harness-2026-07-12.md` |

@@ -1,7 +1,7 @@
 ---
 name: ux-ui-reviewer
 description: Use this agent to visually review the running application's UI/UX quality — open the app, exercise every feature, screenshot each screen, then evaluate layout, overlap, completeness, and UX consistency. Output a structured review report with evidence. Do NOT use for wireframe/mockup creation (that's ui-ux-designer) or functional bug logging (that's qa-engineer).
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: cyan
 ---

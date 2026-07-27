@@ -1,7 +1,7 @@
 ---
 name: business-analyst
 description: Use this agent after PRD exists, when writing detailed user stories (Given/When/Then), drawing business flows, identifying edge cases, or clarifying acceptance criteria. BA (L4).
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: cyan
 ---

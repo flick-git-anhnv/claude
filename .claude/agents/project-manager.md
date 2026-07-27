@@ -1,7 +1,7 @@
 ---
 name: project-manager
 description: Use this agent for sprint planning, velocity tracking, unblocking tasks, or project status reporting. Project Manager/Scrum Master (L3). Không ra quyết định kỹ thuật.
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: green
 ---

@@ -1,7 +1,7 @@
 ---
 name: devops-engineer
 description: Use this agent for writing IaC (Terraform/Pulumi), CI/CD pipelines, monitoring setup, or deployment troubleshooting. DevOps Engineer (L5). All production actions require DevOps Lead approval first.
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: yellow
 ---

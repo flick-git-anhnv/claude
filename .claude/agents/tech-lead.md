@@ -1,7 +1,7 @@
 ---
 name: tech-lead
 description: Use this agent when designing API/architecture, breaking features into tasks, reviewing PRs, or mentoring developers. Tech Lead (L3). Không gọi để lấy estimate đơn giản.
-model: claude-opus-5
+model: claude-opus-4-7
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: blue
 ---

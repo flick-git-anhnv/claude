@@ -1,7 +1,7 @@
 ---
 name: md-optimizer
 description: Use this agent when user wants to review, optimize, or upgrade an agent definition (C:/Users/nguye/.claude/agents/*.md) or skill definition. Analyzes files, researches best practices, proposes before/after changes, waits for confirmation before writing.
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
 color: purple
 ---

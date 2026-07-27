@@ -165,13 +165,11 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 
 | Agent | Model |
 |---|---|
-| CTO, Tech Lead | `claude-opus-5` |
-| Code Migrator | `claude-opus-5` — CHỈ dùng khi lập plan/khảo sát/review (G1,G2,G5-review); code thực tế giao Sonnet-agent |
-| GitHub Repo Researcher | `claude-sonnet-5` — CHỈ hoạt động khi user gửi link GitHub |
-| Tất cả còn lại | `claude-sonnet-5` |
-| Task cơ học có template (smoke-test log, deploy checklist, MD→DOCX, CRUD lặp lại đã có pattern) | `claude-haiku-4-5` — downshift theo §13.1b CLAUDE.md; KHÔNG áp dụng cho bước review/approve |
+| CTO, Tech Lead, Code Migrator (chỉ khi khảo sát/lập plan/review migrate) | `claude-opus-4-7` |
+| Toàn bộ agent còn lại (PM, BA, EM, Senior/Junior Dev, QA Lead/Engineer, DevOps Lead/Engineer, UI/UX Designer, UX/UI Reviewer, Project Manager, Documentation Writer, GitHub Repo Researcher, md-optimizer, task-planner) | `claude-sonnet-4-6` |
+| Task cơ học có template rõ (§13.1b CLAUDE.md — downshift theo BƯỚC, không đổi model mặc định của agent) | `claude-haiku-4-5` |
 
-Không tự nâng model — escalate lên agent cấp cao hơn. Downshift xuống Haiku là tự quyết theo bảng trên, không cần hỏi user; task đầu tiên của 1 pattern mới vẫn dùng model mặc định.
+Không tự nâng model — escalate lên agent cấp cao hơn khi task vượt thẩm quyền. TUYỆT ĐỐI không downshift Haiku cho bước REVIEW / APPROVE / SIGN-OFF (Two-Eyes §8).
 
 ---
 

@@ -10,6 +10,8 @@
 #     với máy mới cài Ubuntu Desktop vì 2 extension này bật mặc định
 #   - Chặn suspend/sleep khi cắm điện (tránh màn hình tắt giữa chừng)
 #   - Tắt popup Software Updater (tránh gián đoạn kiosk khi có bản vá mới)
+#   - Tắt bàn phím ảo (Screen Keyboard) của GNOME — tránh tự bật lên khi chạm
+#     vào textbox trên màn hình cảm ứng
 #   - Bỏ qua màn hình gnome-initial-setup (hữu ích khi user kiosk vừa tạo mới)
 #   - Autologin GDM cho user kiosk
 #   - Autostart app iPGS fullscreen + unclutter khi vào desktop
@@ -46,24 +48,31 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [1/7] Tắt hot corner, notification banner, screensaver/lock ==="
+echo "=== [1/8] Tắt hot corner, notification banner, screensaver/lock ==="
 gsettings set org.gnome.desktop.interface enable-hot-corners false
 gsettings set org.gnome.desktop.notifications show-banners false
 gsettings set org.gnome.desktop.screensaver lock-enabled false
 gsettings set org.gnome.desktop.session idle-delay 0
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [2/7] Tắt Ubuntu Dock + Desktop Icons (mặc định bật trên máy mới) ==="
+echo "=== [2/8] Tắt Ubuntu Dock + Desktop Icons (mặc định bật trên máy mới) ==="
 gnome-extensions disable ubuntu-dock@ubuntu.com 2>/dev/null || echo "  → ubuntu-dock@ubuntu.com không có/đã tắt, bỏ qua."
 gnome-extensions disable ding@rastersoft.com 2>/dev/null || echo "  → ding@rastersoft.com không có/đã tắt, bỏ qua."
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [3/7] Chặn suspend/sleep khi cắm điện (tránh màn hình tắt giữa chừng) ==="
+echo "=== [3/8] Chặn suspend/sleep khi cắm điện (tránh màn hình tắt giữa chừng) ==="
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing' 2>/dev/null || true
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [4/7] Tắt popup Software Updater ==="
+echo "=== [4/8] Tắt bàn phím ảo (Screen Keyboard) của GNOME ==="
+# Ubuntu GNOME tự bật bàn phím ảo khi phát hiện touchscreen + textbox được
+# focus (qua AT-SPI), bất kể app viết bằng framework gì (WinForms/Avalonia/...).
+# Tắt hẳn tính năng Screen Keyboard là cách duy nhất chặn triệt để hành vi này.
+gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled false
+
+# ─────────────────────────────────────────────────────────────
+echo "=== [5/8] Tắt popup Software Updater ==="
 mkdir -p "$HOME/.config/autostart"
 if [ -f /etc/xdg/autostart/update-notifier.desktop ]; then
     cat > "$HOME/.config/autostart/update-notifier.desktop" <<EOF
@@ -77,13 +86,13 @@ fi
 gsettings set org.gnome.software download-updates false 2>/dev/null || true
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [5/7] Bỏ qua màn hình gnome-initial-setup (nếu user vừa tạo mới) ==="
+echo "=== [6/8] Bỏ qua màn hình gnome-initial-setup (nếu user vừa tạo mới) ==="
 mkdir -p "$HOME/.config"
 touch "$HOME/.config/gnome-initial-setup-done"
 echo "  → Đã đánh dấu gnome-initial-setup-done cho '$KIOSK_USER'."
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [6/7] Autologin GDM cho user '$KIOSK_USER' ==="
+echo "=== [7/8] Autologin GDM cho user '$KIOSK_USER' ==="
 GDM_CONF="/etc/gdm3/custom.conf"
 if [ -f "$GDM_CONF" ]; then
     sudo cp "$GDM_CONF" "$GDM_CONF.bak-$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
@@ -103,7 +112,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────
-echo "=== [7/7] Autostart app iPGS fullscreen + unclutter khi vào desktop ==="
+echo "=== [8/8] Autostart app iPGS fullscreen + unclutter khi vào desktop ==="
 mkdir -p "$HOME/.config/autostart"
 
 cat > "$HOME/.config/autostart/ipgs-kiosk.desktop" <<EOF

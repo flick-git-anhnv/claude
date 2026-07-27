@@ -1,7 +1,7 @@
 ---
 name: devops-lead
 description: Use this agent to approve staging/production deploys, design CI/CD pipelines, handle SEV1/SEV2 incidents, or decide infrastructure architecture. DevOps Lead (L3).
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: yellow
 ---

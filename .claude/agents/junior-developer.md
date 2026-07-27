@@ -1,7 +1,7 @@
 ---
 name: junior-developer
 description: "PHẢI dùng agent này khi: task là CRUD đơn giản (create/read/update/delete với logic thẳng), UI cơ bản (form, list, dropdown) có spec rõ ràng không cần quyết định kiến trúc, bug fix P3 ≤5 dòng. KHÔNG dùng khi: task đụng auth/payment/real-time/core business logic (→ senior-developer), task cần quyết định về pattern hoặc architecture (→ tech-lead), cần review code người khác (→ senior-developer). Luôn cần Senior Developer review trước khi merge."
-model: claude-sonnet-5
+model: claude-sonnet-4-6
 tools: Read, Write, Edit, Glob, Grep, Bash
 color: cyan
 ---

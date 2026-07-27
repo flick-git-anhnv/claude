@@ -388,7 +388,7 @@ const AGENTS = [
     parent: null,
     colorClass: 'l1', color: '#FFD700',
     levelLabel: 'L1 · Executive',
-    model: 'claude-opus-5', modelTier: 'opus',
+    model: 'claude-opus-4-7', modelTier: 'opus',
     description: 'Người đứng đầu phòng phần mềm. Phê duyệt kiến trúc lớn, quyết định công nghệ chiến lược, release production tính năng quan trọng.',
     when: 'Kiến trúc lớn, quyết định công nghệ chiến lược, release quan trọng. Không gọi cho task hằng ngày.',
     tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch']
@@ -399,7 +399,7 @@ const AGENTS = [
     parent: 'cto',
     colorClass: 'l2', color: '#FF8C00',
     levelLabel: 'L2 · Management',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Quản lý nhân sự và resource của các team kỹ thuật. Phân bổ team, quyết định ưu tiên cross-team, đánh giá hiệu suất, duyệt PR critical.',
     when: 'Phân bổ team cho dự án, ưu tiên cross-team, approve deploy production tính năng lớn.',
     tools: ['Read', 'Glob', 'Grep', 'Edit']
@@ -410,7 +410,7 @@ const AGENTS = [
     parent: 'cto',
     colorClass: 'l2', color: '#FF8C00',
     levelLabel: 'L2 · Management',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Phụ trách yêu cầu sản phẩm, viết PRD, ưu tiên backlog, đại diện tiếng nói của người dùng và khách hàng.',
     when: 'Định nghĩa tính năng mới, làm rõ scope, quyết định trade-off business vs technical.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch']
@@ -421,7 +421,7 @@ const AGENTS = [
     parent: 'engineering-manager',
     colorClass: 'l3', color: '#4A90D9',
     levelLabel: 'L3 · Lead',
-    model: 'claude-opus-5', modelTier: 'opus',
+    model: 'claude-opus-4-7', modelTier: 'opus',
     description: 'Thiết kế kỹ thuật cho tính năng, chia task, code review cuối cùng, mentor developer. Review test plan từ góc độ coverage và testability.',
     when: 'Thiết kế API, chọn pattern, review PR quan trọng, chia feature lớn thành task nhỏ, review test plan.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -432,7 +432,7 @@ const AGENTS = [
     parent: 'engineering-manager',
     colorClass: 'l3', color: '#4A90D9',
     levelLabel: 'L3 · Lead',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Định nghĩa chiến lược test, viết test plan tổng thể, quyết định automation framework, ký duyệt release từ góc độ chất lượng. Sign-off P0/P1 bug fix.',
     when: 'Lập kế hoạch test cho feature lớn, đánh giá rủi ro chất lượng, sign-off P0/P1 trong WF-BUGFIX. QA Lead có quyền VETO release.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -443,7 +443,7 @@ const AGENTS = [
     parent: 'engineering-manager',
     colorClass: 'l3', color: '#4A90D9',
     levelLabel: 'L3 · Lead',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Quản lý hạ tầng, CI/CD, monitoring, security pipeline. Approve deploy staging VÀ production (2 bước riêng biệt).',
     when: 'Thiết kế pipeline, scale hạ tầng, xử lý sự cố production, approve staging và production deploy.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -454,7 +454,7 @@ const AGENTS = [
     parent: 'engineering-manager',
     colorClass: 'l3', color: '#4A90D9',
     levelLabel: 'L3 · Lead',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Lên kế hoạch sprint, theo dõi tiến độ, gỡ blocker, tổ chức ceremony (standup, planning, retro). Báo cáo trạng thái lên EM.',
     when: 'Chia nhỏ kế hoạch, theo dõi timeline, báo cáo trạng thái dự án.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep']
@@ -465,7 +465,7 @@ const AGENTS = [
     parent: 'product-manager',
     colorClass: 'l4', color: '#5CB85C',
     levelLabel: 'L4 · Senior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Phân tích yêu cầu chi tiết, viết user story, acceptance criteria, vẽ flow nghiệp vụ, kết nối PM và team kỹ thuật.',
     when: 'PRD đã có nhưng cần đào sâu chi tiết, edge case, làm rõ nghiệp vụ.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep']
@@ -476,7 +476,7 @@ const AGENTS = [
     parent: 'product-manager',
     colorClass: 'l4', color: '#5CB85C',
     levelLabel: 'L4 · Senior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Thiết kế giao diện, wireframe, prototype, design system. Đảm bảo tính nhất quán và trải nghiệm người dùng tốt.',
     when: 'Mockup tính năng mới, đánh giá UX, đảm bảo nhất quán với design system.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebFetch']
@@ -487,7 +487,7 @@ const AGENTS = [
     parent: 'tech-lead',
     colorClass: 'l4', color: '#5CB85C',
     levelLabel: 'L4 · Senior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Lập trình viên giàu kinh nghiệm, đảm nhận task khó, thiết kế chi tiết, mentor junior, review code junior. Người thực thi WF-HOTFIX và WF-REFACTOR.',
     when: 'Code phần phức tạp (auth, payment, optimization), peer review, mentor junior, hotfix và refactor.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -498,7 +498,7 @@ const AGENTS = [
     parent: 'tech-lead',
     colorClass: 'l5', color: '#9B59B6',
     levelLabel: 'L5 · Junior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Lập trình viên đang phát triển, đảm nhận task vừa sức, học hỏi qua mentor và code review.',
     when: 'Code tính năng CRUD đơn giản, fix bug nhỏ, thực thi task theo hướng dẫn của Senior/Tech Lead.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -509,7 +509,7 @@ const AGENTS = [
     parent: 'qa-lead',
     colorClass: 'l5', color: '#9B59B6',
     levelLabel: 'L5 · Junior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Viết test case chi tiết, chạy manual test, viết automation script, log bug. Thực hiện smoke test trong WF-HOTFIX. Regression test trong WF-REFACTOR.',
     when: 'Test tính năng cụ thể, viết test plan chi tiết, reproduce bug, smoke test hotfix, regression test refactor.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -520,7 +520,7 @@ const AGENTS = [
     parent: 'devops-lead',
     colorClass: 'l5', color: '#9B59B6',
     levelLabel: 'L5 · Junior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Viết IaC (Terraform), CI/CD pipeline, setup monitor, run deploy. Deploy staging và production sau khi được DevOps Lead approve.',
     when: 'Tạo môi trường, viết pipeline, troubleshoot deployment, setup alert, chạy lệnh deploy.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']
@@ -531,7 +531,7 @@ const AGENTS = [
     parent: 'engineering-manager',
     colorClass: 'l4', color: '#5CB85C',
     levelLabel: 'L4 · Senior IC',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Viết tài liệu hướng dẫn sử dụng từ ứng dụng đang chạy thật, chụp screenshot từng trạng thái, xuất DOCX+PDF theo brand KZTEK. Chuyển đổi file .md sang DOCX/PDF. CHỈ kích hoạt khi user yêu cầu rõ ràng.',
     when: 'WF-DOCS: user yêu cầu viết tài liệu hướng dẫn cho tính năng/hệ thống. WF-CONVERT: chuyển đổi file .md sang DOCX+PDF. KHÔNG tự động kích hoạt trong các workflow khác.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebFetch', 'Bash']
@@ -542,7 +542,7 @@ const AGENTS = [
     parent: null,
     colorClass: 'utility', color: '#e8b84b',
     levelLabel: 'Utility · System',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Tạo và quản lý plan file (.claude/plans/PLAN-*.md) cho mỗi task. Tự động kiểm tra plan hiện có khi task đang dở. Cập nhật tiến độ (⬜→✅) sau mỗi bước hoàn thành. KHÔNG tự thực hiện task — chỉ quản lý plan.',
     when: 'Tự động gọi trước mọi workflow mới để tạo/kiểm tra plan file. Gọi thủ công khi muốn xem tiến độ task, cập nhật plan, hoặc tìm task đang dở.',
     tools: ['Read', 'Write', 'Edit', 'Glob']
@@ -553,7 +553,7 @@ const AGENTS = [
     parent: null,
     colorClass: 'utility', color: '#e8b84b',
     levelLabel: 'Utility · System',
-    model: 'claude-sonnet-5', modelTier: 'sonnet',
+    model: 'claude-sonnet-4-6', modelTier: 'sonnet',
     description: 'Phân tích file agent.md hoặc skill.md qua 5 bước: INGEST → RESEARCH (tra cứu GitHub/web) → ANALYZE (ưu/nhược điểm có nguồn) → PROPOSE (before/after) → APPLY (chỉ sau khi user xác nhận). KHÔNG tự ghi file trước khi được phép.',
     when: 'Khi user muốn review, tối ưu, hoặc nâng cấp một agent definition (.claude/agents/*.md) hoặc skill definition (.claude/commands/*.md). Dispatcher gọi sau khi tạo agent/skill mới.',
     tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch']
@@ -796,7 +796,7 @@ function selectAgent(id) {
   const a = AGENT_MAP[id];
   const toolBadges = a.tools.map(t => `<span class="tool-badge">${t}</span>`).join('');
   const modelClass = a.modelTier === 'opus' ? 'model-opus' : 'model-sonnet';
-  const modelLabel = a.modelTier === 'opus' ? '◆ Opus 5' : '◇ Sonnet 5';
+  const modelLabel = a.modelTier === 'opus' ? '◆ Opus 4.7' : '◇ Sonnet 4.6';
 
   document.getElementById('agentDetail').innerHTML = `
     <div class="detail-name" style="color:${a.color}">${a.fullName}</div>

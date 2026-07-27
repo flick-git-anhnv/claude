@@ -44,3 +44,5 @@ scripts/**/*.pdf
 /WORKFLOW.pdf
 code-graph/*.docx
 code-graph/*.pdf
+/README.docx
+/README.pdf

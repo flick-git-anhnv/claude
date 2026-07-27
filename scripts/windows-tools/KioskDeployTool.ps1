@@ -107,7 +107,7 @@ $chk1.Font = $labelFont
 $form.Controls.Add($chk1); $y += 26
 
 $chk2 = New-Object System.Windows.Forms.CheckBox
-$chk2.Text = "Chạy Script 2 — Cấu hình hệ thống (autologin, autostart, dock/sleep/update...)"
+$chk2.Text = "Chạy Script 2 — Cấu hình hệ thống (autologin, autostart, dock/sleep/update/bàn phím ảo...)"
 $chk2.Location = New-Object System.Drawing.Point(15, $y)
 $chk2.Size = New-Object System.Drawing.Size(560, 22)
 $chk2.Checked = $true
