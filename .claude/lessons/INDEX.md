@@ -59,6 +59,7 @@
 - [react19-jsx-namespace-and-lazy-swap-swallows-keystrokes.md](react-web/react19-jsx-namespace-and-lazy-swap-swallows-keystrokes.md) — React 19 bỏ JSX namespace toàn cục (phải `declare module 'react'`); tráo component sau `import()` động lúc đang gõ làm **mất phím im lặng**
 
 ### csharp-winforms/
+- [winforms-modal-child-hidden-behind-dialoghost.md](csharp-winforms/winforms-modal-child-hidden-behind-dialoghost.md) — Popup mới đè lên dialog xác nhận (`dialogHost` borderless Form riêng) bị che khuất im lặng nếu tự viết `Form.ShowDialog(owner)`; pattern đúng trong codebase là UserControl con + `MaskedUserControl` (như `UcSelectVouchers`), không phải Form riêng + TopMost
 - [thread-async-void-workerthread-pollingstop-vo-hieu.md](csharp-winforms/thread-async-void-workerthread-pollingstop-vo-hieu.md) — ⚠️ CRITICAL: `new Thread(async void WorkerThread)` → thread chết ngay tại `await` đầu tiên, `Running`/`PollingStop()` thành vô hiệu, mỗi lần mở/đóng màn Cài đặt lại nhân đôi số vòng polling UDP tới thiết bị; fix bằng `Task` + `CancellationTokenSource`, `PollingStop` phải await vòng cũ thoát thật
 - [winforms-designer-programmatic-ui.md](csharp-winforms/winforms-designer-programmatic-ui.md) — Programmatic UI không render trong VS Designer: dùng `*.UI.cs` + `[DesignerCategory("Code")]`
 - [kzbutton-focus-events-override-custom-colors.md](csharp-winforms/kzbutton-focus-events-override-custom-colors.md) — `KzButton` (Kztek.Control8) tự reset FillColor/BorderColor/ForeColor khi Focus đổi — set màu custom phải subscribe GotFocus/LostFocus SAU để ghi đè lại
