@@ -53,8 +53,8 @@ Không có — đây là bước đọc/phân tích thuần túy, không có quy
 - **Bước sau cần biết:** KHÔNG cần đọc lại repo scratchpad — toàn bộ thông tin cần thiết đã tóm tắt ở `_workspace/02_researcher_graphify-notes.md`. Bước 2.2 chỉ cần đọc file đó để viết báo cáo chính thức.
 
 ## Commit
-- Hash: [điền sau khi commit]
-- Đã push: không (sẽ commit+push sau khi cập nhật PLAN-MASTER)
+- Hash: 84cf140
+- Đã push: có
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
