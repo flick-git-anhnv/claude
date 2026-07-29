@@ -278,3 +278,90 @@ Giới hạn đáng ghi nhận: đây là pre-1.0 software đang active developm
 ---
 
 *Báo cáo này thuộc Bước 3 WF-GITHUB-RESEARCH — phân tích trung lập. Đề xuất áp dụng vào KZTEK (Mode A, Bước 3A.1) sẽ được viết riêng sau khi user xác nhận tiếp tục.*
+
+---
+
+## 11. Đề xuất cải tiến KZTEK (Mode A — Bước 3A.1)
+
+> Dựa trên phân tích ở các mục trên. Mỗi đề xuất độc lập — user có thể chọn 0, 1, hoặc nhiều đề xuất để áp dụng ở bước tiếp theo (Bước 3A.2). **CHƯA áp dụng bất kỳ thay đổi nào vào codebase KZTEK ở bước này.**
+
+### Bảng tổng quan nhanh
+
+| # | Đề xuất | Effort | Phụ thuộc ngoài | Áp dụng ngay? |
+|---|---------|--------|-----------------|---------------|
+| P1 | Tích hợp Graphify CLI vào workflow coding | Trung bình (1–2 ngày) | Python 3.10+, `pip install graphify` | Khi có C# product codebase |
+| P2 | Cải tiến §17: "Query-first checklist" có cấu trúc | Thấp (2–4 giờ) | Không có | Ngay — với cả markdown codebase hiện tại |
+| P3 | Confidence labels trong CODE-GRAPH.md | Thấp (4–8 giờ) | Không có | Ngay |
+| P4 | "CODE-GRAPH impact" field trong PR checklist §15.3 | Rất thấp (1–2 giờ) | Không có | Ngay |
+| P5 | LESSONS.md — Tích lũy institutional knowledge | Thấp (4–6 giờ) | Không có | Ngay |
+
+---
+
+### P1 — Tích hợp Graphify CLI vào quy trình coding
+
+| Trường | Nội dung |
+|--------|---------|
+| **Hiện trạng KZTEK** | `code-graph/CODE-GRAPH.md` là file Markdown phẳng, cập nhật thủ công bởi agents (CLAUDE.md §17). Agents phải đọc toàn bộ file để lấy context — tốn context window. Không có call graph (ai gọi ai), không query được. Workspace hiện chưa có C# product codebase. |
+| **Học từ đâu** | Pipeline `detect() → extract() → build_graph()` (`extract.py`, `build.py`, `extractors/csharp.py`); lệnh `graphify update .` (incremental re-extract chỉ file đã đổi); lệnh `graphify query "..."`, `graphify path A B`, `graphify explain X` (graph traversal); `always_on/claude-md.md` (injection buộc query-first behavior). |
+| **Lý do thay đổi** | Agents đọc CODE-GRAPH.md như formality rồi vẫn Glob toàn bộ `src/` để "chắc chắn". Không có call graph → Senior Dev phải grep nhiều file để hiểu dependency. Update thủ công không đủ chính xác (agent suy đoán từ tên file, không từ AST). |
+| **Áp dụng vào đâu** | (1) CLAUDE.md §17.1 — thay "đọc CODE-GRAPH.md trước" bằng "chạy `graphify query` trước khi đọc source file". (2) WF-FEATURE Bước 8/9 (Senior/Junior Dev) — thêm bước bắt buộc chạy `graphify update .` sau khi sửa code, trước khi tạo PR. (3) `.claude/shared/CORE.md` §coding-protocol — đồng bộ. |
+| **Đạt được gì** | (a) Agent tra cứu `graphify query "where is KzButton used?"` nhận subgraph trong <2 giây thay vì grep 10+ file — giảm từ ~5 lần Read tool xuống 1 lần query per context question. (b) CODE-GRAPH không bao giờ stale: `graphify update .` dùng AST (tree-sitter, zero LLM cost) chỉ re-extract file đã đổi. (c) C# cross-file dependency (`extractors/csharp.py`) phát hiện namespace/inheritance mà Markdown thủ công không capture được. |
+| **Rủi ro / Effort** | Rủi ro: (1) Pre-1.0 software — API có thể thay đổi giữa minor releases → cần pin version cụ thể. (2) Cần Python 3.10+ trong môi trường dev/CI. (3) Giá trị thực tế chỉ cao khi có C# product codebase — áp dụng ngay bây giờ lợi ích hạn chế. Effort: **Trung bình** — 1–2 ngày (setup, integration vào workflow instructions, test với C# sample). |
+
+---
+
+### P2 — Cải tiến CLAUDE.md §17: "Query-first checklist" có cấu trúc
+
+| Trường | Nội dung |
+|--------|---------|
+| **Hiện trạng KZTEK** | CLAUDE.md §17.1 yêu cầu agents "Read code-graph/CODE-GRAPH.md TRƯỚC" nhưng không có hướng dẫn cụ thể về việc phải trả lời những câu hỏi gì từ CODE-GRAPH trước khi mở source file. Không có checklist hay protocol. |
+| **Học từ đâu** | `always_on/claude-md.md` — đoạn text inject vào CLAUDE.md với danh sách câu hỏi cụ thể cần trả lời từ graph trước khi đọc raw file: "For codebase questions, first run `graphify query`..."; "After modifying code, run `graphify update .`...". Pattern: biến guidance mơ hồ thành constraint có checklist cụ thể. |
+| **Lý do thay đổi** | §17 hiện tại nói "đọc trước" nhưng không định nghĩa "đọc để trả lời câu hỏi gì". Agents đọc qua CODE-GRAPH rồi vẫn mở toàn bộ src/ vì không biết khi nào "đã đủ" — tốn 3–5 lần Read tool redundant mỗi task. |
+| **Áp dụng vào đâu** | CLAUDE.md §17.1 — thêm mục "Query Checklist bắt buộc": danh sách 4–5 câu hỏi agents PHẢI cố gắng trả lời từ CODE-GRAPH trước khi mở source file (ví dụ: "Module X nằm ở file nào?", "X phụ thuộc vào những module nào?", "Ai gọi X?", "X expose interface/API nào?"). Chỉ khi CODE-GRAPH không trả lời được mới mở source file. `.claude/shared/CORE.md` §coding-protocol — đồng bộ. |
+| **Đạt được gì** | Agents khai thác CODE-GRAPH có chủ đích thay vì đọc formality → ước tính giảm 2–4 lần Read/Glob tool redundant per coding task quen thuộc. Mỗi task tiết kiệm ~500–1000 tokens context. Sau 10 WF-BUGFIX cycles, tiết kiệm đáng kể tổng token. |
+| **Rủi ro / Effort** | Rủi ro: Rất thấp — chỉ là text change trong CLAUDE.md và CORE.md, không thêm dependency, không thay đổi code. Effort: **Thấp** — 2–4 giờ (edit §17, viết ví dụ checklist, đồng bộ CORE.md). |
+
+---
+
+### P3 — Confidence labels trong CODE-GRAPH.md
+
+| Trường | Nội dung |
+|--------|---------|
+| **Hiện trạng KZTEK** | CODE-GRAPH.md không có cơ chế phân biệt giữa relationship "đã verify qua code thực tế" và "agent infer từ tên file/convention" và "không chắc chắn". Template `.claude/templates/CODE-GRAPH-template.md` không có trường confidence. |
+| **Học từ đâu** | Extraction output schema (`extract.py`, `validate.py`) — trường `"confidence": "EXTRACTED|INFERRED|AMBIGUOUS"` cho mỗi edge. `EXTRACTED` = explicit trong source code; `INFERRED` = suy diễn từ call-graph second pass; `AMBIGUOUS` = không chắc, flagged cho human review. |
+| **Lý do thay đổi** | Agents đọc CODE-GRAPH thấy "module A gọi module B" không biết liệu đây là verified từ code review hay bước trước đoán dựa trên naming convention — có thể đưa ra assumption sai, dẫn đến bug hoặc phải verify lại từ đầu. |
+| **Áp dụng vào đâu** | `.claude/templates/CODE-GRAPH-template.md` — thêm cột `Confidence` (CONFIRMED / INFERRED / UNCERTAIN) cho relationship entries. CLAUDE.md §17.2 — thêm quy tắc: "Khi edit CODE-GRAPH, đánh dấu confidence cho mỗi relationship entry: CONFIRMED (đọc code trực tiếp), INFERRED (suy luận từ cấu trúc), UNCERTAIN (cần verify)." |
+| **Đạt được gì** | (a) Agents xử lý CONFIRMED relationships như ground truth, UNCERTAIN như "cần verify trước khi dùng" → giảm bug từ incorrect assumption. (b) Tech Lead review CODE-GRAPH có thể filter UNCERTAIN entries và ưu tiên verify trong code review — không bỏ sót relationship không chắc. |
+| **Rủi ro / Effort** | Rủi ro: Thấp. Agents phải thêm 1 trường khi edit CODE-GRAPH — tăng nhẹ effort viết. Risk: agents lười ghi "CONFIRMED" hết mà không verify thực tế → cần TL spot-check. Effort: **Thấp** — 4–8 giờ (edit template + §17 + viết ví dụ trong template). |
+
+---
+
+### P4 — "CODE-GRAPH impact" field trong PR checklist §15.3
+
+| Trường | Nội dung |
+|--------|---------|
+| **Hiện trạng KZTEK** | CLAUDE.md §15.3 PR checklist có dòng "CODE-GRAPH cập nhật (nếu thay đổi structure/API)" — chỉ là Yes/No. Không yêu cầu liệt kê cụ thể module/node nào bị ảnh hưởng. |
+| **Học từ đâu** | `prs.py` — `graphify prs <N>` hiển thị graph impact: node/edge nào bị ảnh hưởng bởi PR đó, kết nối git history với graph. Nguyên lý: reviewer cần biết structural impact ngay trong PR description, không phải sau khi mở CODE-GRAPH riêng. |
+| **Lý do thay đổi** | Tech Lead review PR phải cross-reference changed files với CODE-GRAPH thủ công để đánh giá structural impact — mất 5–10 phút. Nếu bỏ qua, có thể không nhận ra module downstream bị ảnh hưởng gián tiếp. |
+| **Áp dụng vào đâu** | CLAUDE.md §15.3 PR checklist — thêm field: `CODE-GRAPH impact: [liệt kê modules/nodes bị ảnh hưởng — VD: "KzButton (interface đổi), LoginForm (thêm dependency mới)"]`. Senior/Junior Dev điền khi tạo PR. Tech Lead check field này khi review. |
+| **Đạt được gì** | Tech Lead đọc PR description và thấy ngay "PR này ảnh hưởng module X (interface đổi), module Y (thêm dependency mới)" — không cần mở CODE-GRAPH.md và grep manually. Review time giảm ước tính 5–10 phút/PR có structural change (quan sát được: Tech Lead không cần mở CODE-GRAPH tab riêng khi review). |
+| **Rủi ro / Effort** | Rủi ro: Rất thấp. Developer phải thêm 1–2 dòng vào PR description — nếu không điền, Tech Lead có thể request changes. Effort: **Rất thấp** — 1–2 giờ (edit CLAUDE.md §15.3 + ví dụ). |
+
+---
+
+### P5 — LESSONS.md: Tích lũy institutional knowledge
+
+| Trường | Nội dung |
+|--------|---------|
+| **Hiện trạng KZTEK** | Sau mỗi WF hoàn thành, không có cơ chế lưu "bài học" từ workflow đó. Plan files (`docs/plans/`) lưu chi tiết nhưng dài, khó search cross-workflow. GOTCHAS.md (`.claude/shared/`) ghi lỗi kỹ thuật ngầm nhưng không ghi lesson nghiệp vụ/workflow. Chưa có `docs/LESSONS.md`. |
+| **Học từ đâu** | `reflect.py` — `graphify reflect` aggregate Q&A memory từ các session làm việc với codebase → tổng hợp thành `LESSONS.md`. Nguyên lý: mỗi session để lại Q&A trace; `reflect` đọc traces và distill thành lessons cộng dồn có thể search được. |
+| **Lý do thay đổi** | Khi bắt đầu WF-FEATURE mới, agents không có cách nhanh để biết "những gì đã học từ WF trước" ngoài đọc lại toàn bộ plan files (bị gitignored hoặc rất dài) — dẫn đến re-discovery các vấn đề đã gặp, tốn thêm 2–3 turns. |
+| **Áp dụng vào đâu** | (1) Tạo file `docs/LESSONS.md` với template: `[date] | [workflow] | [tag] | [lesson 1–2 câu]`. (2) CLAUDE.md §3.3 (Dispatcher tổng kết) — thêm bước cuối: "Có lesson nào đáng ghi vào `docs/LESSONS.md` từ workflow này không? (tùy chọn)". (3) CLAUDE.md §3.0 Pre-0 — thêm: "Nếu tồn tại `docs/LESSONS.md`, Read và scan qua lessons liên quan đến workflow hiện tại trước khi bắt đầu." |
+| **Đạt được gì** | Sau 3–5 WF cycles, agents đọc LESSONS.md trong Pre-0 và biết ngay các gotcha đã biết cho domain đó — ước tính tiết kiệm 1–2 turns/WF-FEATURE sau khi có ≥5 lessons tích lũy (quan sát được: agent không cần hỏi lại câu đã từng hỏi trong WF trước). Khác với GOTCHAS.md (lỗi kỹ thuật ngầm) — LESSONS.md ghi pattern nghiệp vụ và workflow decisions. |
+| **Rủi ro / Effort** | Rủi ro: Thấp. Risk chính: agents ghi lesson quá generic → vô nghĩa. Cần template bắt buộc có `context` cụ thể (không chỉ "kiểm tra kỹ trước khi deploy"). Effort: **Thấp** — 4–6 giờ (tạo template `docs/LESSONS.md`, cập nhật §3.0 và §3.3 trong CLAUDE.md và CORE.md). |
+
+---
+
+> **Lưu ý ưu tiên:** P4 và P2 có effort thấp nhất và áp dụng được ngay. P1 có giá trị kỹ thuật cao nhất nhưng phụ thuộc vào việc có C# product codebase. P3 và P5 bổ sung chất lượng dài hạn cho quy trình.
+>
+> Đề xuất nào được chọn sẽ được áp dụng tại Bước 3A.3 (sau khi user xác nhận ở Bước 3A.2).
