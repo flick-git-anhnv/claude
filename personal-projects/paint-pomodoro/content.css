@@ -1,0 +1,83 @@
+#paint-pomodoro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: #0b0b0d;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#paint-pomodoro-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#paint-pomodoro-overlay .pp-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  clip-path: circle(0% at 50% 50%);
+  will-change: clip-path;
+  background: #0b0b0d;
+}
+
+#paint-pomodoro-overlay .pp-card {
+  position: relative;
+  margin-bottom: 6vh;
+  padding: 18px 26px;
+  border-radius: 14px;
+  background: rgba(10, 10, 12, 0.72);
+  backdrop-filter: blur(6px);
+  color: #f4f1ea;
+  text-align: center;
+  max-width: 560px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+#paint-pomodoro-overlay .pp-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
+#paint-pomodoro-overlay .pp-timer {
+  font-size: 40px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+#paint-pomodoro-overlay .pp-artwork {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+#paint-pomodoro-overlay .pp-artwork a {
+  color: #ffd65c;
+  text-decoration: none;
+}
+
+#paint-pomodoro-overlay .pp-skip {
+  border: 1px solid rgba(244, 241, 234, 0.35);
+  background: transparent;
+  color: #f4f1ea;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#paint-pomodoro-overlay .pp-skip:hover {
+  background: rgba(244, 241, 234, 0.12);
+}

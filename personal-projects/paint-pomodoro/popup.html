@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Paint Pomodoro</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="pp-app">
+      <header class="pp-header">
+        <span class="pp-logo">🍅 Paint Pomodoro</span>
+        <nav class="pp-tabs">
+          <button class="pp-tab active" data-tab="timer">Timer</button>
+          <button class="pp-tab" data-tab="tasks">Tasks</button>
+          <button class="pp-tab" data-tab="history">History</button>
+          <button class="pp-tab" data-tab="settings">Settings</button>
+        </nav>
+      </header>
+
+      <section class="pp-panel active" data-panel="timer">
+        <div class="pp-phase-label" id="phaseLabel">Sẵn sàng</div>
+        <div class="pp-clock" id="clock">25:00</div>
+        <div class="pp-current-task" id="currentTask">Không có task được chọn</div>
+        <div class="pp-controls">
+          <button id="btnStart" class="pp-btn pp-btn-primary">Bắt đầu</button>
+          <button id="btnPause" class="pp-btn" hidden>Tạm dừng</button>
+          <button id="btnSkip" class="pp-btn" hidden>Bỏ qua</button>
+          <button id="btnReset" class="pp-btn pp-btn-ghost">Reset</button>
+        </div>
+        <div class="pp-today-count">
+          Hôm nay: <strong id="todayCount">0</strong> phiên
+        </div>
+      </section>
+
+      <section class="pp-panel" data-panel="tasks">
+        <form id="taskForm" class="pp-task-form">
+          <input id="taskInput" type="text" placeholder="Thêm task mới…" maxlength="140" />
+          <button type="submit" class="pp-btn pp-btn-primary">+</button>
+        </form>
+        <ul id="taskList" class="pp-task-list"></ul>
+      </section>
+
+      <section class="pp-panel" data-panel="history">
+        <div class="pp-history-summary" id="historySummary">Chưa có phiên nào hoàn thành.</div>
+        <ul id="historyList" class="pp-history-list"></ul>
+      </section>
+
+      <section class="pp-panel" data-panel="settings">
+        <label class="pp-field">
+          <span>Work (phút)</span>
+          <input id="workMinutes" type="number" min="1" max="120" />
+        </label>
+        <label class="pp-field">
+          <span>Rest (phút)</span>
+          <input id="restMinutes" type="number" min="1" max="60" />
+        </label>
+
+        <div class="pp-field">
+          <span>Nguồn tranh khi nghỉ</span>
+          <select id="artSource">
+            <option value="met">The Met Museum (ngẫu nhiên)</option>
+            <option value="custom">Danh sách URL tùy chỉnh</option>
+            <option value="upload">Ảnh tải lên</option>
+          </select>
+        </div>
+
+        <div class="pp-field" id="customUrlsField" hidden>
+          <span>URL ảnh (mỗi dòng 1 link)</span>
+          <textarea id="customUrls" rows="4" placeholder="https://example.com/painting.jpg"></textarea>
+        </div>
+
+        <div class="pp-field" id="uploadField" hidden>
+          <span>Tải ảnh lên (tối đa 10 ảnh, lưu cục bộ)</span>
+          <input id="uploadInput" type="file" accept="image/*" multiple />
+          <div id="uploadPreview" class="pp-upload-preview"></div>
+        </div>
+
+        <button id="btnSaveSettings" class="pp-btn pp-btn-primary pp-save">Lưu cài đặt</button>
+      </section>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
