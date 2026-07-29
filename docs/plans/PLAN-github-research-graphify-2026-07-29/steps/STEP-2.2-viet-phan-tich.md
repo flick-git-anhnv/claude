@@ -47,8 +47,8 @@ Dựa trên ghi chú phân tích từ Bước 2.1, viết file báo cáo chính 
 - Bước sau cần biết: Bước 2.3 là USER chọn Mode A hoặc Mode B — hiển thị báo cáo tóm tắt cho user, hỏi mục đích tiếp theo. Graphify giải quyết vấn đề CODE-GRAPH.md tĩnh của KZTEK (§17) bằng real traversable graph; value tăng cao khi KZTEK có product C# codebase thực tế.
 
 ## Commit
-- Hash: [điền sau khi commit]
-- Đã push: chờ commit
+- Hash: a737251
+- Đã push: có — nhánh research/graphify-2026-07-29
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
