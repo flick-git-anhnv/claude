@@ -92,3 +92,9 @@ dpkg-deb --fsys-tarfile file.deb | tar -xO ./usr/share/applications/*.desktop
 ## Liên quan
 
 - `dconf-system-db-profile-required.md` — cùng nhóm "cấu hình desktop Linux bị bỏ qua âm thầm khi thiếu điều kiện ngầm".
+
+## 7. Tái phát 2026-07-28 — regenerate skill copy lại đúng bản lỗi
+
+`/gen-build-deb` quy trình 6 bước quy định "dùng file `.sh` hiện có trong repo làm nguồn" khi user yêu cầu tạo lại — nhưng bản `scripts/linux-deb/build-deb.sh`/`_pack-deb-inner.sh` đang nằm trong repo (project `IPGSv4`, đổi tên từ `IPGSUseCam`) lại CHÍNH LÀ bản lỗi mô tả ở mục 2 (chưa từng được áp fix này), không phải bản đã sửa. Agent đọc rồi ghi đè y hệt → khôi phục lại lỗi cũ, tưởng "tạo mới" là an toàn vì nội dung "trông đầy đủ, không thiếu gì".
+
+**Bài học:** Khi regenerate/refresh 1 script build-deb đã tồn tại trong repo, PHẢI so nội dung với checklist mục 3 (icon theme, `.desktop` hệ thống dùng `Icon=<tên>`, `gtk-update-icon-cache`/`update-desktop-database` trong postinst) TRƯỚC khi coi bản hiện có là "đúng, không cần sửa gì". Không suy luận "file có vẻ đầy đủ + không báo lỗi build" = đã áp fix — phải grep trực tiếp các dấu hiệu (`icons/hicolor`, `gtk-update-icon-cache`) trong chính file, hoặc chạy lệnh chẩn đoán mục 5 trên `.deb` build ra.

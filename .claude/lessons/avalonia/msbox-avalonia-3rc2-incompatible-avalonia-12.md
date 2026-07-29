@@ -114,3 +114,20 @@ qua UI. Chính self-test này đã lộ ra lỗi MsBox trong vài giây.
 - Plan: `docs/plans/PLAN-migrate-dooralarmv3-avalonia-2026-07-26/steps/STEP-2.4-platform-services.md` (rủi ro R9)
 - Liên quan: `avalonia-12-breaking-changes-rabbitmq7-migration.md`, `msbox-avalonia-namespace-split.md`,
   `avalonia-devtools-package-migration-v12.md`
+
+## Tái phát 2026-07-28 — iPGSv4 / ApplicationConfig
+
+Đúng bug này lặp lại ở `ApplicationConfig` (project con của `iPGSv4`, tool cấu hình SQL/Cash/Kocom/LPR):
+`MainViewModel.CheckSqlConnection()`/`SaveConfig()` gọi `MessageBoxManager.GetMessageBoxStandard(...).ShowWindowDialogAsync(_owner)`
+→ crash y hệt `TypeLoadException: SystemDecorations` ngay khi bấm "Kiểm tra kết nối" hoặc "Lưu".
+`IPGSv4` (project chính, cùng repo) đã tự viết `Services/DialogService.cs` xử lý đúng vấn đề này từ
+trước — nhưng `ApplicationConfig` là project riêng, không share code đó, và bị bỏ sót khi migrate.
+
+**Fix áp dụng:** tạo `ApplicationConfig/Services/SimpleMessageBox.cs` (bản rút gọn của
+`DialogService`, chỉ cần dialog info 1-nút OK vì cả 6 call site đều dùng overload 2 tham số không có
+`ButtonEnum`) + gỡ hẳn `<PackageReference Include="MsBox.Avalonia">` khỏi `ApplicationConfig.csproj`.
+
+**Bài học bổ sung:** trong 1 solution có N project Avalonia 12 độc lập, sửa xong 1 project không tự
+động sửa các project khác cùng phụ thuộc gói lỗi — phải `grep -r "MessageBoxManager\|MsBox.Avalonia"`
+trên TOÀN repo (không chỉ project đang crash) để tìm hết các điểm chạm còn sót, kể cả nếu chưa có báo
+lỗi từ project đó (chưa ai bấm tới nút gọi nó).
