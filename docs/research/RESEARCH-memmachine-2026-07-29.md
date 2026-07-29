@@ -376,7 +376,7 @@ Tóm lại: KZTEK dùng file markdown + git làm "bộ nhớ dài hạn" — đ�
 
 | # | Đề xuất | Trạng thái |
 |---|---------|-----------|
-| E1 | Category tagging cho GOTCHAS.md | Chờ user xác nhận |
-| E2 | Sufficiency tracking mở rộng cho §17.1 CODE-GRAPH | Chờ user xác nhận |
-| E3 | Simple Query Rule cho lessons lookup | Chờ user xác nhận |
-| E4 | Compact pre-coding SKILL file | Chờ user xác nhận |
+| E1 | Category tagging cho GOTCHAS.md | ✅ Đã áp dụng — `.claude/shared/GOTCHAS.md` (bảng lọc + 6 category labels) + `.claude/shared/CORE.md §6` |
+| E2 | Sufficiency tracking mở rộng cho §17.1 CODE-GRAPH | ✅ Đã áp dụng — `CLAUDE.md §17.1` bước 4 (sufficiency tracking sub-step) |
+| E3 | Simple Query Rule cho lessons lookup | ✅ Đã áp dụng — `C:\Users\nguye\.claude\CLAUDE.md §Khi nào đọc lessons` (Simple Query Rule + bảng lọc) |
+| E4 | Compact pre-coding SKILL file | ✅ Đã áp dụng — tạo `.claude/commands/pre-coding-check.md` (mới) + `CLAUDE.md §16.5 Bước 2a` (1 dòng reference) |
