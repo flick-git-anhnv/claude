@@ -111,6 +111,8 @@ CTO  (L1 - Executive)
 
 **Pre-0a (điều kiện) — Scope Check:** Nếu yêu cầu user còn mơ hồ về phạm vi/priority/workflow áp dụng → chạy skill `scope-check` (`.claude/commands/scope-check.md`) TRƯỚC khi làm các bước dưới, để chốt scope + priority + workflow đề xuất bằng `AskUserQuestion`. Bỏ qua nếu yêu cầu đã rõ ràng (VD: SEV1 incident).
 
+**Pre-0b (khuyến nghị) — Đọc LESSONS.md:** Nếu `docs/LESSONS.md` tồn tại → đọc lướt qua 5–10 entry gần nhất để nhắc nhở workflow/business decision đã học — tránh lặp lại sai lầm quy trình đã ghi nhận. Không cần đọc lại nếu đã đọc trong cùng session.
+
 Trước khi hiển thị Dispatcher phân tích, PHẢI:
 
 1. **Glob** `docs/plans/PLAN-*.md` (plan cũ, 1 file) VÀ `docs/plans/PLAN-*/PLAN-MASTER.md` (plan mới, cấu trúc folder) → tìm plan liên quan đến task hiện tại (so sánh bằng tên task / slug).
@@ -181,6 +183,8 @@ Artifact tổng: [danh sách toàn bộ output]
 Bước tiếp theo: [hành động cần làm tiếp / "Không có — workflow hoàn tất"]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+> **Ghi chú LESSONS.md:** Sau mỗi workflow hoàn thành, nếu có bài học đáng ghi (quyết định workflow, cách xử lý tình huống bất thường, pattern thành công/thất bại liên quan đến quy trình/nghiệp vụ) → thêm entry vào `docs/LESSONS.md`. Khác với GOTCHAS.md (lỗi kỹ thuật ngầm): LESSONS.md ghi bài học **workflow và business decision** — dùng template trong file đó.
 
 ---
 
@@ -948,6 +952,7 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 - [ ] DESIGN cập nhật (nếu thay đổi UI / wireframe)
 - [ ] ADR tạo mới hoặc cập nhật (nếu thay đổi kiến trúc)
 - [ ] Test case cập nhật (nếu thay đổi AC / behavior)
+- [ ] CODE-GRAPH impact: [liệt kê module/node bị ảnh hưởng (thêm/xóa/rename module, thay đổi API, DB schema, dependency), hoặc "Không có"]
 - [ ] Không có tài liệu nào cần cập nhật (giải thích lý do): ___
 ```
 
@@ -1156,10 +1161,18 @@ Gõ /compact ngay bây giờ để giải phóng context window trước khi b�
 ```
 1. Glob "code-graph/CODE-GRAPH.md" → kiểm tra file có tồn tại không
 2. Nếu tồn tại       → Read code-graph/CODE-GRAPH.md TRƯỚC
-3. Thông tin đủ      → bắt đầu coding (không cần đọc toàn bộ source)
-4. Thiếu thông tin   → chỉ đọc thêm file/module cụ thể liên quan
+3. Thông tin đủ      → trả lời ít nhất 3/5 câu hỏi dưới đây từ CODE-GRAPH (không mở source):
+     a. Module/file liên quan đến task này nằm ở đâu?
+     b. Module đó phụ thuộc vào module/package nào?
+     c. Ai gọi module/function này (callers)?
+     d. API endpoint hoặc class public interface được định nghĩa ở file:line nào?
+     e. Có thay đổi nào gần đây ở module liên quan không (xem "Thay đổi gần đây")?
+   → Nếu CODE-GRAPH trả lời được ≥ 3/5 câu → bắt đầu coding (không cần đọc toàn bộ source)
+4. Thiếu thông tin   → chỉ đọc thêm file/module cụ thể liên quan (dựa trên câu hỏi nào chưa trả lời được)
 5. Không tồn tại     → khảo sát dự án → tạo code-graph/CODE-GRAPH.md từ template
                        → xuất code-graph/CODE-GRAPH.pdf ngay sau khi tạo xong
+                       → [Tùy chọn] Nếu Python 3.10+ có sẵn và project > 50 file code,
+                         có thể dùng `graphify` để build tự động (xem §17.6)
 ```
 
 ### 17.2 Khi nào PHẢI cập nhật CODE-GRAPH
@@ -1173,6 +1186,16 @@ Gõ /compact ngay bây giờ để giải phóng context window trước khi b�
 | Thêm dependency mới | ✅ Bắt buộc |
 | Thêm/sửa env variable | ✅ Bắt buộc |
 | Sửa nội dung logic bên trong (không đổi interface) | ❌ Không cần |
+
+**Confidence labels (bắt buộc cho cột `Confidence` trong bảng Dependencies/Relationships của CODE-GRAPH):**
+
+| Label | Khi nào dùng |
+|-------|-------------|
+| `CONFIRMED` | Đã đọc trực tiếp source code hoặc config file liên quan — quan hệ/dependency chắc chắn đúng |
+| `INFERRED` | Suy luận từ tên module, cấu trúc thư mục, hoặc convention đặt tên — chưa đọc trực tiếp code |
+| `UNCERTAIN` | Chưa rõ: module mới tạo, code bị xóa chưa cập nhật, hoặc có mâu thuẫn giữa doc và code thực tế |
+
+Quy tắc: khi agent đọc CODE-GRAPH gặp label `UNCERTAIN` ở node liên quan đến task → **PHẢI** đọc trực tiếp source file đó để xác nhận, không dựa vào thông tin cũ.
 
 ### 17.3 Ai cập nhật CODE-GRAPH
 
@@ -1211,6 +1234,33 @@ Nếu file chưa cập nhật > 30 ngày VÀ có nhiều thay đổi lớn → S
 2. Viết lại `code-graph/CODE-GRAPH.md` từ template
 3. Xuất lại `code-graph/CODE-GRAPH.pdf`
 4. Ghi chú ngày tạo lại vào "Lịch sử cập nhật"
+
+### 17.6 Công cụ tùy chọn: graphify (tự động hóa build/update CODE-GRAPH)
+
+> **Tùy chọn — không bắt buộc.** Graphify là CLI Python phân tích codebase bằng tree-sitter/AST, tự động sinh đồ thị dependency và xuất ra nhiều định dạng (JSON, Markdown). Hữu ích khi project > 50 file code và việc viết/cập nhật CODE-GRAPH.md thủ công tốn nhiều thời gian.
+
+**Cài đặt:**
+```bash
+pip install graphify
+# Hoặc tham khảo README đầy đủ tại: https://github.com/Graphify-Labs/graphify
+```
+
+**Lệnh cơ bản:**
+```bash
+graphify .                          # Phân tích toàn bộ project hiện tại, xuất graph
+graphify query --node ModuleName    # Tra cứu node cụ thể (callers, dependencies)
+graphify update --diff              # Cập nhật graph sau khi code thay đổi (chỉ re-parse file đã đổi)
+```
+
+**Khi nào nên dùng:**
+- Tạo CODE-GRAPH.md mới cho project lớn (> 50 file): dùng `graphify .` để có dữ liệu nền, sau đó bổ sung context nghiệp vụ thủ công vào template.
+- Cập nhật sau refactor lớn (nhiều file thay đổi): dùng `graphify update --diff` thay vì đọc lại từng file.
+- Tra cứu nhanh callers/dependencies trong session dài: `graphify query` cho kết quả nhanh hơn Grep thủ công.
+
+**Lưu ý quan trọng:**
+- Graphify xuất graph kỹ thuật (dependency/call graph) — KHÔNG thay thế phần mô tả nghiệp vụ, quyết định kiến trúc, và Confidence labels trong CODE-GRAPH.md (phần đó vẫn cần agent điền thủ công).
+- KHÔNG tự ý cài pip package trên project production/staging khi chưa được Tech Lead duyệt.
+- Output của `graphify` là input để điền vào CODE-GRAPH.md — không dùng raw output thay thế file template.
 
 ---
 

@@ -287,13 +287,13 @@ Giới hạn đáng ghi nhận: đây là pre-1.0 software đang active developm
 
 ### Bảng tổng quan nhanh
 
-| # | Đề xuất | Effort | Phụ thuộc ngoài | Áp dụng ngay? |
-|---|---------|--------|-----------------|---------------|
-| P1 | Tích hợp Graphify CLI vào workflow coding | Trung bình (1–2 ngày) | Python 3.10+, `pip install graphify` | Khi có C# product codebase |
-| P2 | Cải tiến §17: "Query-first checklist" có cấu trúc | Thấp (2–4 giờ) | Không có | Ngay — với cả markdown codebase hiện tại |
-| P3 | Confidence labels trong CODE-GRAPH.md | Thấp (4–8 giờ) | Không có | Ngay |
-| P4 | "CODE-GRAPH impact" field trong PR checklist §15.3 | Rất thấp (1–2 giờ) | Không có | Ngay |
-| P5 | LESSONS.md — Tích lũy institutional knowledge | Thấp (4–6 giờ) | Không có | Ngay |
+| # | Đề xuất | Effort | Phụ thuộc ngoài | Áp dụng ngay? | Trạng thái |
+|---|---------|--------|-----------------|---------------|------------|
+| P1 | Tích hợp Graphify CLI vào workflow coding | Trung bình (1–2 ngày) | Python 3.10+, `pip install graphify` | Khi có C# product codebase | ✅ Đã áp dụng (2026-07-29) |
+| P2 | Cải tiến §17: "Query-first checklist" có cấu trúc | Thấp (2–4 giờ) | Không có | Ngay — với cả markdown codebase hiện tại | ✅ Đã áp dụng (2026-07-29) |
+| P3 | Confidence labels trong CODE-GRAPH.md | Thấp (4–8 giờ) | Không có | Ngay | ✅ Đã áp dụng (2026-07-29) |
+| P4 | "CODE-GRAPH impact" field trong PR checklist §15.3 | Rất thấp (1–2 giờ) | Không có | Ngay | ✅ Đã áp dụng (2026-07-29) |
+| P5 | LESSONS.md — Tích lũy institutional knowledge | Thấp (4–6 giờ) | Không có | Ngay | ✅ Đã áp dụng (2026-07-29) |
 
 ---
 
@@ -364,4 +364,4 @@ Giới hạn đáng ghi nhận: đây là pre-1.0 software đang active developm
 
 > **Lưu ý ưu tiên:** P4 và P2 có effort thấp nhất và áp dụng được ngay. P1 có giá trị kỹ thuật cao nhất nhưng phụ thuộc vào việc có C# product codebase. P3 và P5 bổ sung chất lượng dài hạn cho quy trình.
 >
-> Đề xuất nào được chọn sẽ được áp dụng tại Bước 3A.3 (sau khi user xác nhận ở Bước 3A.2).
+> **Trạng thái áp dụng (2026-07-29 — Bước 3A.3):** User xác nhận áp dụng CẢ 5 đề xuất P1–P5. Đã hoàn thành tất cả. Chi tiết thay đổi: xem `docs/plans/PLAN-github-research-graphify-2026-07-29/steps/STEP-3A.3-ap-dung-de-xuat.md`.

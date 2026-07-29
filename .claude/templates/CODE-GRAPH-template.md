@@ -71,9 +71,11 @@
 ---
 
 ## Dependencies quan trọng
-| Package | Version | Dùng cho |
-|---------|---------|---------|
-| [package-name] | [x.y.z] | [mục đích sử dụng] |
+| Package | Version | Dùng cho | Confidence |
+|---------|---------|---------|------------|
+| [package-name] | [x.y.z] | [mục đích sử dụng] | CONFIRMED |
+
+> **Confidence labels:** `CONFIRMED` = đã đọc trực tiếp source/config. `INFERRED` = suy luận từ tên/convention, chưa verify. `UNCERTAIN` = chưa rõ hoặc có mâu thuẫn — agent đọc CODE-GRAPH gặp `UNCERTAIN` ở node liên quan đến task PHẢI đọc source để xác nhận (xem CLAUDE.md §17.2).
 
 ---
 
