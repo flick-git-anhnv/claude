@@ -1,7 +1,7 @@
 ---
 task: github-research-graphify
 created: 2026-07-29
-updated: 2026-07-29 13:43
+updated: 2026-07-29 13:45
 status: active
 workflow: WF-GITHUB-RESEARCH
 priority: P2
@@ -31,7 +31,7 @@ Nghiên cứu repo GitHub `https://github.com/Graphify-Labs/graphify` theo workf
 ### Phase 1: Khởi tạo — Tạo nhánh nghiên cứu
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 1.1 | Tạo nhánh `research/graphify-2026-07-29`; xác định Mode A/B nếu user đã nói rõ mục đích | GitHub Repo Researcher | ⬜ | `steps/STEP-1.1-tao-nhanh.md` | - |
+| 1.1 | Tạo nhánh `research/graphify-2026-07-29`; xác định Mode A/B nếu user đã nói rõ mục đích | GitHub Repo Researcher | ✅ | `steps/STEP-1.1-tao-nhanh.md` | 2026-07-29 13:45 |
 
 ### Phase 2: Nghiên cứu repo & Xác định mode
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
@@ -82,6 +82,7 @@ Không có
 |------|----------|-------|
 | 2026-07-29 | Plan tạo mới | task-planner |
 | 2026-07-29 13:43 | Bước 0.1 ✅ — Phase 0 Audit hoàn thành: task mới hoàn toàn, không có artifact/nhánh/clone trước đó, Mode A đã xác nhận | GitHub Repo Researcher |
+| 2026-07-29 13:45 | Bước 1.1 ✅ — Nhánh `research/graphify-2026-07-29` tạo thành công; Mode A ghi nhận sớm | GitHub Repo Researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
