@@ -2,8 +2,8 @@
 step: "3A.4"
 plan: ../PLAN-MASTER.md
 agent: user
-status: todo
-completed_at:
+status: done
+completed_at: "2026-07-29"
 ---
 
 # STEP 3A.4 — [Mode A / Bước 5] [USER] Xác nhận merge nhánh về main
@@ -20,16 +20,17 @@ User xem lại tóm tắt thay đổi trên nhánh `research/graphify-2026-07-29
 - [ ] Cập nhật step file này + PLAN-MASTER.md
 
 ## Đã làm
-[Điền SAU khi user xác nhận]
+User xác nhận rõ ràng: "merge về main rồi tôi sẽ tự thực hiện" — chấp nhận merge nhánh `research/graphify-2026-07-29` về `main`.
 
 ## Artifact
 Không có artifact kỹ thuật — đây là bước xác nhận của user.
 
 ## Quyết định quan trọng
-[Điền SAU khi user xác nhận — merge hay không, lý do nếu có]
+User chọn merge ngay, không yêu cầu demo `graph.html` thêm (sẽ tự thử graphify CLI sau).
 
 ## Handoff Log — bước sau cần biết
-[Điền SAU khi user xác nhận — ghi rõ: user đã xác nhận merge, không cần hỏi lại]
+- Đã làm: User đã xác nhận merge rõ ràng.
+- Bước sau cần biết: Bước 3A.5 tiến hành merge `research/graphify-2026-07-29` → `main` ngay, không cần hỏi lại.
 
 ## Commit
 - Hash: N/A (bước xác nhận user)

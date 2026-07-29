@@ -1,8 +1,8 @@
 ---
 task: github-research-graphify
 created: 2026-07-29
-updated: 2026-07-29 14:08
-status: active
+updated: 2026-07-29 15:30
+status: completed
 workflow: WF-GITHUB-RESEARCH
 priority: P2
 ---
@@ -48,8 +48,8 @@ Nghiên cứu repo GitHub `https://github.com/Graphify-Labs/graphify` theo workf
 | 3A.1 | [Bước 3b] Viết bảng đề xuất cải tiến — từng đề xuất nêu rõ học từ đâu, áp dụng vào đâu, lợi ích, rủi ro/effort | GitHub Repo Researcher | ✅ | `steps/STEP-3A.1-de-xuat-cai-tien.md` | 2026-07-29 13:59 |
 | 3A.2 | [Bước 4] [USER] Xác nhận đề xuất nào được áp dụng | User | ✅ | `steps/STEP-3A.2-user-confirm-de-xuat.md` | 2026-07-29 |
 | 3A.3 | [Bước 4b] Áp dụng đề xuất đã được user chọn vào code/tài liệu KZTEK, commit lên nhánh nghiên cứu | GitHub Repo Researcher | ✅ | `steps/STEP-3A.3-ap-dung-de-xuat.md` | 2026-07-29 14:08 |
-| 3A.4 | [Bước 5] [USER] Xác nhận merge nhánh nghiên cứu về main | User | ⬜ | `steps/STEP-3A.4-user-confirm-merge.md` | - |
-| 3A.5 | [Bước 5b] Merge nhánh `research/graphify-2026-07-29` về main sau khi có xác nhận rõ ràng | GitHub Repo Researcher | ⬜ | `steps/STEP-3A.5-merge-main.md` | - |
+| 3A.4 | [Bước 5] [USER] Xác nhận merge nhánh nghiên cứu về main | User | ✅ | `steps/STEP-3A.4-user-confirm-merge.md` | 2026-07-29 |
+| 3A.5 | [Bước 5b] Merge nhánh `research/graphify-2026-07-29` về main sau khi có xác nhận rõ ràng | GitHub Repo Researcher | ✅ | `steps/STEP-3A.5-merge-main.md` | 2026-07-29 |
 
 ### Phase 3B: Mode B — Học tập / Tham khảo cá nhân [chờ 2.3]
 > Chỉ thực hiện nếu user chọn Mode B tại Bước 2.3. Nếu chọn Mode A → bỏ qua toàn bộ Phase 3B, chuyển sang Phase 3A.
@@ -89,6 +89,8 @@ Không có
 | 2026-07-29 13:59 | Bước 3A.1 ✅ — 5 đề xuất P1–P5 viết vào mục §11 của RESEARCH-graphify-2026-07-29.md. DOCX xuất lại thành công. Chờ user xác nhận đề xuất nào được chọn ở Bước 3A.2. | GitHub Repo Researcher |
 | 2026-07-29 | Bước 3A.2 ✅ — User xác nhận áp dụng CẢ 5 đề xuất P1–P5, không bỏ đề xuất nào. | User |
 | 2026-07-29 14:08 | Bước 3A.3 ✅ — Áp dụng P1–P5 vào tài liệu KZTEK (CLAUDE.md §3/§15/§17, docs/LESSONS.md mới, CODE-GRAPH-template.md, RESEARCH cập nhật trạng thái). DOCX xuất 4 file thành công. Chờ user xác nhận merge tại Bước 3A.4. | GitHub Repo Researcher |
+| 2026-07-29 15:00 | Bổ sung §17.6: làm rõ graphify không tự chạy ngầm, BẮT BUỘC `graphify update --diff` ở WF-FEATURE Bước 10 / WF-BUGFIX Bước 3 khi project đã cài graphify. | GitHub Repo Researcher |
+| 2026-07-29 15:30 | Bước 3A.4 ✅ + 3A.5 ✅ — User xác nhận merge; merge `research/graphify-2026-07-29` → `main` sạch (không conflict, commit 59cda3b), push thành công. Xóa nhánh local; xóa nhánh remote thất bại (HTTP 403, không block). **WORKFLOW HOÀN TẤT.** | GitHub Repo Researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
