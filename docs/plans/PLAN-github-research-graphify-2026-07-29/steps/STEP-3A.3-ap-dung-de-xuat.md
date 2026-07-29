@@ -72,8 +72,8 @@ Từ Bước 3A.2 — danh sách đề xuất được user duyệt. Handoff Log
 - Bước sau cần biết: Bước 3A.4 là USER xác nhận merge nhánh `research/graphify-2026-07-29` về main. TUYỆT ĐỐI KHÔNG tự merge trước khi user confirm tại Bước 3A.4.
 
 ## Commit
-- Hash: [điền sau khi commit]
-- Đã push: [có/không]
+- Hash: f7e1b51
+- Đã push: có (research/graphify-2026-07-29)
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
