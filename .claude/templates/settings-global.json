@@ -2,9 +2,9 @@
   "//": "MẪU cho ~/.claude/settings.json — KHÔNG copy đè, phải MERGE vào file đang có.",
   "//_huong_dan": [
     "File này chỉ chứa phần config KZTEK cần có ở user-level scope.",
-    "Trên máy mới: chạy scripts/link-global.ps1 trước, rồi merge 2 mục dưới đây",
+    "Trên máy mới: chạy scripts/link-global.ps1 trước, rồi merge 3 mục dưới đây",
     "vào C:/Users/<user>/.claude/settings.json — giữ nguyên mọi mục sẵn có của máy",
-    "(model, theme, enabledPlugins, hooks.PostToolUse riêng của máy, ...).",
+    "(model, theme, enabledPlugins, hook riêng của máy không thuộc KZTEK, ...).",
     "Chi tiết: docs/SETUP-GLOBAL.md"
   ],
   "permissions": {
@@ -35,6 +35,20 @@
             "shell": "bash",
             "timeout": 10,
             "statusMessage": "Kiểm tra config-protection..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/nguye/.claude/hooks-kztek/code-graph-lesson-reminder.js\"",
+            "shell": "bash",
+            "timeout": 10,
+            "statusMessage": "Kiểm tra code-graph / lesson reminder..."
           }
         ]
       }

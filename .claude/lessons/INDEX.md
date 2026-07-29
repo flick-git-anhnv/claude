@@ -57,6 +57,7 @@
 - [powershell-vietnamese-bom-parse-error.md](windows-tooling/powershell-vietnamese-bom-parse-error.md) — PS 5.1 đọc `.ps1` không BOM theo ANSI → chữ Việt gây lỗi parser sai hướng (`Missing '=' operator`)
 - [virtualbox-chan-doan-vm-tu-host.md](windows-tooling/virtualbox-chan-doan-vm-tu-host.md) — VM "màn hình đen" sau mất điện thường chỉ là Plymouth splash, không hỏng: chẩn đoán từ host bằng `VBoxManage controlvm screenshotpng` + `guestproperty enumerate` TRƯỚC khi định chạy fsck
 - [docx2pdf-false-failure-pdf-still-created.md](windows-tooling/docx2pdf-false-failure-pdf-still-created.md) — `docx2pdf` báo `Word.Application.Quit` / RPC failed nhưng PDF **vẫn được tạo đúng**: kiểm file trên đĩa trước khi kết luận thất bại, đừng retry hay cài LibreOffice
+- [graphify-hook-silent-fail-scripts-not-in-path.md](windows-tooling/graphify-hook-silent-fail-scripts-not-in-path.md) — ⚠️ `graphify claude install` ghi PreToolUse hook nhưng vô hiệu IM LẶNG khi `Scripts/` không có trong PATH (Windows): `_resolve_graphify_exe()` suy từ `sys.executable` fail vì `python.exe` và `graphify.exe` khác thư mục; Claude Code không báo lỗi khi hook fail — tool gốc vẫn chạy như chưa cài gì. Fix: sửa `command` trong `.claude/settings.json` trỏ đường dẫn tuyệt đối `Scripts/graphify.exe`
 
 ### react-web/
 - [tsc-noemit-vs-tsc-build-different-configs.md](react-web/tsc-noemit-vs-tsc-build-different-configs.md) — `tsc --noEmit` đọc tsconfig gốc (gần như không kiểm gì), `tsc -b` mới đọc `tsconfig.app.json`; kèm bẫy `erasableSyntaxOnly` cấm parameter property

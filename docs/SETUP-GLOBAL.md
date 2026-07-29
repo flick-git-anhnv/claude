@@ -75,12 +75,16 @@ Get-ChildItem C:\Users\<user>\.claude -Force | Where-Object { $_.LinkType -eq 'J
 | `templates` | `.claude/templates` | PRD, TDD, PLAN, EVAL... |
 | `references` | `.claude/references` | Checklist bảo mật, DoD |
 | `evals` | `.claude/evals` | Eval của agent/skill |
-| `hooks-kztek` | `.claude/hooks` | `config-protection.js` |
+| `hooks-kztek` | `.claude/hooks` | `config-protection.js`, `code-graph-lesson-reminder.js` |
 | `scripts` | `scripts` (repo root) | `md_to_docx_kztek.py`, linux-deb, kiosk... |
 | `lessons` | `.claude/lessons` | Kinh nghiệm/gotcha kỹ thuật theo category (avalonia, csharp-winforms, camera-integration...) — chuyển vào repo 2026-07-27, trước đó là thư mục thật chỉ có trên máy |
 
-**Vì sao tên `hooks-kztek` mà không phải `hooks`:** `~/.claude/hooks/` đã có hook riêng của máy
-(`code-graph-lesson-reminder.js`) không thuộc repo này. Dùng tên khác để hai bộ cùng tồn tại.
+**Vì sao tên `hooks-kztek` mà không phải `hooks`:** ban đầu (2026-07-25) `~/.claude/hooks/` có
+hook riêng của máy (`code-graph-lesson-reminder.js`) không thuộc repo này, nên dùng tên khác để
+hai bộ cùng tồn tại. Từ 2026-07-29, hook đó đã được đưa vào repo (`.claude/hooks/`, junction qua
+`hooks-kztek`) để không mất khi đổi máy — xem Lịch sử cập nhật cuối file. Tên `hooks-kztek` vẫn giữ
+nguyên (không đổi lại thành `hooks`) để tránh phá vỡ đường dẫn đã cấu hình trong `settings.json`
+hiện có trên các máy khác.
 
 **Vì sao KHÔNG junction `CLAUDE.md`:** quy trình 17-agent / Dispatcher / plan file chỉ phù hợp
 project phần mềm, không nên áp lên mọi thư mục. Project nào cần thì tự có `CLAUDE.md` riêng,
@@ -165,3 +169,4 @@ từng có bug xoá xuyên sang target ở PowerShell cũ).
 |---|---|---|
 | 2026-07-25 | Tạo mới — chuyển config sang user-level scope bằng 8 junction | Claude Code |
 | 2026-07-27 | Thêm junction thứ 9 `lessons` — chuyển `~/.claude/lessons/` (429 file, ~87MB, trước đó là thư mục thật chỉ có trên máy, không backup/không đồng bộ) vào `.claude/lessons/` trong repo | Claude Code |
+| 2026-07-29 | Đưa `code-graph-lesson-reminder.js` (hook `PostToolUse` nhắc cập nhật CODE-GRAPH/lesson) vào `.claude/hooks/` của repo — trước đó là hook riêng của máy, không tracked. Cập nhật `settings.json` thật + template `settings-global.json` trỏ về `hooks-kztek/` thay vì `hooks/`. Lý do đổi: user muốn giữ thiết lập khi đổi máy, không muốn phải tạo lại thủ công | Claude Code |
