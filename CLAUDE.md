@@ -111,6 +111,8 @@ CTO  (L1 - Executive)
 
 **Pre-0a (điều kiện) — Scope Check:** Nếu yêu cầu user còn mơ hồ về phạm vi/priority/workflow áp dụng → chạy skill `scope-check` (`.claude/commands/scope-check.md`) TRƯỚC khi làm các bước dưới, để chốt scope + priority + workflow đề xuất bằng `AskUserQuestion`. Bỏ qua nếu yêu cầu đã rõ ràng (VD: SEV1 incident).
 
+**Pre-0b (khuyến nghị) — Đọc LESSONS.md:** Nếu `docs/LESSONS.md` tồn tại → đọc lướt qua 5–10 entry gần nhất để nhắc nhở workflow/business decision đã học — tránh lặp lại sai lầm quy trình đã ghi nhận. Không cần đọc lại nếu đã đọc trong cùng session.
+
 Trước khi hiển thị Dispatcher phân tích, PHẢI:
 
 1. **Glob** `docs/plans/PLAN-*.md` (plan cũ, 1 file) VÀ `docs/plans/PLAN-*/PLAN-MASTER.md` (plan mới, cấu trúc folder) → tìm plan liên quan đến task hiện tại (so sánh bằng tên task / slug).
@@ -182,6 +184,8 @@ Bước tiếp theo: [hành động cần làm tiếp / "Không có — workflow
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+> **Ghi chú LESSONS.md:** Sau mỗi workflow hoàn thành, nếu có bài học đáng ghi (quyết định workflow, cách xử lý tình huống bất thường, pattern thành công/thất bại liên quan đến quy trình/nghiệp vụ) → thêm entry vào `docs/LESSONS.md`. Khác với GOTCHAS.md (lỗi kỹ thuật ngầm): LESSONS.md ghi bài học **workflow và business decision** — dùng template trong file đó.
+
 ---
 
 ## 4. Chi tiết từng workflow bắt buộc
@@ -209,6 +213,7 @@ Bước 8  → SENIOR DEVELOPER     : Code phần phức tạp, mentor junior
 Bước 9  → JUNIOR DEVELOPER     : Code phần CRUD/UI đơn giản theo spec
 Bước 10 → TECH LEAD            : Code review cuối, merge decision
   > **Yêu cầu trước Bước 10:** Senior/Junior Developer PHẢI chạy `/verify-pr` và đính kèm VERIFICATION REPORT vào PR description. Tech Lead chỉ mở review khi report toàn PASS. (`.claude/commands/verify-pr.md`)
+  > **[CÓ ĐIỀU KIỆN — nếu project đã cài `graphify`, xem §17.6]:** Senior/Junior Developer PHẢI chạy `graphify update --diff` ngay sau khi code xong (trước `/verify-pr`), rồi bổ sung thủ công phần mô tả nghiệp vụ + Confidence labels vào CODE-GRAPH.md.
 Bước 10a → TECH LEAD           : [CÓ ĐIỀU KIỆN — nếu đụng auth/payment/DB schema/dữ liệu nhạy cảm] Chạy skill `security-audit-stride` (OWASP + STRIDE), BLOCK merge nếu Fail nhóm rủi ro cao
 Bước 10b ∥ Bước 11 (song song — cả hai cùng nhận code đã merge từ Bước 10/10a, độc lập nhau):
 Bước 10b → UX/UI REVIEWER      : [CÓ ĐIỀU KIỆN — nếu feature có chỉnh sửa/thêm giao diện] Chạy app thật, chụp screenshot, đánh giá C1–C7 trước khi QA test
@@ -232,6 +237,7 @@ Bước 1 → QA ENGINEER / SENIOR DEV : Reproduce bug, xác định root cause,
 Bước 2 → SENIOR DEVELOPER         : Viết fix, tạo PR với mô tả rõ
 Bước 3 → TECH LEAD                : Review PR, approve hoặc request changes
   > **Yêu cầu trước Bước 3:** Senior Developer PHẢI chạy `/verify-pr` và đính kèm VERIFICATION REPORT vào PR description. Tech Lead chỉ review khi report toàn PASS. (`.claude/commands/verify-pr.md`)
+  > **[CÓ ĐIỀU KIỆN — nếu project đã cài `graphify`, xem §17.6]:** Senior Developer PHẢI chạy `graphify update --diff` ngay sau khi fix xong (trước `/verify-pr`), rồi bổ sung thủ công phần mô tả nghiệp vụ + Confidence labels vào CODE-GRAPH.md.
 Bước 3b → UX/UI REVIEWER          : [CÓ ĐIỀU KIỆN — nếu fix có đổi giao diện] Chạy app thật, kiểm tra trực quan trước khi QA verify
 Bước 4 → QA ENGINEER              : Verify fix trên staging, regression test
 Bước 5 → QA LEAD                  : Sign-off nếu bug là P0/P1 [BỎ QUA nếu P2/P3]
@@ -948,6 +954,7 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 - [ ] DESIGN cập nhật (nếu thay đổi UI / wireframe)
 - [ ] ADR tạo mới hoặc cập nhật (nếu thay đổi kiến trúc)
 - [ ] Test case cập nhật (nếu thay đổi AC / behavior)
+- [ ] CODE-GRAPH impact: [liệt kê module/node bị ảnh hưởng (thêm/xóa/rename module, thay đổi API, DB schema, dependency), hoặc "Không có"]
 - [ ] Không có tài liệu nào cần cập nhật (giải thích lý do): ___
 ```
 
@@ -1156,10 +1163,18 @@ Gõ /compact ngay bây giờ để giải phóng context window trước khi b�
 ```
 1. Glob "code-graph/CODE-GRAPH.md" → kiểm tra file có tồn tại không
 2. Nếu tồn tại       → Read code-graph/CODE-GRAPH.md TRƯỚC
-3. Thông tin đủ      → bắt đầu coding (không cần đọc toàn bộ source)
-4. Thiếu thông tin   → chỉ đọc thêm file/module cụ thể liên quan
+3. Thông tin đủ      → trả lời ít nhất 3/5 câu hỏi dưới đây từ CODE-GRAPH (không mở source):
+     a. Module/file liên quan đến task này nằm ở đâu?
+     b. Module đó phụ thuộc vào module/package nào?
+     c. Ai gọi module/function này (callers)?
+     d. API endpoint hoặc class public interface được định nghĩa ở file:line nào?
+     e. Có thay đổi nào gần đây ở module liên quan không (xem "Thay đổi gần đây")?
+   → Nếu CODE-GRAPH trả lời được ≥ 3/5 câu → bắt đầu coding (không cần đọc toàn bộ source)
+4. Thiếu thông tin   → chỉ đọc thêm file/module cụ thể liên quan (dựa trên câu hỏi nào chưa trả lời được)
 5. Không tồn tại     → khảo sát dự án → tạo code-graph/CODE-GRAPH.md từ template
                        → xuất code-graph/CODE-GRAPH.pdf ngay sau khi tạo xong
+                       → [Tùy chọn] Nếu Python 3.10+ có sẵn và project > 50 file code,
+                         có thể dùng `graphify` để build tự động (xem §17.6)
 ```
 
 ### 17.2 Khi nào PHẢI cập nhật CODE-GRAPH
@@ -1174,6 +1189,16 @@ Gõ /compact ngay bây giờ để giải phóng context window trước khi b�
 | Thêm/sửa env variable | ✅ Bắt buộc |
 | Sửa nội dung logic bên trong (không đổi interface) | ❌ Không cần |
 
+**Confidence labels (bắt buộc cho cột `Confidence` trong bảng Dependencies/Relationships của CODE-GRAPH):**
+
+| Label | Khi nào dùng |
+|-------|-------------|
+| `CONFIRMED` | Đã đọc trực tiếp source code hoặc config file liên quan — quan hệ/dependency chắc chắn đúng |
+| `INFERRED` | Suy luận từ tên module, cấu trúc thư mục, hoặc convention đặt tên — chưa đọc trực tiếp code |
+| `UNCERTAIN` | Chưa rõ: module mới tạo, code bị xóa chưa cập nhật, hoặc có mâu thuẫn giữa doc và code thực tế |
+
+Quy tắc: khi agent đọc CODE-GRAPH gặp label `UNCERTAIN` ở node liên quan đến task → **PHẢI** đọc trực tiếp source file đó để xác nhận, không dựa vào thông tin cũ.
+
 ### 17.3 Ai cập nhật CODE-GRAPH
 
 | Agent | Khi nào cập nhật |
@@ -1182,6 +1207,8 @@ Gõ /compact ngay bây giờ để giải phóng context window trước khi b�
 | Junior Developer | Sau mỗi PR merge có thay đổi structure/API |
 | Tech Lead | Sau mỗi technical design thay đổi kiến trúc |
 | DevOps Engineer | Khi thêm infra mới, env variable, deploy config |
+
+> **BẮT BUỘC nếu `graphify` đã được cài trong project** (kiểm tra nhanh: `pip show graphify` hoặc có file `graph.json`/`graph.html` ở root) — Senior/Junior Developer PHẢI chạy `graphify update --diff` NGAY sau khi code xong, TRƯỚC khi tự sửa tay `code-graph/CODE-GRAPH.md`, rồi mới bổ sung thủ công phần mô tả nghiệp vụ + Confidence labels mà graphify không tạo ra. Nếu project chưa cài `graphify` → giữ nguyên quy trình cập nhật thủ công như trên (xem §17.6 để cân nhắc cài đặt).
 
 ### 17.4 File location và định dạng bắt buộc
 
@@ -1211,6 +1238,35 @@ Nếu file chưa cập nhật > 30 ngày VÀ có nhiều thay đổi lớn → S
 2. Viết lại `code-graph/CODE-GRAPH.md` từ template
 3. Xuất lại `code-graph/CODE-GRAPH.pdf`
 4. Ghi chú ngày tạo lại vào "Lịch sử cập nhật"
+
+### 17.6 Công cụ tùy chọn: graphify (tự động hóa build/update CODE-GRAPH)
+
+> **Tùy chọn — không bắt buộc.** Graphify là CLI Python phân tích codebase bằng tree-sitter/AST, tự động sinh đồ thị dependency và xuất ra nhiều định dạng (JSON, Markdown). Hữu ích khi project > 50 file code và việc viết/cập nhật CODE-GRAPH.md thủ công tốn nhiều thời gian.
+
+**Cài đặt:**
+```bash
+pip install graphify
+# Hoặc tham khảo README đầy đủ tại: https://github.com/Graphify-Labs/graphify
+```
+
+**Lệnh cơ bản:**
+```bash
+graphify .                          # Phân tích toàn bộ project hiện tại, xuất graph
+graphify query --node ModuleName    # Tra cứu node cụ thể (callers, dependencies)
+graphify update --diff              # Cập nhật graph sau khi code thay đổi (chỉ re-parse file đã đổi)
+```
+
+**Khi nào nên dùng:**
+- Tạo CODE-GRAPH.md mới cho project lớn (> 50 file): dùng `graphify .` để có dữ liệu nền, sau đó bổ sung context nghiệp vụ thủ công vào template.
+- Cập nhật sau refactor lớn (nhiều file thay đổi): dùng `graphify update --diff` thay vì đọc lại từng file.
+- Tra cứu nhanh callers/dependencies trong session dài: `graphify query` cho kết quả nhanh hơn Grep thủ công.
+
+**Lưu ý quan trọng:**
+- Graphify xuất graph kỹ thuật (dependency/call graph) — KHÔNG thay thế phần mô tả nghiệp vụ, quyết định kiến trúc, và Confidence labels trong CODE-GRAPH.md (phần đó vẫn cần agent điền thủ công).
+- KHÔNG tự ý cài pip package trên project production/staging khi chưa được Tech Lead duyệt.
+- Output của `graphify` là input để điền vào CODE-GRAPH.md — không dùng raw output thay thế file template.
+
+> **Không tự động chạy ngầm:** `graphify` là CLI phải được chủ động gọi (không có watcher/daemon tự chạy). Một khi project đã cài đặt, việc gọi nó KHÔNG còn là tùy chọn tự do — §17.3 và các bước Developer trong WF-FEATURE (Bước 10)/WF-BUGFIX (Bước 3) đã BẮT BUỘC chạy `graphify update --diff` sau khi code xong, trước khi tự sửa tay CODE-GRAPH.md.
 
 ---
 
@@ -1438,6 +1494,7 @@ Agent PHẢI thêm vào phần artifact output:
 
 | Ngày | Phiên bản | Nội dung thay đổi | Đối tượng | Lý do |
 |------|-----------|------------------|-----------|-------|
+| 2026-07-29 | v1.7 | Áp dụng đề xuất P1-P5 từ nghiên cứu github.com/Graphify-Labs/graphify (Mode A): (1) §3.0 Pre-0b + §3.3 — đọc/ghi `docs/LESSONS.md`; (2) §15.3 — thêm dòng CODE-GRAPH impact vào PR checklist; (3) §17.1 — query-first checklist 5 câu hỏi thay vì "bắt đầu coding" mơ hồ; (4) §17.2 — Confidence labels CONFIRMED/INFERRED/UNCERTAIN; (5) §17.3 + §17.6 (mới) — công cụ tùy chọn `graphify` CLI, và khi project đã cài thì BẮT BUỘC Senior/Junior Developer chạy `graphify update --diff` sau khi code (WF-FEATURE Bước 10, WF-BUGFIX Bước 3) trước khi tự sửa tay CODE-GRAPH.md | CLAUDE.md §3.0 §3.3 §15.3 §17.1 §17.2 §17.3 §17.6 §21, `docs/LESSONS.md` (mới), `.claude/templates/CODE-GRAPH-template.md` | Học từ Graphify: real graph traversal thay Markdown tĩnh, confidence labels theo schema EXTRACTED/INFERRED/AMBIGUOUS, always-on injection pattern. Xem `docs/research/RESEARCH-graphify-2026-07-29.md` |
 | 2026-07-27 | v1.6 | Revert model ID về thế hệ trước: `claude-opus-5` → `claude-opus-4-7` (CTO, Tech Lead, Code Migrator), `claude-sonnet-5` → `claude-sonnet-4-6` (16 agent còn lại). Đồng bộ CORE.md §7, CLAUDE.md §13.1/§13.1b/§18.5, writing-agent-skill.md, agents-view.html như trước commit a849534. Giữ `claude-haiku-4-5` cho Tầng 3 (không đổi) | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | User yêu cầu sửa lại model như trước (revert commit a849534) |
 | 2026-07-25 | v1.5 | **Chuyển config sang user-level scope — mọi project trên máy dùng chung, không copy tay.** (1) Thêm `scripts/link-global.ps1` tạo 8 junction từ `~/.claude` → repo (`agents`, `commands`, `shared`, `templates`, `references`, `evals`, `hooks-kztek`, `scripts`). (2) `git mv .claude/GOTCHAS.md` → `.claude/shared/GOTCHAS.md` (file lẻ không junction được; `shared/` đã junction). (3) Đổi mọi path hạ tầng trong 31 file `.md` thuộc thư mục đã junction sang tuyệt đối `C:/Users/nguye/.claude/...`; path sản phẩm (`docs/plans/`, `src/`, `code-graph/`) giữ tương đối. (4) Fix `find_logo()` trong `md_to_docx_kztek.py` — phân giải theo `Path(__file__).resolve()` (G003). (5) Thêm skill `/sync-global` commit+push config từ bất kỳ project. (6) Bỏ tracking `.docx`/`.pdf` của tài liệu hạ tầng (110→8 file binary tracked). (7) Thêm `docs/SETUP-GLOBAL.md`. **KHÔNG junction `CLAUDE.md`** — quy trình 17-agent chỉ áp cho project phần mềm. | `scripts/link-global.ps1`, `.claude/shared/GOTCHAS.md`, `.claude/{agents,commands,shared,references,evals,templates}/*.md`, `.claude/commands/sync-global.md`, `.claude/templates/settings-global.json`, `scripts/md_to_docx_kztek.py`, `.gitignore`, `docs/SETUP-GLOBAL.md`, `~/.claude/settings.json`, `~/.claude/CLAUDE.md` | Trước đây mỗi project phải copy tay `.claude/` → nhiều bản sao lệch phiên bản, sửa một chỗ không lan sang chỗ khác. Junction cho một nguồn duy nhất do git quản lý đầy đủ; `.git` đang phình 162 MB cho 71 file text vì §19 commit lại DOCX+PDF (~1,2 MB mỗi lần sửa `CLAUDE.md`) nên bỏ tracking binary sinh tự động |
 | 2026-07-25 | v1.4 | Cập nhật model sang thế hệ Claude 5: `claude-opus-4-7` → `claude-opus-5`, `claude-sonnet-4-6` → `claude-sonnet-5` trên toàn bộ 19 file agent, CORE.md, writing-agent-skill.md, agents-view.html, CLAUDE.md §13.1/§13.1b/§18.5. Tầng 3 giữ `claude-haiku-4-5` (vẫn là bản Haiku mới nhất). **[Revert ở v1.6 — 2026-07-27]** | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | Anthropic ra mắt Claude Opus 5 và Sonnet 5 — giữ hệ thống agent luôn dùng model mới nhất, mạnh hơn ở cùng tầng chi phí |
