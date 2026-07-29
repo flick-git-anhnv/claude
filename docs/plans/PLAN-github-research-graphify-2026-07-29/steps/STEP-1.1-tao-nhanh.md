@@ -39,7 +39,7 @@ Tạo nhánh nghiên cứu `research/graphify-2026-07-29` từ nhánh main hiệ
 - Bước sau cần biết: Bước 2.1 phải clone repo về scratchpad `/tmp/claude-0/-home-user-claude/e57c930e-1f04-57e6-bd23-935399a30b38/scratchpad/research/graphify/` (KHÔNG lồng .git vào working tree KZTEK). Đang ở đúng nhánh `research/graphify-2026-07-29` — không cần checkout lại.
 
 ## Commit
-- Hash: [điền sau khi commit]
+- Hash: 7f5d246
 - Đã push: có
 
 ---
