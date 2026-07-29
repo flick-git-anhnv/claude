@@ -2,8 +2,8 @@
 step: "2.2"
 plan: ../PLAN-MASTER.md
 agent: github-repo-researcher
-status: todo
-completed_at:
+status: done
+completed_at: 2026-07-29 13:53
 ---
 
 # STEP 2.2 — Viết báo cáo phân tích repo chính thức
@@ -25,7 +25,11 @@ Dựa trên ghi chú phân tích từ Bước 2.1, viết file báo cáo chính 
 - [ ] Cập nhật đúng 1 dòng status trong PLAN-MASTER.md (⬜ → ✅)
 
 ## Đã làm
-[Điền SAU khi hoàn thành]
+- Đọc `_workspace/02_researcher_graphify-notes.md` từ Bước 2.1 làm cơ sở
+- Viết `docs/research/RESEARCH-graphify-2026-07-29.md` gồm 10 mục: Tổng quan, Stack, Cấu trúc thư mục, Pipeline, Các module chính, Điểm nổi bật kỹ thuật (5 điểm), Hiện trạng KZTEK, Bảng so sánh, Thông tin repo, Nhận xét chung
+- KHÔNG có mục đề xuất cải tiến KZTEK (đúng yêu cầu Bước 3 WF-GITHUB-RESEARCH)
+- Chạy `scripts/md_to_docx_kztek.py` → DOCX thành công, PDF thất bại (chưa có LibreOffice/docx2pdf — per §19.4 không block)
+- Tạo `docs/research/RESEARCH-graphify-2026-07-29.docx`
 
 ## Artifact
 - `docs/research/RESEARCH-graphify-2026-07-29.md`
@@ -33,14 +37,18 @@ Dựa trên ghi chú phân tích từ Bước 2.1, viết file báo cáo chính 
 - `docs/research/RESEARCH-graphify-2026-07-29.pdf`
 
 ## Quyết định quan trọng
-[Điền SAU khi hoàn thành]
+- PDF thất bại do môi trường Linux sandbox chưa cài LibreOffice/docx2pdf. Theo §19.4: không block workflow, chỉ ghi chú.
+- Báo cáo gồm cả mục "Hiện trạng KZTEK" và "So sánh trực tiếp" (bắt buộc per WF-GITHUB-RESEARCH Bước 3), dù Mode B sẽ không dùng — giữ để làm cơ sở nếu user chọn Mode A.
 
 ## Handoff Log — bước sau cần biết
-[Điền SAU khi hoàn thành — nêu rõ: link file báo cáo, tóm tắt 2-3 câu về repo để user đọc nhanh trước khi chọn Mode]
+- Đã làm: Viết xong báo cáo phân tích chính thức tại `docs/research/RESEARCH-graphify-2026-07-29.md`. DOCX xuất thành công, PDF thất bại (môi trường thiếu converter — không block).
+- File/module đã đọc hoặc đổi: `_workspace/02_researcher_graphify-notes.md` (đọc), `docs/research/RESEARCH-graphify-2026-07-29.md` (tạo mới), `docs/research/RESEARCH-graphify-2026-07-29.docx` (tạo mới)
+- Quyết định quan trọng: Báo cáo gồm đầy đủ Hiện trạng KZTEK + Bảng so sánh (bắt buộc per WF-GITHUB-RESEARCH Bước 3), không có đề xuất — làm cơ sở cho Bước 3A.1 nếu user chọn Mode A.
+- Bước sau cần biết: Bước 2.3 là USER chọn Mode A hoặc Mode B — hiển thị báo cáo tóm tắt cho user, hỏi mục đích tiếp theo. Graphify giải quyết vấn đề CODE-GRAPH.md tĩnh của KZTEK (§17) bằng real traversable graph; value tăng cao khi KZTEK có product C# codebase thực tế.
 
 ## Commit
 - Hash: [điền sau khi commit]
-- Đã push: [có/không]
+- Đã push: chờ commit
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

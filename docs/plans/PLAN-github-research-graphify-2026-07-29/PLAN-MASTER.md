@@ -1,7 +1,7 @@
 ---
 task: github-research-graphify
 created: 2026-07-29
-updated: 2026-07-29 13:49
+updated: 2026-07-29 13:53
 status: active
 workflow: WF-GITHUB-RESEARCH
 priority: P2
@@ -37,7 +37,7 @@ Nghiên cứu repo GitHub `https://github.com/Graphify-Labs/graphify` theo workf
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 2.1 | Clone repo về scratchpad, đọc & phân tích cấu trúc/công nghệ/điểm nổi bật | GitHub Repo Researcher | ✅ | `steps/STEP-2.1-clone-phan-tich.md` | 2026-07-29 13:49 |
-| 2.2 | Viết phần phân tích repo vào `docs/research/RESEARCH-graphify-2026-07-29.md` (KHÔNG kèm đề xuất cải tiến ở bước này) | GitHub Repo Researcher | ⬜ | `steps/STEP-2.2-viet-phan-tich.md` | - |
+| 2.2 | Viết phần phân tích repo vào `docs/research/RESEARCH-graphify-2026-07-29.md` (KHÔNG kèm đề xuất cải tiến ở bước này) | GitHub Repo Researcher | ✅ | `steps/STEP-2.2-viet-phan-tich.md` | 2026-07-29 13:53 |
 | 2.3 | [USER] Chọn Mode A (đề xuất cải tiến KZTEK) hay Mode B (học tập/tham khảo cá nhân) | User | ⬜ | `steps/STEP-2.3-user-chon-mode.md` | - |
 
 ### Phase 3A: Mode A — Đề xuất & Áp dụng cải tiến KZTEK [chờ 2.3]
@@ -84,6 +84,7 @@ Không có
 | 2026-07-29 13:43 | Bước 0.1 ✅ — Phase 0 Audit hoàn thành: task mới hoàn toàn, không có artifact/nhánh/clone trước đó, Mode A đã xác nhận | GitHub Repo Researcher |
 | 2026-07-29 13:45 | Bước 1.1 ✅ — Nhánh `research/graphify-2026-07-29` tạo thành công; Mode A ghi nhận sớm | GitHub Repo Researcher |
 | 2026-07-29 13:49 | Bước 2.1 ✅ — Clone repo, phân tích xong. Ghi chú: `_workspace/02_researcher_graphify-notes.md`. Stack: Python/NetworkX/tree-sitter. 5 điểm kỹ thuật nổi bật đã ghi. So sánh với CODE-GRAPH.md hiện tại của KZTEK đã xong. | GitHub Repo Researcher |
+| 2026-07-29 13:53 | Bước 2.2 ✅ — Báo cáo chính thức `docs/research/RESEARCH-graphify-2026-07-29.md` tạo xong (10 mục, gồm Hiện trạng KZTEK + Bảng so sánh). DOCX xuất thành công; PDF thất bại (thiếu converter, không block). | GitHub Repo Researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
