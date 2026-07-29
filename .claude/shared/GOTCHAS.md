@@ -17,6 +17,7 @@
 | G003 | `find_logo()` chỉ tìm theo CWD → xuất tài liệu từ project khác **mất logo mà không báo lỗi** | 2026-07-25 |
 | G004 | `KzPasswordTextBox` (UserControl): binding `Text` mặc định OneWay → VM **không nhận giá trị gõ vào, không báo lỗi**; Watermark mặc định "Nhập mật khẩu"; CornerRadius/FontSize set ngoài bị bỏ qua | 2026-07-26 |
 | G005 | `md_to_docx_kztek.py` báo `✗ PDF thất bại` (RPC failed) nhưng PDF **vẫn được tạo hợp lệ** — cảnh báo sai | 2026-07-27 |
+| G006 | Tool "graphify" tên package PyPI thật là `graphifyy` (2 chữ y) — `pip install graphify` báo lỗi "No matching distribution" | 2026-07-29 |
 
 ---
 
@@ -178,6 +179,45 @@ PDF chỉ cần khi chạy trên máy local có LibreOffice GUI đầy đủ —
 - DOCX là artifact chính; PDF là optional và chỉ cần ở môi trường local
 
 **Lần đầu gặp:** Bước 1.1-1.2 — WF-REFACTOR optimize-framework (2026-07-12)
+
+---
+
+## G006 — Tool "graphify": tên package PyPI thật là `graphifyy` (2 chữ y), không phải `graphify`
+
+**Ngày phát hiện:** 2026-07-29
+
+**Môi trường:** Windows 11, Python 3.10.11, pip 23.0.1
+
+**Vấn đề:**
+Chạy theo trực giác từ tên tool "graphify" (Graphify-Labs/graphify trên GitHub):
+```bash
+pip install graphify
+```
+→ `ERROR: No matching distribution found for graphify`. Package `graphify` trên PyPI không tồn tại
+hoặc không phải package này — dễ khiến agent nghĩ tool chưa release, hoặc bịa cách cài khác.
+
+**Nguyên nhân:**
+Tên repo GitHub (`Graphify-Labs/graphify`) và tên package publish lên PyPI **không trùng nhau**.
+Theo `docs/research/RESEARCH-graphify-2026-07-29.md` §1 (đã research từ README repo gốc), package
+thật là `graphifyy` — xác nhận bằng `pip index versions graphifyy` (trả về danh sách version từ
+0.1.1 đến 0.9.29, active development).
+
+**Cách xử lý:**
+Luôn dùng:
+```bash
+python -m pip install graphifyy
+```
+Nếu nghi ngờ tên package của bất kỳ tool GitHub nào không khớp tên repo, xác nhận trước bằng:
+```bash
+python -m pip index versions <tên-nghi-ngờ>
+```
+thay vì đoán và cài nhầm.
+
+**Lần đầu gặp:** Trả lời user hỏi cách dùng graphify cho project `App-Access-V2` (2026-07-29);
+tạo skill `.claude/commands/graphify.md` ngay sau đó có ghi lại gotcha này trong bảng Red Flags.
+
+**Không cần làm lại:** Không cần thử biến thể tên khác (`graphify-cli`, `pygraphify`, ...) —
+`graphifyy` là tên chính thức duy nhất, đã xác nhận qua `pip index versions`.
 
 ---
 
