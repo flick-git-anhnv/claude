@@ -44,8 +44,8 @@ Dựa trên phân tích repo graphify (Bước 2.1 + 2.2), viết bảng đề x
 - Bước sau cần biết: Bước 3A.2 là bước USER chọn đề xuất — agent KHÔNG làm gì thêm đến khi user xác nhận danh sách. Sau khi user xác nhận, Bước 3A.3 thực hiện Edit/Write vào KZTEK (CLAUDE.md §17, §15.3, template, v.v.). Các đề xuất P2/P3/P4/P5 chỉ đụng CLAUDE.md, CORE.md, template files — không đụng auth/payment/DB schema → không cần security-audit-stride. P1 nếu được chọn cần thêm bước test integration nhỏ.
 
 ## Commit
-- Hash: [điền sau commit]
-- Đã push: [điền sau push]
+- Hash: aeb0f7d
+- Đã push: có (research/graphify-2026-07-29)
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
