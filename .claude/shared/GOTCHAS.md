@@ -8,20 +8,25 @@
 
 ---
 
-## Mục lục nhanh
+## Mục lục nhanh + Bảng lọc theo Category
 
-| # | Vấn đề | Ngày |
-|---|--------|------|
-| G001 | `C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py` — thiếu `python-docx`/`Pillow`; PDF không cần trên cloud/sandbox | 2026-07-12 |
-| G002 | File `.ps1` có chữ Việt mà **không có BOM** → PowerShell 5.1 parse lỗi `Missing '=' operator` | 2026-07-25 |
-| G003 | `find_logo()` chỉ tìm theo CWD → xuất tài liệu từ project khác **mất logo mà không báo lỗi** | 2026-07-25 |
-| G004 | `KzPasswordTextBox` (UserControl): binding `Text` mặc định OneWay → VM **không nhận giá trị gõ vào, không báo lỗi**; Watermark mặc định "Nhập mật khẩu"; CornerRadius/FontSize set ngoài bị bỏ qua | 2026-07-26 |
-| G005 | `md_to_docx_kztek.py` báo `✗ PDF thất bại` (RPC failed) nhưng PDF **vẫn được tạo hợp lệ** — cảnh báo sai | 2026-07-27 |
-| G006 | Tool "graphify" tên package PyPI thật là `graphifyy` (2 chữ y) — `pip install graphify` báo lỗi "No matching distribution" | 2026-07-29 |
+> **Cách dùng:** Khi gặp lỗi, xác định category loại lỗi → lọc cột Category → chỉ đọc entries thuộc category đó. Không cần đọc tuần tự toàn bộ file.
+
+| # | Vấn đề | Category | Ngày |
+|---|--------|----------|------|
+| G001 | `md_to_docx_kztek.py` — thiếu `python-docx`/`Pillow`; PDF không cần trên cloud/sandbox | `[SCRIPT]` | 2026-07-12 |
+| G002 | File `.ps1` có chữ Việt mà **không có BOM** → PowerShell 5.1 parse lỗi vô nghĩa | `[ENCODING]` | 2026-07-25 |
+| G003 | `find_logo()` chỉ tìm theo CWD → xuất tài liệu từ project khác **mất logo mà không báo lỗi** | `[SCRIPT]` | 2026-07-25 |
+| G004 | `KzPasswordTextBox`: binding `Text` mặc định OneWay → VM **không nhận giá trị gõ vào, không báo lỗi** | `[UI-BINDING]` | 2026-07-26 |
+| G005 | `md_to_docx_kztek.py` báo `✗ PDF thất bại` (RPC failed) nhưng PDF **vẫn được tạo hợp lệ** | `[SCRIPT]` | 2026-07-27 |
+| G006 | Tool "graphify" tên package PyPI thật là `graphifyy` (2 chữ y) — `pip install graphify` báo lỗi | `[CONFIG]` | 2026-07-29 |
+
+**Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
 
 ---
 
 ## G004 — `KzPasswordTextBox`: binding `Text` phải `Mode=TwoWay` tường minh, Watermark có default, CornerRadius/FontSize không forward
+**Category:** `[UI-BINDING]`
 
 **Ngày phát hiện:** 2026-07-26
 **Môi trường:** KztekComponentAvalonia (Avalonia 12.1.0), Windows 11
@@ -34,6 +39,7 @@
 ---
 
 ## G005 — `md_to_docx_kztek.py` báo "PDF thất bại" nhưng file PDF vẫn được tạo hợp lệ
+**Category:** `[SCRIPT]`
 
 **Ngày phát hiện:** 2026-07-27
 **Môi trường:** Windows 11, `docx2pdf` + Microsoft Word COM Automation
@@ -75,6 +81,7 @@ UX-REVIEW payment-flow (iPGSv4, 2026-07-27).
 ---
 
 ## G003 — `md_to_docx_kztek.py`: logo tìm theo CWD nên mất logo khi chạy từ project khác
+**Category:** `[SCRIPT]`
 
 **Ngày phát hiện:** 2026-07-25
 **Môi trường:** Windows 11, mọi project không phải repo config KZTEK
@@ -110,6 +117,7 @@ Thứ tự tìm: CWD trước (cho phép project override logo riêng) → repo 
 ---
 
 ## G002 — File `.ps1` chứa chữ Việt không có BOM → PowerShell 5.1 parse lỗi vô nghĩa
+**Category:** `[ENCODING]`
 
 **Ngày phát hiện:** 2026-07-25
 **Môi trường:** Windows PowerShell 5.1 (`powershell.exe`), Windows 11
@@ -148,7 +156,8 @@ không phải UTF-8. Chữ Việt nhiều byte bị giải mã sai thành ký t�
 
 ---
 
-## G001 — `C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py`: thiếu `python-docx`/`Pillow`; PDF là optional trên cloud/sandbox
+## G001 — `md_to_docx_kztek.py`: thiếu `python-docx`/`Pillow`; PDF là optional trên cloud/sandbox
+**Category:** `[SCRIPT]`
 
 **Ngày phát hiện:** 2026-07-12
 
@@ -183,6 +192,7 @@ PDF chỉ cần khi chạy trên máy local có LibreOffice GUI đầy đủ —
 ---
 
 ## G006 — Tool "graphify": tên package PyPI thật là `graphifyy` (2 chữ y), không phải `graphify`
+**Category:** `[CONFIG]`
 
 **Ngày phát hiện:** 2026-07-29
 
@@ -224,6 +234,7 @@ tạo skill `.claude/commands/graphify.md` ngay sau đó có ghi lại gotcha n�
 <!-- Thêm entry mới theo format:
 
 ## G00N — [Tên vấn đề ngắn gọn]
+**Category:** `[SCRIPT]` | `[ENCODING]` | `[UI-BINDING]` | `[CONFIG]` | `[GIT]` | `[AGENT-LOOP]` | (hoặc thêm category mới nếu không khớp)
 
 **Ngày phát hiện:** YYYY-MM-DD
 **Môi trường:** [OS / platform / version]
@@ -232,5 +243,7 @@ tạo skill `.claude/commands/graphify.md` ngay sau đó có ghi lại gotcha n�
 **Cách xử lý:** [Giải pháp, workaround, hoặc cách tránh]
 **Lần đầu gặp:** [Context task / session]
 **Không cần làm lại:** [Những gì đã thử mà KHÔNG hoạt động — để tránh lặp lại]
+
+BẮT BUỘC: Sau khi thêm entry mới → cập nhật bảng "Mục lục nhanh + Bảng lọc theo Category" ở đầu file.
 
 -->

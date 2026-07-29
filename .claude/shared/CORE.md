@@ -111,6 +111,8 @@ Trạng thái: ✅/⚠️/🔴 | Artifacts: [...] | Tiếp theo: [...]
 
 ## 6. Rules cứng (không ngoại lệ)
 
+> **Tra GOTCHAS.md:** Trước khi debug lỗi lạ, lọc theo **Category** ở đầu GOTCHAS.md (`[SCRIPT]`, `[ENCODING]`, `[UI-BINDING]`, `[CONFIG]`...) → chỉ đọc entries thuộc category đó. Không cần đọc toàn bộ file.
+
 | # | Rule |
 |---|------|
 | R1 | Mọi `.md` tạo/sửa → chạy `python C:/Users/nguye/.claude/scripts/md_to_docx_kztek.py <file>` ngay |
