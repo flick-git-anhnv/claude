@@ -53,6 +53,7 @@
 - [python-lazy-import-startup-time.md](python-tkinter/python-lazy-import-startup-time.md) — App Tkinter khởi động 46s vì import ML ở mức module (`paddleocr` kéo torch GIÁN TIẾP); truy vết bằng hook `builtins.__import__`, fix bằng `find_spec` + proxy lazy + dựng tab lười → 2,1s
 
 ### windows-tooling/
+- [harness-scratchpad-overrides-project-temp-rule.md](windows-tooling/harness-scratchpad-overrides-project-temp-rule.md) — Claude Code harness tự bơm "Scratchpad Directory" vào system prompt mọi session, dễ đè lên rule global "bắt buộc temp/ trong project"; project có CLAUDE.md không tự động chặn được — phải chủ động kiểm tra `Glob <project>/temp/` trước khi ghi file trung gian, kể cả từ MCP tool ngoài (Stitch/Figma)
 - [bash-heredoc-collapses-backslash-in-python.md](windows-tooling/bash-heredoc-collapses-backslash-in-python.md) — Heredoc thu gọn `\`→`\` khiến Python đọc `\5` thành escape bát phân `\5`: replace không khớp, file nhiễm ký tự điều khiển, converter DOCX chết. Fix: dựng backslash bằng `chr(92)`
 - [powershell-vietnamese-bom-parse-error.md](windows-tooling/powershell-vietnamese-bom-parse-error.md) — PS 5.1 đọc `.ps1` không BOM theo ANSI → chữ Việt gây lỗi parser sai hướng (`Missing '=' operator`)
 - [virtualbox-chan-doan-vm-tu-host.md](windows-tooling/virtualbox-chan-doan-vm-tu-host.md) — VM "màn hình đen" sau mất điện thường chỉ là Plymouth splash, không hỏng: chẩn đoán từ host bằng `VBoxManage controlvm screenshotpng` + `guestproperty enumerate` TRƯỚC khi định chạy fsck
