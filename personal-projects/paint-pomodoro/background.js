@@ -58,6 +58,12 @@ async function setState(patch) {
   return next;
 }
 
+// Clicking the toolbar icon opens the side panel (docked, stays open across
+// tabs) instead of a transient popup that closes on outside click.
+chrome.sidePanel
+  .setPanelBehavior({ openPanelOnActionClick: true })
+  .catch(() => {});
+
 chrome.runtime.onInstalled.addListener(async () => {
   const data = await chrome.storage.local.get([
     "settings",
