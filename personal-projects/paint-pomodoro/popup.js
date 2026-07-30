@@ -66,6 +66,8 @@ function renderTimer() {
   btnStart.textContent = phase === "idle" ? "Bắt đầu" : "Tiếp tục";
   btnPause.hidden = !running;
   btnSkip.hidden = phase === "idle";
+
+  renderPip();
 }
 
 function formatMinutes() {
@@ -95,6 +97,122 @@ btnSkip.addEventListener("click", async () => {
 btnReset.addEventListener("click", async () => {
   await send("RESET");
   await refreshAll();
+});
+
+// ---- Pin to desktop (Document Picture-in-Picture) --------------------------
+// Opens a real always-on-top OS window (floats above every app, not just
+// Chrome) showing a mini timer. Requires Chrome 116+.
+
+const btnPip = document.getElementById("btnPip");
+let pipWindow = null;
+let pipEls = null;
+
+function buildPipDocument(win) {
+  const style = win.document.createElement("style");
+  style.textContent = `
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #14141a;
+      color: #f4f1ea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .pip-app { text-align: center; padding: 10px; }
+    .pip-phase {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.65;
+      margin-bottom: 4px;
+    }
+    .pip-clock {
+      font-size: 44px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #e03d2e;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .pip-controls { display: flex; gap: 6px; justify-content: center; }
+    button {
+      border: 1px solid rgba(244, 241, 234, 0.25);
+      background: rgba(244, 241, 234, 0.06);
+      color: #f4f1ea;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover { background: rgba(244, 241, 234, 0.14); }
+  `;
+  win.document.head.appendChild(style);
+  win.document.body.innerHTML = `
+    <div class="pip-app">
+      <div class="pip-phase" id="pipPhase">Sẵn sàng</div>
+      <div class="pip-clock" id="pipClock">--:--</div>
+      <div class="pip-controls">
+        <button id="pipStart">Bắt đầu</button>
+        <button id="pipPause" hidden>Tạm dừng</button>
+        <button id="pipSkip" hidden>Bỏ qua</button>
+      </div>
+    </div>
+  `;
+  const els = {
+    phase: win.document.getElementById("pipPhase"),
+    clock: win.document.getElementById("pipClock"),
+    start: win.document.getElementById("pipStart"),
+    pause: win.document.getElementById("pipPause"),
+    skip: win.document.getElementById("pipSkip"),
+  };
+  els.start.addEventListener("click", async () => {
+    await send("START", { taskId: latestState?.currentTaskId || null });
+    await refreshAll();
+  });
+  els.pause.addEventListener("click", async () => {
+    await send("PAUSE");
+    await refreshAll();
+  });
+  els.skip.addEventListener("click", async () => {
+    await send("SKIP");
+    await refreshAll();
+  });
+  return els;
+}
+
+function renderPip() {
+  if (!pipWindow || !pipEls || !latestState) return;
+  const { phase, running, phaseEndAt, remainingMsWhenPaused } = latestState;
+  pipEls.phase.textContent = PHASE_LABELS[phase] || phase;
+  const remaining = running ? phaseEndAt - Date.now() : remainingMsWhenPaused ?? 0;
+  pipEls.clock.textContent = phase === "idle" ? "--:--" : formatMs(remaining);
+  pipEls.start.hidden = running;
+  pipEls.start.textContent = phase === "idle" ? "Bắt đầu" : "Tiếp tục";
+  pipEls.pause.hidden = !running;
+  pipEls.skip.hidden = phase === "idle";
+}
+
+btnPip.addEventListener("click", async () => {
+  if (!("documentPictureInPicture" in window)) {
+    alert(
+      "Trình duyệt này chưa hỗ trợ Pin ra màn hình (cần Chrome/Edge 116 trở lên)."
+    );
+    return;
+  }
+  if (pipWindow) {
+    pipWindow.focus();
+    return;
+  }
+  pipWindow = await documentPictureInPicture.requestWindow({ width: 220, height: 170 });
+  pipEls = buildPipDocument(pipWindow);
+  renderPip();
+  pipWindow.addEventListener("pagehide", () => {
+    pipWindow = null;
+    pipEls = null;
+  });
 });
 
 // ---- Tasks panel -----------------------------------------------------------

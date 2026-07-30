@@ -118,6 +118,13 @@ body {
   opacity: 0.6;
 }
 
+.pp-btn-pip {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  text-align: center;
+}
+
 .pp-today-count {
   text-align: center;
   font-size: 12px;
