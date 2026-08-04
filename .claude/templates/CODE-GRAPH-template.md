@@ -37,10 +37,10 @@
 ---
 
 ## Module chính
-| Module | Path | Mục đích | Files quan trọng |
-|--------|------|----------|-----------------|
-| [ModuleA] | `src/module-a/` | [mục đích] | `main.ts`, `types.ts` |
-| [ModuleB] | `src/module-b/` | [mục đích] | `service.ts`, `model.ts` |
+| Module | Path | Mục đích | Files quan trọng | Callers/Used-by | Last verified |
+|--------|------|----------|-----------------|-----------------|---------------|
+| [ModuleA] | `src/module-a/` | [mục đích] | `main.ts`, `types.ts` | [ModuleX, ModuleY] | YYYY-MM-DD |
+| [ModuleB] | `src/module-b/` | [mục đích] | `service.ts`, `model.ts` | [ModuleA] | YYYY-MM-DD |
 
 ---
 
@@ -71,11 +71,12 @@
 ---
 
 ## Dependencies quan trọng
-| Package | Version | Dùng cho | Confidence |
-|---------|---------|---------|------------|
-| [package-name] | [x.y.z] | [mục đích sử dụng] | CONFIRMED |
+| Package | Version | Dùng cho | Confidence | Last verified |
+|---------|---------|---------|------------|---------------|
+| [package-name] | [x.y.z] | [mục đích sử dụng] | CONFIRMED | YYYY-MM-DD |
 
 > **Confidence labels:** `CONFIRMED` = đã đọc trực tiếp source/config. `INFERRED` = suy luận từ tên/convention, chưa verify. `UNCERTAIN` = chưa rõ hoặc có mâu thuẫn — agent đọc CODE-GRAPH gặp `UNCERTAIN` ở node liên quan đến task PHẢI đọc source để xác nhận (xem CLAUDE.md §17.2).
+> **Last verified:** Ngày agent/developer cuối cùng đọc trực tiếp source để xác nhận entry này còn đúng (YYYY-MM-DD). Entry có `Last verified` > 30 ngày trước VÀ module xuất hiện trong git log gần đây → tạm downgrade sang UNCERTAIN, re-verify trước khi dùng (xem rule chi tiết CLAUDE.md §17.2).
 
 ---
 

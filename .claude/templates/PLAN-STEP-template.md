@@ -4,6 +4,7 @@ plan: ../PLAN-MASTER.md
 agent: [agent phụ trách]
 status: todo
 completed_at:
+deps: []
 ---
 
 # STEP N.M — [Tên bước ngắn]
@@ -27,8 +28,10 @@ completed_at:
 ## Quyết định quan trọng
 [Nếu có — vd: chọn cách A vì lý do X. Không có → "Không có".]
 
-## Handoff Log — bước sau cần biết
-[Cảnh báo / gotcha / điều KHÔNG cần làm lại, để bước kế tiếp không phải tự đọc lại/nghiên cứu lại. Không có → "Không có".]
+## Handoff Payload — bước sau đọc phần này (chỉ phần này, không cần đọc "Đã làm")
+- do_not_redo: [thao tác đã làm xong, bước sau KHÔNG làm lại — vd: "đã clone repo, không cần clone lại"; nếu không có → "Không có"]
+- watch_out: [gotcha / điều kiện bất ngờ bước sau cần biết — vd: "branch X đang ở dirty state"; nếu không có → "Không có"]
+- next_inputs: [artifact/file/quyết định bước sau cần dùng làm input — vd: "dùng commit hash abc1234, file plan ở docs/plans/..."; nếu không có → "Không có"]
 
 ## Commit
 - Hash: [điền sau khi commit]
