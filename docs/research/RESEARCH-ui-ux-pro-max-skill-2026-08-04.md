@@ -4,8 +4,8 @@ repo_url: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
 research_date: 2026-08-04
 researcher: github-repo-researcher
 branch: research/ui-ux-pro-max-skill-2026-08-04
-mode: pending — chờ user xác nhận Mode A/B
-status: draft — phân tích Bước 3 (chưa có đề xuất)
+mode: A (Cải tiến KZTEK — đã xác nhận)
+status: draft — Bước 3b (bảng đề xuất, chờ user duyệt Bước 4)
 ---
 
 # Nghiên cứu repo: nextlevelbuilder/ui-ux-pro-max-skill
@@ -278,4 +278,40 @@ Skill này là **bộ quy tắc prescriptive** phong phú (508+ dòng đã đọ
 
 ---
 
-> **Cần user xác nhận:** Bước tiếp theo phụ thuộc vào mục đích nghiên cứu. Xem phần "Bước tiếp theo" ở cuối báo cáo gốc.
+> **Mode A đã được xác nhận.** Bảng đề xuất cải tiến bên dưới (Bước 3b) — chờ user duyệt từng mục ở Bước 4 trước khi áp dụng bất kỳ thay đổi nào.
+
+---
+
+## 9. Bảng đề xuất cải tiến KZTEK (Bước 3b — Mode A)
+
+> Mỗi đề xuất dựa trực tiếp trên phần "So sánh" ở Mục 6. Không có đề xuất nào được áp dụng cho đến khi user xác nhận ở Bước 4.
+
+| # | Đề xuất | Hiện trạng KZTEK (đang có gì / chưa có gì) | Học từ đâu (file/pattern cụ thể trong repo nguồn) | Lý do thay đổi (vấn đề/khoảng trống cụ thể) | Áp dụng vào đâu trong KZTEK | Đạt được gì (kết quả cụ thể, quan sát được) | Rủi ro / Effort |
+|---|---------|---------------------------------------------|--------------------------------------------------|---------------------------------------------|------------------------------|----------------------------------------------|-----------------|
+| E1 | **Cài skill UI UX Pro Max vào workspace Claude Code** | `.claude/skills/` chưa có bất kỳ skill nào liên quan design. Agent UI/UX Designer và các agent code (Senior Dev, Junior Dev) khi tạo UI phụ thuộc hoàn toàn vào LLM suy đoán style, màu, font — không có database tham chiếu. | `skill.json` + CLI installer: `npm install -g ui-ux-pro-max-cli && uipro init --ai claude --global` → sinh ra `.claude/skills/ui-ux-pro-max/` chứa đầy đủ `data/`, `scripts/`, `SKILL.md` | Khi Senior/Junior Dev viết UI Avalonia hoặc WinForms, agent không có nguồn nào để tra cứu pattern phù hợp → dễ ra output mặc định (generic, không brand). Không có searchable database = AI luôn phải đoán. | `.claude/skills/ui-ux-pro-max/` (thư mục mới, cài bởi CLI) — sau đó thêm 1 dòng nhắc trong `ui-ux-designer.md` và `senior-developer.md`: "Trước khi code UI, query `python scripts/search.py`" | Agent có thể gọi `python scripts/search.py "avalonia dashboard" --stack avalonia` và nhận 3 Do/Don't guidelines cụ thể kèm code example thay vì suy đoán. Tương tự cho web UI: `--stack react`, `--stack html-tailwind`. | Rủi ro thấp — chỉ thêm thư mục data + scripts, không sửa code hiện có. Effort thấp: 1 lệnh CLI + cập nhật 2 file agent (3–5 dòng mỗi file). Cần Python 3.x có sẵn trên máy. |
+| E2 | **Tích hợp Design System Generator vào quy trình UI/UX Designer** | `ui-ux-designer.md` mô tả quy trình wireframe → mockup nhưng không chỉ định cách agent chọn style/color/typography. Kết quả: mỗi session tạo ra palette và style khác nhau, không nhất quán giữa các feature. | `src/ui-ux-pro-max/scripts/design_system.py` + `--persist` flag: lệnh `python3 scripts/search.py "<project type>" --design-system --persist -p "ProjectName"` sinh `design-system/MASTER.md` | Hiện tại không có "design system document" nào được sinh ra và lưu lại cho từng dự án → AI dùng style khác nhau mỗi session. Bước thiết kế của WF-FEATURE không có output cụ thể về design token/palette đã chốt. | `ui-ux-designer.md` → thêm bước trong Quy trình: "Bước 0: Nếu `design-system/MASTER.md` chưa tồn tại → chạy design system generator và lưu"; thêm artifact `design-system/MASTER.md` vào danh sách artifact bắt buộc của agent này. | Dự án sẽ có 1 file `design-system/MASTER.md` là nguồn sự thật về palette + typography + style. Agent ở mọi session sau đọc file này thay vì tự đoán → style nhất quán xuyên session và xuyên agent (Dev cũng đọc được). | Rủi ro thấp — pattern persist chỉ tạo file Markdown, không sửa code. Effort thấp-vừa: cập nhật `ui-ux-designer.md` (~15 dòng) + template `design-system/` structure. Phụ thuộc E1 (cần skill đã cài). |
+| E3 | **Chuẩn hoá Avalonia lessons thành CSV searchable (hoặc link sang Avalonia CSV của skill)** | Lessons Avalonia hiện tại nằm tại `C:\Users\nguye\.claude\lessons\avalonia\` dạng Markdown prose (5 file: resource-path, datagrid, gotfocuseventargs...). Dạng prose không thể query bằng `search.py`; agent phải đọc toàn bộ file để tìm 1 guideline cụ thể. | `src/ui-ux-pro-max/data/stacks/avalonia.csv` — 29 rows có cấu trúc: `No, Category, Guideline, Description, Do, Don't, Code Good, Code Bad, Severity, Docs URL`. Searchable bằng BM25. | Khi agent gặp vấn đề "DataGrid không có style" → phải đọc toàn bộ file lesson Avalonia (nhiều file) thay vì query đúng 1 guideline. Có 2 nguồn kiến thức Avalonia tách biệt (lessons KZTEK + skill CSV) dễ không đồng bộ. Một số gotcha trong GOTCHAS.md cũng overlap (VD: G004 về KzPasswordTextBox binding). | Phương án A (ưu tiên): Sau khi cài E1, thêm vào `pre-coding-check.md` bước: "Nếu task liên quan Avalonia, chạy `python scripts/search.py '<query>' --stack avalonia` trước khi đọc lesson." Phương án B (nếu muốn mở rộng): Tạo `C:\Users\nguye\.claude\lessons\avalonia\avalonia-guidelines.csv` copy từ `avalonia.csv` của skill, thêm các KZTEK-specific rows (G004, KzPasswordTextBox...). | Agent tìm guideline Avalonia trong 1 tool call (`search.py`) thay vì 2–3 tool calls đọc file. Số lần đọc lesson trước khi code giảm từ "đọc N file để tìm M guideline" xuống "query 1 câu, nhận top-3 kết quả". Skill CSV cũng có link docs chính thức Avalonia đi kèm mỗi guideline. | Rủi ro thấp. Phương án A: effort rất thấp (3–5 dòng trong `pre-coding-check.md`), phụ thuộc E1. Phương án B: effort vừa (tạo 1 CSV, đồng bộ với lessons hiện có); cần review để không mâu thuẫn với GOTCHAS.md. |
+| E4 | **Bổ sung KZTEK brand palette vào design-system MASTER template** | `kztek-brand-info.md` có màu brand (#251C53, #F05922, #4A3F8C...) và quy tắc áp dụng theo loại tài liệu (Slide/Word/Excel). Tuy nhiên không có file template `design-system/MASTER.md` nào chứa brand tokens ở dạng design system — mỗi khi agent cần màu KZTEK phải đọc `kztek-brand-info.md` và tự suy ra token. | `--persist` pattern của `design_system.py`: file `design-system/MASTER.md` là "Global Source of Truth" với cấu trúc: Colors, Typography, Spacing, Effects, Anti-patterns. Pattern này có thể dùng như template cho workspace KZTEK. | Agent viết UI tài liệu/slide/web KZTEK phải đọc `kztek-brand-info.md` rồi tự áp dụng quy tắc, dễ bỏ sót (VD: quên dùng Navy #251C53 cho heading, tự chọn màu khác). Không có file tập trung nào map "loại tài liệu → token cụ thể cần dùng" theo format design system. | Tạo file mới: `docs/design/kztek-design-system/MASTER.md` theo cấu trúc của `design-system/MASTER.md` của skill, điền brand colors KZTEK, typography, spacing conventions, anti-patterns (không dùng đỏ tươi, không mix palette...). Cập nhật `ui-ux-designer.md` để reference file này. | Khi agent (Documentation Writer, UI/UX Designer, Senior Dev viết UI KZTEK) cần màu/font → đọc 1 file duy nhất `docs/design/kztek-design-system/MASTER.md` thay vì 2 bước (đọc `kztek-brand-info.md` + tự suy). File này cũng là input để generate page-specific overrides khi KZTEK có nhiều loại document cần cấu hình riêng. | Rủi ro thấp — chỉ tạo file Markdown tổng hợp, không thay thế `kztek-brand-info.md`. Effort thấp: 1–2 giờ tạo MASTER.md từ template + nội dung `kztek-brand-info.md`. Không phụ thuộc E1/E2. |
+| E5 | **Thêm hướng dẫn query design database vào `design-taste-frontend.md`** | `design-taste-frontend.md` là skill anti-slop rất phong phú (1207 dòng) cho web landing page/portfolio. Nó có 3 dials (DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY) trùng concept với dials của ui-ux-pro-max. Tuy nhiên khi agent cần typography hoặc color palette cụ thể, nó phụ thuộc hoàn toàn vào rules hardcoded trong file — không có cơ chế query database để tìm lựa chọn phù hợp hơn với từng loại project. | `src/ui-ux-pro-max/scripts/search.py` domain `color`, `typography`, `product`: query bằng keyword → nhận top-3 palette/font phù hợp nhất thay vì dùng list cố định. Ví dụ: `python3 scripts/search.py "saas dashboard" --domain color` → palette phù hợp SaaS. | `design-taste-frontend.md` Section 4.1 liệt kê font suggestions và Section 4.2 liệt kê color rules nhưng là danh sách tĩnh không thay đổi theo loại project. Khi làm SaaS vs wellness vs fintech, agent vẫn lấy cùng một pool font/color. Thiếu khả năng "tìm palette phù hợp ngành X" theo dữ liệu có cấu trúc. | `design-taste-frontend.md` → thêm vào Section 2 (Brief → Design System Map) một bước: "Nếu đã cài ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max/`), chạy `python3 scripts/search.py '<product type>' --design-system` để lấy palette/typography được recommend cho loại project này, sau đó áp dụng qua dials Section 1." | Khi làm landing page cho "beauty spa", agent nhận palette cụ thể có AVOID list ("Bright neon colors") từ data thay vì chỉ áp The Lila Rule generic. Kết quả: typography và palette phù hợp ngành hơn, ít "AI default". Dials của 2 tool đồng bộ concept (variance/motion/density) nên không xung đột. | Rủi ro rất thấp — chỉ thêm 1 bước optional vào skill đã có (không bắt buộc nếu skill chưa cài). Effort rất thấp: ~5–10 dòng thêm vào Section 2. Phụ thuộc E1. |
+
+---
+
+### Tóm tắt đề xuất và dependency
+
+```
+E4 (standalone, không phụ thuộc) — tạo KZTEK design system MASTER.md
+E1 (cài skill) → E2 (design system generator) + E3 Phương án A + E5
+E3 Phương án B (standalone, chỉ cần Python)
+```
+
+**Đề xuất ưu tiên thực hiện:** E1 → E4 (song song) → E2 → E3A → E5
+
+**Trạng thái đề xuất:**
+
+| # | Đề xuất | Trạng thái |
+|---|---------|-----------|
+| E1 | Cài skill UI UX Pro Max vào workspace | ⬜ Chờ user duyệt |
+| E2 | Tích hợp Design System Generator vào ui-ux-designer.md | ⬜ Chờ user duyệt |
+| E3 | Chuẩn hoá Avalonia lessons thành CSV searchable | ⬜ Chờ user duyệt |
+| E4 | Bổ sung KZTEK brand palette vào design-system MASTER template | ⬜ Chờ user duyệt |
+| E5 | Thêm hướng dẫn query design database vào design-taste-frontend.md | ⬜ Chờ user duyệt |
