@@ -20,6 +20,7 @@
 | G004 | `KzPasswordTextBox`: binding `Text` mặc định OneWay → VM **không nhận giá trị gõ vào, không báo lỗi** | `[UI-BINDING]` | 2026-07-26 |
 | G005 | `md_to_docx_kztek.py` báo `✗ PDF thất bại` (RPC failed) nhưng PDF **vẫn được tạo hợp lệ** | `[SCRIPT]` | 2026-07-27 |
 | G006 | Tool "graphify" tên package PyPI thật là `graphifyy` (2 chữ y) — `pip install graphify` báo lỗi | `[CONFIG]` | 2026-07-29 |
+| G007 | Edit tool báo "updated successfully" nhưng **không ghi vào disk** trên Windows trong 1 số branch context | `[AGENT-LOOP]` | 2026-08-04 |
 
 **Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
 
@@ -155,6 +156,49 @@ không phải UTF-8. Chữ Việt nhiều byte bị giải mã sai thành ký t�
 - Không dùng `Set-Content` mặc định để ghi lại (5.1 ghi ANSI, làm hỏng tiếp).
 
 ---
+
+## G007 — Edit tool báo "updated successfully" nhưng không ghi vào disk (Windows)
+**Category:** `[AGENT-LOOP]`
+
+**Ngày phát hiện:** 2026-08-04
+**Môi trường:** Windows 11, Git Bash (POSIX shell), nhánh git không phải main
+
+**Vấn đề:**
+Dùng Edit tool để patch file (VD: `.claude/templates/CODE-GRAPH-template.md`, `CLAUDE.md`) — tool báo "File updated successfully" nhưng `grep` sau đó trả về 0 kết quả. Thay đổi **không được ghi vào disk** mặc dù không có thông báo lỗi nào.
+
+**Môi trường tái hiện:**
+- Đang ở trên nhánh feature (`research/gitnexus-2026-08-04`) thay vì `main`
+- File target là file lớn (CLAUDE.md > 500 dòng, CODE-GRAPH-template.md)
+- Edit có nhiều lần thay thế liên tiếp trong cùng 1 lệnh
+
+**Cách phát hiện:**
+```bash
+grep -n "keyword_from_edit" <file>   # trả về rỗng sau khi Edit tool báo thành công
+# HOẶC
+python3 -c "open('<file>').read().count('new_string')"  # trả về 0
+```
+
+**Cách xử lý (ĐÃ XÁC NHẬN):**
+Viết nội dung patch vào file `.py` riêng rồi chạy bằng Bash:
+```python
+# patch_file.py
+with open(r'path/to/file.md', 'r', encoding='utf-8') as f:
+    content = f.read()
+content = content.replace('OLD_STRING', 'NEW_STRING')
+with open(r'path/to/file.md', 'w', encoding='utf-8') as f:
+    f.write(content)
+```
+```bash
+PYTHONIOENCODING=utf-8 python3 patch_file.py
+```
+
+**Lần đầu gặp:** WF-GITHUB-RESEARCH Mode A Bước 4b — áp dụng GX-1 đến GX-6 (2026-08-04)
+
+**Không cần làm lại:**
+- KHÔNG retry Edit tool nhiều lần — nó sẽ tiếp tục báo "updated successfully" mà không ghi disk
+- KHÔNG dùng Write tool để ghi lại toàn bộ file lớn (rủi ro mất nội dung nếu format sai)
+- Dùng Python `str.replace()` — đơn giản, idempotent, và verifiable ngay sau khi chạy
+
 
 ## G001 — `md_to_docx_kztek.py`: thiếu `python-docx`/`Pillow`; PDF là optional trên cloud/sandbox
 **Category:** `[SCRIPT]`

@@ -40,7 +40,7 @@ Nghiên cứu repo GitHub https://github.com/abhigyanpatwari/GitNexus theo workf
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 3.1 | [Mode A] Bảng đề xuất cải tiến KZTEK — hoặc — [Mode B] Giải thích tương tác nguyên lý/cách vận hành | github-repo-researcher | ✅ | `steps/STEP-3.1-mode-action.md` | 2026-08-04 15:30 |
-| 3.2 | [Mode A] User duyệt + áp dụng đề xuất — hoặc — [Mode B] Tài liệu tổng hợp cuối cùng + xuất DOCX/PDF | github-repo-researcher | ⬜ | `steps/STEP-3.2-mode-finalize.md` | - |
+| 3.2 | [Mode A] User duyệt + áp dụng đề xuất — hoặc — [Mode B] Tài liệu tổng hợp cuối cùng + xuất DOCX/PDF | github-repo-researcher | ✅ | `steps/STEP-3.2-mode-finalize.md` | 2026-08-04 |
 | 3.3 | [Mode A only] Xác nhận merge nhánh research → main | github-repo-researcher | ⬜ | `steps/STEP-3.3-merge.md` | - |
 
 > Bước 3.3 chỉ chạy nếu Mode A. Nếu Mode B → đánh dấu ⏭️ Skipped sau khi biết mode.

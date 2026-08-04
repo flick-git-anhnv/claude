@@ -424,3 +424,26 @@ Dispatcher truyền "nguyên văn nội dung" — agent kế tiếp phải đọ
 2. §16.4 CLAUDE.md: hướng dẫn Dispatcher chỉ trích 3 key trên để nhúng vào prompt kế tiếp — không truyền section "Đã làm" trừ khi bước kế tiếp đặc biệt cần biết chi tiết.
 
 **Kết quả đạt được:** Prompt của agent kế tiếp giảm ~40-60% noise (bỏ phần "Đã làm" dài); 3 key rõ ràng dễ đọc hơn đoạn văn tự do → giảm trường hợp agent bỏ qua Handoff Log vì "quá dài, không biết phần nào quan trọng."
+
+---
+
+## 8. Kết quả áp dụng (Mode A — Bước 4b)
+
+> **Ngày áp dụng:** 2026-08-04
+> **Tất cả 6 đề xuất GX-1 đến GX-6 đã được áp dụng vào hệ thống KZTEK.**
+
+| # | Đề xuất | Trạng thái | File đã sửa / tạo |
+|---|---------|-----------|-------------------|
+| GX-1 | Depth-grouped impact taxonomy trong PR checklist + cột Callers/Used-by | Đã áp dụng | `.claude/templates/CODE-GRAPH-template.md` (thêm cột Callers/Used-by + Last verified vào Module chính); `CLAUDE.md §15.3` (format depth-1/depth-2 + gợi ý /detect-impact) |
+| GX-2 | Field `deps` tường minh trong PLAN-STEP frontmatter + validation | Đã áp dụng | `.claude/templates/PLAN-STEP-template.md` (thêm `deps: []` vào frontmatter); `.claude/agents/task-planner.md` (thêm bước 2 validate deps trước khi giao) |
+| GX-3 | Skill `/detect-impact` — semi-automate PR impact section | Đã áp dụng | `.claude/evals/detect-impact.md` (EDD eval — tạo trước); `.claude/commands/detect-impact.md` (skill mới; graphify-aware) |
+| GX-4 | Cột `Last verified` trong CODE-GRAPH để flag stale entries | Đã áp dụng | `.claude/templates/CODE-GRAPH-template.md` (thêm cột Last verified vào Dependencies + Module chính + ghi chú staleness); `CLAUDE.md §17.2` (staleness rule: CONFIRMED > 30 ngày + có commit mới → downgrade sang UNCERTAIN) |
+| GX-5 | CONTEXT-HINTS tự sinh khi Pre-0 Audit | Đã áp dụng | `.claude/agents/task-planner.md` (thêm step 3b sinh _workspace/CONTEXT-HINTS.md sau phân tích CODE-GRAPH); `CLAUDE.md §3.0` (thêm Pre-0c: Dispatcher đọc CONTEXT-HINTS trước khi giao cho agent đầu) |
+| GX-6 | Structured Handoff Payload keys (3 key thay vì free-text) | Đã áp dụng | `.claude/templates/PLAN-STEP-template.md` ("Handoff Log" → "Handoff Payload" với 3 key: do_not_redo, watch_out, next_inputs); `CLAUDE.md §16.4` + `§16.5` (Dispatcher chỉ trích 3 key, không truyền toàn bộ "Đã làm"); `.claude/agents/task-planner.md` (cập nhật toàn bộ references) |
+
+### Ghi chú kỹ thuật
+
+- **GX-3 graphify-aware:** Skill `/detect-impact` được thiết kế ưu tiên `graphify query` khi project đã cài graphify — giảm redundant effort khi graphify đã indexing codebase real-time.
+- **GX-4 không có automation:** Staleness rule là quy tắc agent tuân theo khi đọc CODE-GRAPH — không có cron job hay watcher tự động. Phù hợp triết lý lightweight của workspace hiện tại (agent config, không phải product codebase lớn).
+- **GX-6 backward compatible:** Step file cũ dùng "Handoff Log" vẫn hoạt động — task-planner được hướng dẫn đọc "## Handoff Payload" (mới) hoặc "## Handoff Log" (cũ) gracefully. Chỉ plan MỚI tạo sau khi áp dụng GX-6 mới dùng format 3-key.
+- **Edit tool issue (ghi nhận gotcha):** Trong session này, Edit tool báo "updated successfully" nhưng thay đổi không được ghi vào disk trên Windows. Workaround: dùng Python script file + `PYTHONIOENCODING=utf-8`. Đây là lỗi ngầm cần ghi vào GOTCHAS.md.
