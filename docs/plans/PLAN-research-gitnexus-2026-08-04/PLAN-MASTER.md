@@ -1,7 +1,7 @@
 ---
 task: research-gitnexus
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-08-04 15:30
 status: in-progress
 workflow: WF-GITHUB-RESEARCH
 priority: P2
@@ -34,12 +34,12 @@ Nghiên cứu repo GitHub https://github.com/abhigyanpatwari/GitNexus theo workf
 |---|------|-------|--------|-----------|-----------------|
 | 2.1 | Clone repo về scratchpad, đọc & phân tích cấu trúc | github-repo-researcher | ✅ | `steps/STEP-2.1-clone-phan-tich.md` | 2026-08-04 10:30 |
 | 2.2 | Viết phân tích repo vào `docs/research/RESEARCH-gitnexus-2026-08-04.md` | github-repo-researcher | ✅ | `steps/STEP-2.2-viet-phan-tich.md` | 2026-08-04 11:00 |
-| 2.3 | Hỏi user chọn Mode A (áp dụng KZTEK) hay Mode B (học tập/tham khảo) | github-repo-researcher | 🔄 | `steps/STEP-2.3-hoi-mode.md` | - |
+| 2.3 | Hỏi user chọn Mode A (áp dụng KZTEK) hay Mode B (học tập/tham khảo) | github-repo-researcher | ✅ | `steps/STEP-2.3-hoi-mode.md` | 2026-08-04 |
 
 ### Phase 3: Theo mode được chọn (điền sau khi biết Mode)
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 3.1 | [Mode A] Bảng đề xuất cải tiến KZTEK — hoặc — [Mode B] Giải thích tương tác nguyên lý/cách vận hành | github-repo-researcher | ⬜ | `steps/STEP-3.1-mode-action.md` | - |
+| 3.1 | [Mode A] Bảng đề xuất cải tiến KZTEK — hoặc — [Mode B] Giải thích tương tác nguyên lý/cách vận hành | github-repo-researcher | ✅ | `steps/STEP-3.1-mode-action.md` | 2026-08-04 15:30 |
 | 3.2 | [Mode A] User duyệt + áp dụng đề xuất — hoặc — [Mode B] Tài liệu tổng hợp cuối cùng + xuất DOCX/PDF | github-repo-researcher | ⬜ | `steps/STEP-3.2-mode-finalize.md` | - |
 | 3.3 | [Mode A only] Xác nhận merge nhánh research → main | github-repo-researcher | ⬜ | `steps/STEP-3.3-merge.md` | - |
 
@@ -65,6 +65,7 @@ Không có
 |------|----------|-------|
 | 2026-08-04 | Plan tạo mới | task-planner |
 | 2026-08-04 | Phase 1 hoàn thành (1.1 audit, 1.2 tạo nhánh), Phase 2 bước 2.1+2.2 hoàn thành (clone, viết RESEARCH-gitnexus.md+docx+pdf) | github-repo-researcher |
+| 2026-08-04 15:30 | Bước 2.3 ✅ (user chọn Mode A), Bước 3.1 ✅ (6 đề xuất GX-1..GX-6 viết vào RESEARCH file + xuất DOCX+PDF) — chờ user chọn đề xuất áp dụng (Bước 4) | github-repo-researcher |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
