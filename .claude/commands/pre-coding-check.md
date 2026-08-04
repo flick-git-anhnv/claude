@@ -43,6 +43,14 @@ description: >
    (ghi lesson mới sau nếu gặp lỗi thực tế).
 ```
 
+> **Nếu task liên quan Avalonia UI:** Bổ sung truy vấn nhanh qua UI UX Pro Max skill TRƯỚC KHI đọc lesson (tiết kiệm tool call):
+> ```bash
+> python .claude/skills/ui-ux-pro-max/scripts/search.py "<topic-keyword>" --stack avalonia
+> ```
+> Kết quả trả về Do/Don't + code example + link docs chính thức — dùng làm context chính.
+> Nếu kết quả chưa đủ hoặc cần gotcha KZTEK-specific (VD: KzPasswordTextBox, KztekComponentAvalonia) → tiếp tục đọc lesson Avalonia theo Simple Query Rule như thường.
+> Xem thêm lệnh: `.claude/commands/ui-ux-pro-max.md`
+
 ---
 
 ## Bước 3 — GOTCHAS (lọc theo Category)
