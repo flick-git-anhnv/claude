@@ -1,0 +1,14 @@
+# Example routing table for the `jarvis` CLI.
+#
+# Each route is a keyword match against the task's input text. Routes are
+# tried in descending `priority` order; the first match wins. If nothing
+# matches, `default_agents` runs instead.
+
+default_agents: [echo]
+
+routes:
+  - name: greeting
+    agents: [echo]
+    keywords: ["hello", "hi", "xin chào"]
+    priority: 10
+    description: "Say hi back via the echo agent"
