@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand colors */
+  --color-navy-dark:    #251C53;
+  --color-orange:       #F05922;
+  --color-navy-mid:     #4A3F8C;
+  --color-navy-light:   #B8B3D6;
+  --color-orange-light: #FFAA80;
+  --color-gray-light:   #CBCBCB;
+  --color-white:        #FFFFFF;
+  --color-green:        #22C55E;
+  --color-red:          #EF4444;
+  --color-red-bg:       #FEE2E2;
+  --color-warning-bg:   #FFFBEB;
+  --color-error-bg:     #FEF2F2;
+  --color-text-body:    #1F2937;
+
+  /* Spacing */
+  --spacing-xs:  4px;
+  --spacing-sm:  8px;
+  --spacing-md:  16px;
+  --spacing-lg:  24px;
+  --spacing-xl:  32px;
+
+  /* Layout */
+  --sidebar-width:  220px;
+  --header-height:  56px;
+  --card-radius:    8px;
+  --button-radius:  6px;
+  --badge-radius:   12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--color-text-body);
+  background: var(--color-white);
+}
+
+/* Utility: monospace token values */
+.mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Scrollbar thin */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-gray-light); border-radius: 3px; }

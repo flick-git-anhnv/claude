@@ -1,0 +1,141 @@
+/**
+ * Fetch interceptor cho mock mode (VITE_MOCK=true).
+ * Intercept tất cả /api/* requests và trả mock data
+ * thay vì gửi request thật đến backend.
+ */
+import {
+  MOCK_SESSIONS,
+  MOCK_ACCOUNTS,
+  getMockTokenSummary,
+  getMockSessionHistory,
+} from './mockData'
+import type { Account } from '../types'
+
+const isMock = import.meta.env.VITE_MOCK === 'true'
+
+// State in-memory cho accounts (để demo add/delete/activate)
+let mockAccounts: Account[] = [...MOCK_ACCOUNTS]
+let accountIdCounter = 10
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+function errorResponse(code: string, message: string, status: number): Response {
+  return jsonResponse({ error: { code, message } }, status)
+}
+
+function handleMockRequest(input: RequestInfo | URL, init?: RequestInit): Response | null {
+  const url = typeof input === 'string' ? input : input.toString()
+  const method = (init?.method ?? 'GET').toUpperCase()
+
+  // Strip origin if present
+  const path = url.replace(/^https?:\/\/[^/]+/, '')
+
+  // GET /api/sessions
+  if (method === 'GET' && path === '/api/sessions') {
+    const active = MOCK_SESSIONS.filter(s => s.state !== 'Ended')
+    return jsonResponse(active)
+  }
+
+  // GET /api/sessions/history
+  if (method === 'GET' && path.startsWith('/api/sessions/history')) {
+    const u = new URL(url, 'http://localhost')
+    const limit = parseInt(u.searchParams.get('limit') ?? '20')
+    const offset = parseInt(u.searchParams.get('offset') ?? '0')
+    return jsonResponse(getMockSessionHistory(limit, offset))
+  }
+
+  // GET /api/tokens/summary
+  if (method === 'GET' && path.startsWith('/api/tokens/summary')) {
+    const u = new URL(url, 'http://localhost')
+    const range = u.searchParams.get('range') ?? '30d'
+    return jsonResponse(getMockTokenSummary(range))
+  }
+
+  // GET /api/accounts
+  if (method === 'GET' && path === '/api/accounts') {
+    return jsonResponse(mockAccounts)
+  }
+
+  // POST /api/accounts
+  if (method === 'POST' && path === '/api/accounts') {
+    const body = JSON.parse((init?.body as string) ?? '{}')
+    if (!body.api_key) return errorResponse('ACCOUNT_KEY_INVALID', 'API key required', 400)
+    if (mockAccounts.some(a => a.name === body.name)) {
+      return errorResponse('ACCOUNT_NAME_EXISTS', 'Tên đã tồn tại', 409)
+    }
+    const newAccount: Account = {
+      id: `acc-${++accountIdCounter}`,
+      name: body.name,
+      key_masked: body.api_key.slice(0, 8) + '****' + body.api_key.slice(-4),
+      is_active: false,
+      created_at: new Date().toISOString(),
+    }
+    mockAccounts = [...mockAccounts, newAccount]
+    return jsonResponse(newAccount, 201)
+  }
+
+  // DELETE /api/accounts/:id
+  const deleteMatch = path.match(/^\/api\/accounts\/([^/]+)$/)
+  if (method === 'DELETE' && deleteMatch) {
+    const id = deleteMatch[1]
+    const account = mockAccounts.find(a => a.id === id)
+    if (!account) return errorResponse('ACCOUNT_NOT_FOUND', 'Không tìm thấy tài khoản', 404)
+    if (account.is_active) return errorResponse('ACCOUNT_ACTIVE_CANNOT_DELETE', 'Không thể xóa tài khoản đang active', 409)
+    mockAccounts = mockAccounts.filter(a => a.id !== id)
+    return new Response(null, { status: 204 })
+  }
+
+  // POST /api/accounts/:id/activate
+  const activateMatch = path.match(/^\/api\/accounts\/([^/]+)\/activate$/)
+  if (method === 'POST' && activateMatch) {
+    const id = activateMatch[1]
+    if (!mockAccounts.find(a => a.id === id)) return errorResponse('ACCOUNT_NOT_FOUND', 'Không tìm thấy tài khoản', 404)
+    mockAccounts = mockAccounts.map(a => ({ ...a, is_active: a.id === id }))
+    return jsonResponse({ active_id: id })
+  }
+
+  // GET /api/accounts/:id/reveal
+  const revealMatch = path.match(/^\/api\/accounts\/([^/]+)\/reveal$/)
+  if (method === 'GET' && revealMatch) {
+    const id = revealMatch[1]
+    const account = mockAccounts.find(a => a.id === id)
+    if (!account) return errorResponse('ACCOUNT_NOT_FOUND', 'Không tìm thấy tài khoản', 404)
+    // Return a fake full key for mock
+    return jsonResponse({ api_key: `sk-ant-api01-mock-key-for-${id}-XXXX` })
+  }
+
+  // GET /api/health
+  if (method === 'GET' && path === '/api/health') {
+    return jsonResponse({ status: 'ok', uptime_sec: 3600, watcher_alive: true })
+  }
+
+  return null // Not intercepted — pass through
+}
+
+export function installMockInterceptor(): void {
+  if (!isMock) return
+
+  const originalFetch = window.fetch.bind(window)
+
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input.toString()
+    if (url.includes('/api/')) {
+      const mockResp = handleMockRequest(input, init)
+      if (mockResp) {
+        // Small artificial delay for realism
+        await new Promise(r => setTimeout(r, 80))
+        return mockResp
+      }
+    }
+    return originalFetch(input, init)
+  }
+
+  console.info('[Mock] Fetch interceptor installed — all /api/* calls use mock data')
+}
+
+export { isMock }

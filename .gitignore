@@ -46,3 +46,7 @@ code-graph/*.docx
 code-graph/*.pdf
 /README.docx
 /README.pdf
+
+# Frontend build output & dependencies
+node_modules/
+tools/agent-dashboard/dist/
