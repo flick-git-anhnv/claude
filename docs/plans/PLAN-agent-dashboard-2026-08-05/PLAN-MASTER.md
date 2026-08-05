@@ -50,7 +50,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 |---|------|-------|--------|-----------|-----------------|
 | 3.1 | Code backend: file-watcher, WebSocket server, SQLite ingestion, account mgmt API | Senior Developer | ✅ | `steps/STEP-3.1-sd-backend.md` | 2026-08-05 23:37 |
 | 3.2 | Code frontend: dashboard UI (agent list, token chart, account switcher), WebSocket client | Junior Developer | ✅ | `steps/STEP-3.2-jd-frontend.md` | 2026-08-05 23:59 |
-| 3.3 | Code review + verify-pr + merge decision (SD + JD) | Tech Lead | ⬜ | `steps/STEP-3.3-tl-code-review.md` | - |
+| 3.3 | Code review + verify-pr + merge decision (SD + JD) | Tech Lead | ✅ | `steps/STEP-3.3-tl-code-review.md` | 2026-08-06 00:45 |
 | 3.4 | UX/UI Review — chạy app thật, screenshot, đánh giá C1–C7 | UX/UI Reviewer | ⬜ | `steps/STEP-3.4-uxr-review.md` | - |
 
 ### Phase 4: Kiểm thử & Deploy
