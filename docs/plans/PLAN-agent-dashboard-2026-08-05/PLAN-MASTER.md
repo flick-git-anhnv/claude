@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-05 22:52
+updated: 2026-08-05 23:30
 status: in-progress
 workflow: WF-FEATURE
 priority: P2
@@ -34,7 +34,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 1.1 | Viết PRD — mục tiêu, user persona, feature list, non-goals | Product Manager | ✅ | `steps/STEP-1.1-pm-prd.md` | 2026-08-05 22:52 |
-| 1.2 | Viết User Stories + Acceptance Criteria chi tiết | Business Analyst | ⬜ | `steps/STEP-1.2-ba-user-stories.md` | - |
+| 1.2 | Viết User Stories + Acceptance Criteria chi tiết | Business Analyst | ✅ | `steps/STEP-1.2-ba-user-stories.md` | 2026-08-05 23:30 |
 | 1.3 | Thiết kế wireframe/design spec — layout dashboard, màn hình account | UI/UX Designer | ⬜ | `steps/STEP-1.3-ux-design.md` | - |
 | 1.4 | Estimate resource, confirm priority P2, phân bổ team | Engineering Manager | ⬜ | `steps/STEP-1.4-em-resource.md` | - |
 | 1.5 | CTO review kiến trúc | CTO | ⏭️ | `steps/STEP-1.5-cto-skip.md` | - |
@@ -87,6 +87,7 @@ Không có
 |------|----------|-------|
 | 2026-08-05 | Plan tạo mới | task-planner |
 | 2026-08-05 22:52 | Bước 1.1 ✅ — PRD viết xong, DOCX+PDF xuất tại `docs/prd/` | Product Manager |
+| 2026-08-05 23:30 | Bước 1.2 ✅ — 8 User Stories F-01..F-08, DOCX tại `docs/user-stories/` | Business Analyst |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
