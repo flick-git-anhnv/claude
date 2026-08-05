@@ -346,4 +346,90 @@ CTO, Engineering Manager, Product Manager, Business Analyst, Tech Lead, Senior D
 
 ---
 
-*Tài liệu này chỉ phân tích, không kèm đề xuất áp dụng. Xem Bước 3b để đọc đề xuất cải tiến (Mode A) hoặc Bước 3c/3d/3e để đi sâu học nguyên lý (Mode B).*
+---
+
+## 7. Bảng đề xuất cải tiến (Mode A — Bước 3b)
+
+> **Trạng thái:** Chờ user duyệt tại Bước 4. CHƯA áp dụng bất kỳ thay đổi nào.
+
+Sau khi đối chiếu hiện trạng KZTEK với repo nguồn, chọn **5 đề xuất** có giá trị rõ ràng và effort/rủi ro hợp lý. Đã loại bỏ: CONTEXT.md (chỉ có ý nghĩa khi có product repo cụ thể), skill lifecycle (nice-to-have, không block gì), router skill (CLAUDE.md dispatcher đã xử lý).
+
+---
+
+### E1 — Thêm `disable-model-invocation: true` cho commands chỉ nên human trigger
+
+| Cột | Nội dung |
+|-----|---------|
+| **Học từ đâu** | `.agents/invocation.md` + frontmatter `disable-model-invocation: true` trong SKILL.md của các user-invoked skills (`ask-matt`, `grill-with-docs`, `implement`, `wayfinder`, `handoff`). Pattern: nếu skill orchestrate luồng lớn hoặc cần human intent rõ ràng → phải tường minh block model khỏi tự trigger. |
+| **Hiện trạng KZTEK** | Tất cả 17 commands trong `.claude/commands/` đều không có frontmatter `disable-model-invocation`. Không có cơ chế nào ngăn agent tự trigger `scope-check`, `ship`, `run-plan-step`, `sync-global`, `sdk-crossplatform-eval` — các commands có side effect lớn hoặc chỉ có ý nghĩa khi human chủ động. |
+| **Lý do thay đổi** | Nếu không block, agent có thể tự trigger `ship` (deploy gate) hoặc `run-plan-step` (chạy bước kế tiếp trong plan) mà không có human intent — vi phạm Two-Eyes Principle ngầm. Hiện trạng này là "may mắn chưa xảy ra vấn đề" chứ không phải "đã được bảo vệ". |
+| **Áp dụng vào đâu** | Thêm `disable-model-invocation: true` vào frontmatter của 5 commands: `scope-check.md`, `ship.md`, `run-plan-step.md`, `sync-global.md`, `sdk-crossplatform-eval.md`. Các commands có thể agent tự trigger hợp lý (`pre-coding-check`, `verify-pr`, `detect-impact`) thì giữ nguyên. |
+| **Đạt được gì** | Agent không còn tự ý trigger các flow orchestration-level. Ví dụ cụ thể: trong 1 session dài, agent không tự gọi `ship` để deploy khi thấy code đã "xong" theo nhận định của nó — thay vào đó phải chờ human `/ship`. |
+| **Rủi ro/Effort** | Rủi ro: Gần như không có — chỉ thêm 1 dòng frontmatter, không thay đổi behavior của skill. Effort: 30 phút — Edit 5 file. |
+
+---
+
+### E2 — Tạo skill `grilling.md` — Interview primitive tái dùng được
+
+| Cột | Nội dung |
+|-----|---------|
+| **Học từ đâu** | `skills/productivity/grilling/SKILL.md` — model interview như design tree: rounds, frontier (tất cả quyết định đã settled prerequisite), agent tự tìm facts (không hỏi user về thứ tra được), kết thúc khi frontier rỗng. |
+| **Hiện trạng KZTEK** | `.claude/commands/scope-check.md` — hỏi tối đa 5 câu cứng nhắc về scope/priority/workflow, không có design tree, không có round model, không tái dùng được bởi skill khác. Khi task phức tạp cần làm rõ yêu cầu sâu hơn (VD: feature mới có nhiều nhánh quyết định), scope-check dừng sau 5 câu dù design tree chưa settled. |
+| **Lý do thay đổi** | scope-check giải quyết vấn đề khác (`map yêu cầu → workflow ID + priority`) — không phải "làm rõ yêu cầu sâu". Hiện KZTEK không có primitive nào để agent gọi khi cần interview user cho đến khi "every branch of the decision tree is resolved". Nếu thiếu grilling, agent tiếp tục với hiểu biết chưa đầy đủ → sai scope → làm lại. |
+| **Áp dụng vào đâu** | Tạo mới `.claude/commands/grilling.md`. Cập nhật `scope-check.md` để gọi grilling khi scope phức tạp (thay vì tự hỏi 5 câu cứng). Cập nhật `CLAUDE.md` §Pre-0a để mention grilling là option khi scope-check không đủ. |
+| **Đạt được gì** | Khi PM/Tech Lead cần làm rõ yêu cầu feature mới phức tạp, agent có thể chạy grilling session theo rounds (hỏi toàn bộ frontier, chờ answer, recompute frontier) thay vì hỏi 5 câu rồi đoán phần còn lại. Giảm vòng lặp "làm xong rồi sai yêu cầu → làm lại" — hiện tại xảy ra khi PRD dựa trên 5 câu scope-check không đủ. |
+| **Rủi ro/Effort** | Rủi ro: Thấp — grilling là model-invoked (không thay thế scope-check). Effort: 2–3 giờ — viết SKILL.md theo mattpocock template, qua `writing-agent-skill.md` workflow, cập nhật 2 file. |
+
+---
+
+### E3 — Tạo skill `diagnosing-bugs.md` — 6-phase disciplined debug loop
+
+| Cột | Nội dung |
+|-----|---------|
+| **Học từ đâu** | `skills/engineering/diagnosing-bugs/SKILL.md` — 6 phases với completion criteria rõ ràng, đặc biệt Phase 1 "build a feedback loop" là critical path (10 cách build loop, không cho hypothesise khi chưa có tight loop). Keyword: "tight loop that goes red". |
+| **Hiện trạng KZTEK** | `CLAUDE.md §9a Agent Introspection Debugging` — xử lý "agent bị stuck/loop" (≥3 retries cùng tool), không phải debugging app/feature. Không có skill nào hướng dẫn Senior Dev / QA Engineer approach bug trong sản phẩm theo discipline. Khi gặp bug khó, agent thường: đọc code → hypothesis ngay → fix thử → sai → đọc lại — không có feedback loop. |
+| **Lý do thay đổi** | §9a xử lý infrastructure problem (agent stuck), không xử lý domain problem (bug trong business logic/UI). Thiếu skill debugging cho sản phẩm → agent hay bỏ qua "build feedback loop first" để hypothesise ngay (lỗi kinh điển), dẫn đến fix sai root cause hoặc mất nhiều vòng thử. |
+| **Áp dụng vào đâu** | Tạo mới `.claude/commands/diagnosing-bugs.md` (model-invoked — agent tự trigger khi thấy user báo bug/exception). Cập nhật `CLAUDE.md §4 WF-BUGFIX` bước 1 để mention `/diagnosing-bugs` khi bug khó reproduce. Cập nhật `senior-developer.md` và `qa-engineer.md` description để trigger diagnosing-bugs khi gặp hard bug. |
+| **Đạt được gì** | Senior Dev / QA gặp bug khó sẽ không hypothesis ngay mà build feedback loop trước (1 command red-capable). Cụ thể: Phase 1 completion criterion = "paste 1 command + output của nó đang red" — nếu không có thì STOP, không tiến. Giảm "fix sai root cause, phát hiện bởi QA 2 vòng sau". |
+| **Rủi ro/Effort** | Rủi ro: Không có — model-invoked, không thay thế WF-BUGFIX. Effort: 2 giờ — adapt từ mattpocock (6 phases giữ nguyên logic, chỉnh ngôn ngữ + stack context C#/.NET). |
+
+---
+
+### E4 — Tạo skill `tdd.md` — Red-green-refactor loop
+
+| Cột | Nội dung |
+|-----|---------|
+| **Học từ đâu** | `skills/engineering/tdd/SKILL.md` — red-green-refactor, seam-based testing, 3 anti-patterns rõ (implementation-coupled, tautological, horizontal slicing), vertical slice model (1 test → 1 implementation → repeat). |
+| **Hiện trạng KZTEK** | Không có TDD skill. `verify-pr.md` chạy test suite nhưng không hướng dẫn process viết test. Senior Dev / Junior Dev hiện không có guidance về "viết test trước hay code trước", không có định nghĩa "seam", không có anti-pattern checklist. `CLAUDE.md §4 WF-FEATURE Bước 8-9` chỉ nói "viết unit test" không nói cách tiếp cận. |
+| **Lý do thay đổi** | Không có TDD guidance → developers mặc định viết code trước, test sau (nếu có). Hệ quả đo được: tests thường implementation-coupled (break khi refactor dù behavior không đổi), test coverage thấp cho business logic phức tạp, QA Engineer phải catch nhiều hơn. |
+| **Áp dụng vào đâu** | Tạo mới `.claude/commands/tdd.md` (model-invoked — agent tự trigger khi user muốn build feature test-first hoặc fix bug với regression test). Cập nhật `WF-FEATURE Bước 8-9` trong `CLAUDE.md §4` để Senior/Junior Dev PHẢI dùng `/tdd` cho các phần logic phức tạp. Cập nhật `senior-developer.md` và `junior-developer.md` để mention tdd. |
+| **Đạt được gì** | Developer có framework rõ ràng: seam trước, test đỏ trước, code tối thiểu để pass. Anti-pattern checklist trong skill ngăn viết test tautological hoặc test implementation. Verify-pr.md bước 3 (test check) từ chỗ "test pass/fail" → chỗ "test đúng seam, không implementation-coupled". |
+| **Rủi ro/Effort** | Rủi ro: Thấp — model-invoked, opt-in. Effort: 2–3 giờ — adapt từ mattpocock, điều chỉnh cho C#/xUnit context (thay TypeScript examples). |
+
+---
+
+### E5 — Tạo skill `code-review.md` — 2-axis parallel sub-agents (Standards + Spec)
+
+| Cột | Nội dung |
+|-----|---------|
+| **Học từ đâu** | `skills/engineering/code-review/SKILL.md` — 2 trục hoàn toàn độc lập, chạy song song (parallel sub-agents): (1) Standards: documented coding standards + Fowler smell baseline (12 smells); (2) Spec: faithful implementation của originating issue/spec. Merge chỉ ở output, không ở context. |
+| **Hiện trạng KZTEK** | `verify-pr.md` — automated self-check (build, lint, test, security, diff). Đây là pre-PR checklist của Developer, không phải code review. `CLAUDE.md §4 WF-FEATURE Bước 10` nói "Tech Lead code review" nhưng không có skill/format nào hướng dẫn review theo chiều nào, check gì. Tech Lead review hiện dựa vào judgment cá nhân — không có checklist, không có format, không đảm bảo cả 2 trục đều được check. |
+| **Lý do thay đổi** | Tech Lead review "tự do" → dễ focus 1 chiều (thường Standards) và bỏ qua Spec chiều (code đúng convention nhưng thiếu AC). Hoặc ngược lại: check spec kỹ nhưng miss code smell. 2 trục riêng biệt + parallel context đảm bảo cả 2 được check độc lập, không bias lẫn nhau. Fowler smell baseline là safety net khi repo chưa có documented standards. |
+| **Áp dụng vào đâu** | Tạo mới `.claude/commands/code-review.md` (model-invoked). Cập nhật `CLAUDE.md §4 WF-FEATURE Bước 10` và `WF-BUGFIX Bước 3`, `WF-REVIEW-STD`, `WF-REVIEW-CRIT` để Tech Lead chạy `/code-review` thay vì review "tự do". Cập nhật `tech-lead.md` agent để mention skill này. |
+| **Đạt được gì** | Mỗi PR được review theo 2 trục rõ ràng: Tech Lead có output riêng biệt cho Standards vs Spec, không bỏ sót. Fowler smell baseline là backstop tối thiểu dù project chưa có CODING_STANDARDS.md. Format chuẩn giúp Developer hiểu lý do change request (Standards? Spec?). |
+| **Rủi ro/Effort** | Rủi ro: Trung bình — cần đảm bảo parallel sub-agents có đủ context (diff + standards sources + spec). Nếu project không có spec/issue rõ → Spec trục chạy degraded. Effort: 3–4 giờ — adapt từ mattpocock, thêm context cho C# stack, viết Fowler smell baseline tiếng Việt nếu cần. |
+
+---
+
+### Tóm tắt nhanh 5 đề xuất
+
+| # | Đề xuất | Effort | Rủi ro | Impact |
+|---|---------|--------|--------|--------|
+| E1 | Disable-model-invocation cho 5 commands | 30 phút | Rất thấp | Medium |
+| E2 | Grilling primitive tái dùng | 2–3 giờ | Thấp | High |
+| E3 | Diagnosing-bugs 6-phase | 2 giờ | Không có | High |
+| E4 | TDD skill (red-green-refactor) | 2–3 giờ | Thấp | High |
+| E5 | Code-review 2-axis parallel | 3–4 giờ | Trung bình | High |
+
+**Tổng effort nếu chọn cả 5:** ~10–12 giờ làm việc.
+**Có thể chọn 0, 1, hoặc nhiều đề xuất — không bắt buộc áp dụng cả bộ.**
