@@ -24,6 +24,19 @@ disable-model-invocation: true
 2. Từ câu trả lời, xác định **Workflow ID** phù hợp theo bảng routing CLAUDE.md §2.
 3. Chuyển kết quả (workflow + priority + scope tóm tắt) làm input cho Bước Pre-0 (`task-planner`) — KHÔNG tự tạo Plan file ở bước này, chỉ chốt scope.
 
+## Khi scope phức tạp → escalate sang grilling
+
+Nếu sau 5 câu scope-check mà vẫn còn nhiều unknowns (> 3 prerequisite chưa rõ, hoặc feature mới có nhiều phụ thuộc chưa xác định), scope-check PHẢI gợi ý:
+
+```
+Scope có nhiều unknowns cần khám phá có cấu trúc.
+Gợi ý: chạy `/grilling` để xây dựng design tree và giải quyết từng prerequisite — hiệu quả hơn hỏi thêm câu ngẫu nhiên.
+```
+
+Phân biệt:
+- **scope-check**: 5 câu quick để chốt workflow + priority. Đủ cho task rõ phạm vi.
+- **grilling**: full frontier exploration cho feature có nhiều unknowns. Dùng khi scope-check chưa đủ.
+
 ## Output bắt buộc
 Một khối tóm tắt ngắn:
 ```
