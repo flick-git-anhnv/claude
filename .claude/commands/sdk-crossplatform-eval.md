@@ -1,6 +1,7 @@
 ---
 name: sdk-crossplatform-eval
 description: "PHẢI dùng khi cần đánh giá khả năng thay 1 SDK thiết bị native/Windows-only đang dùng (P/Invoke, DLL/.so cũ) bằng phiên bản SDK/API thay thế cross-platform (gRPC/REST/cloud gateway) TRƯỚC khi mở workflow migrate thật — phạm vi CHỈ 1 SDK/thiết bị đơn lẻ (VD: ZKTeco, BioBridge, Morpho đang native Windows-only giống Suprema, đã đánh giá 2026-07-31, xem docs/architecture/ADR-suprema-gsdk-eval.md làm mẫu). Output là ADR go/no-go, KHÔNG viết code migrate. KHÔNG dùng khi: user yêu cầu migrate code thật ngay (→ code-migrator/WF-MIGRATE); SDK hiện tại đã cross-platform sẵn (không có vấn đề gì để đánh giá); hoặc yêu cầu là migrate TOÀN BỘ UI/framework/codebase (dù có nhắc tên SDK thiết bị bên trong câu) — phạm vi đó vẫn thuộc code-migrator/WF-MIGRATE, KHÔNG phải đánh giá 1 SDK đơn lẻ."
+disable-model-invocation: true
 ---
 
 # SDK Cross-platform Eval (Đánh giá thay SDK native bằng bản cross-platform)

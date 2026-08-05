@@ -21,6 +21,36 @@ Tối ưu hóa agent/skill definition files. **KHÔNG ghi file trước khi có 
 Tìm kiếm ≥ 3 lần (agent tương tự, best practice, Anthropic docs) → WebFetch nguồn chất lượng nhất.
 Không tìm được → ghi rõ "Không tìm thấy nguồn", KHÔNG hallucinate.
 
+### PHASE 2b — Đánh giá cấu trúc thông tin (Information Structure Audit)
+
+> Học từ `mattpocock/skills` `writing-for-agents/SKILL.md`. Chạy sau RESEARCH, trước ANALYZE.
+
+Đọc lại file vừa INGEST và đánh giá 3 tiêu chí sau. Ghi nhận vấn đề tìm được — đây là input cho PHASE 3 (Nhược điểm) và PHASE 4 (đề xuất sửa).
+
+**Tiêu chí 2b-1 — Phân loại thông tin đúng vị trí:**
+
+| Kiểm tra | Pass | Fail (cần flag) |
+|----------|------|----------------|
+| Bảng tra cứu dài > 10 dòng có nằm ngoài flow chính không? | Trong section riêng hoặc disclosed reference | Nhúng giữa step → agent đọc toàn bộ mỗi lần |
+| Thông tin "chỉ cần đôi khi" có được tách khỏi "cần mỗi lần"? | Đặt trong `## References` cuối file | Đặt inline trong step quan trọng |
+| Pointer đến file ngoài có dùng đường dẫn rõ ràng không? | Có đường dẫn cụ thể | Chỉ nói "xem tài liệu khác" không có path |
+
+**Tiêu chí 2b-2 — Leading words:**
+
+Scan qua mỗi instruction — có bắt đầu bằng từ hành động không?
+
+Từ hành động hợp lệ: `PHẢI / KHÔNG / ĐỌC / GHI / HỎI / DỪNG / CHẠY / VERIFY / BÁO CÁO`
+
+Flag bất kỳ instruction nào bắt đầu bằng mệnh đề danh từ (VD: "Information about...", "The agent should...") → thiếu leading word → agent dễ skip.
+
+**Tiêu chí 2b-3 — Density check (pruning needed?):**
+
+- Có đoạn text > 3 câu liên tiếp không có action item nào? → flag "explanatory bloat"
+- File > 200 dòng? → kiểm tra có thể chuyển phần nào sang disclosed reference không
+- Có ví dụ lặp lại cùng một concept > 2 lần? → giữ 1, flag phần còn lại để xóa
+
+Kết quả Phase 2b: danh sách vấn đề structure (nếu có) → thêm vào bảng Nhược điểm ở PHASE 3.
+
 ### PHASE 3 — ANALYZE
 Bảng **Ưu điểm**: # | Điểm mạnh | Lý do | Nguồn
 Bảng **Nhược điểm**: # | Vấn đề | Rủi ro/Tác động | Nguồn

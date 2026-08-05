@@ -1,5 +1,6 @@
 ---
 description: "PHẢI dùng khi: vừa sửa agent/skill/template/script dùng chung (bất kỳ file dưới ~/.claude/agents, commands, shared, templates, references, evals, hooks-kztek, scripts) và cần commit+push về repo config KZTEK — kể cả khi đang làm ở project khác. Cũng dùng khi: muốn kéo bản config mới nhất về máy này, kiểm tra config dùng chung có thay đổi chưa commit, hoặc nghi ngờ junction bị đứt sau khi di chuyển repo. KHÔNG dùng khi: chỉ sửa file thuộc riêng project hiện tại (src/, docs/plans/, code-graph/ của project đó — commit bằng git thường)."
+disable-model-invocation: true
 ---
 
 # /sync-global — Đồng bộ config KZTEK dùng chung

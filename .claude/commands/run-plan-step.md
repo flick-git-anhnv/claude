@@ -1,5 +1,6 @@
 ---
 description: "PHẢI dùng khi cần thực thi 1 bước (STEP-N.M) trong plan docs/plans/PLAN-*/ qua subagent theo session isolation §16.5 — trigger: 'chạy bước tiếp theo', 'tiếp tục plan', 'làm STEP-3.2', hoặc Dispatcher đến lượt thực thi 1 bước ⬜/🔄 trong plan đã duyệt. Skill tự đọc Handoff Log bước liền trước, phát hiện bước làm dở, dựng prompt chuẩn và verify artifact sau khi xong. KHÔNG dùng khi: chưa có plan được duyệt (→ task-planner), plan chỉ có 1 bước duy nhất, bước hiện tại là câu hỏi/xác nhận với user, hoặc user yêu cầu rõ chạy toàn bộ trong 1 session (các ngoại lệ §16.5)."
+disable-model-invocation: true
 ---
 
 # Skill: run-plan-step — Thực thi 1 bước plan qua subagent (§16.5)
