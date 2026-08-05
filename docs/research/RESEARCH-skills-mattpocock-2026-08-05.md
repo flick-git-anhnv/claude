@@ -636,3 +636,35 @@ Hiện trạng KZTEK: khi Senior Dev cần research một câu hỏi kỹ thuậ
 **Khuyến nghị nhóm ưu tiên cao (impact cao, effort hợp lý, không phụ thuộc nhau):** E1 + E3 + E9 + E10 + E11 (~7–8 giờ).
 **Nhóm ưu tiên trung bình (cần grilling E2 trước):** E2 + E4 + E5 + E6 (~9–12 giờ).
 **Nhóm phụ thuộc (implement sau nhóm trên):** E7 (sau E3/E4) + E8 (sau E2) (~5–7 giờ).
+
+---
+
+## 9. Bước 4b — Trạng thái áp dụng
+
+> User xác nhận áp dụng TOÀN BỘ E1–E11 (2026-08-05). Bước 4b đã hoàn thành trên nhánh `research/skills-2026-08-05`.
+
+| # | Đề xuất | Trạng thái | Artifact đã tạo/sửa |
+|---|---------|-----------|-------------------|
+| E1 | disable-model-invocation cho 5 commands | ✅ Đã áp dụng | `.claude/commands/scope-check.md`, `ship.md`, `run-plan-step.md`, `sync-global.md`, `sdk-crossplatform-eval.md` |
+| E2 | grilling.md — interview primitive | ✅ Đã áp dụng | `.claude/evals/grilling.md` (mới), `.claude/commands/grilling.md` (mới), `.claude/commands/scope-check.md` (cập nhật — gợi ý grilling khi phức tạp) |
+| E3 | diagnosing-bugs.md — 6-phase debug loop | ✅ Đã áp dụng | `.claude/evals/diagnosing-bugs.md` (mới), `.claude/commands/diagnosing-bugs.md` (mới) |
+| E4 | tdd.md — Red-Green-Refactor seam-based | ✅ Đã áp dụng | `.claude/evals/tdd.md` (mới), `.claude/commands/tdd.md` (mới) |
+| E5 | code-review.md — 2-axis Standards + Spec | ✅ Đã áp dụng | `.claude/evals/code-review.md` (mới), `.claude/commands/code-review.md` (mới) |
+| E6 | domain-modeling.md — CONTEXT.md vocabulary | ✅ Đã áp dụng | `.claude/evals/domain-modeling.md` (mới), `.claude/commands/domain-modeling.md` (mới), `docs/CONTEXT-template.md` (mới) |
+| E7 | codebase-design.md — 7-term vocabulary | ✅ Đã áp dụng | `.claude/evals/codebase-design.md` (mới), `.claude/commands/codebase-design.md` (mới) |
+| E8 | wayfinder-lite.md — foggy work decision ticket | ✅ Đã áp dụng | `.claude/evals/wayfinder-lite.md` (mới), `.claude/commands/wayfinder-lite.md` (mới) |
+| E9 | Nâng cấp cấu trúc thông tin trong agent/skill definitions | ✅ Đã áp dụng | `.claude/commands/writing-agent-skill.md` (thêm Bước 4b — information structure), `.claude/agents/md-optimizer.md` (thêm PHASE 2b — Information Structure Audit) |
+| E10 | docs/decisions/REJECTED.md — rejection convention | ✅ Đã áp dụng | `docs/decisions/REJECTED.md` (mới, 10 entries), `docs/decisions/REJECTED.docx` + `.pdf` |
+| E11 | research.md — general research skill | ✅ Đã áp dụng | `.claude/evals/research.md` (mới), `.claude/commands/research.md` (mới) |
+
+**Cập nhật CLAUDE.md và agent descriptions:**
+- `CLAUDE.md §3.0 Pre-0a`: Thêm gợi ý grilling khi scope phức tạp sau scope-check
+- `CLAUDE.md §4 WF-BUGFIX Bước 1`: Thêm mention `/diagnosing-bugs`
+- `CLAUDE.md §4 WF-FEATURE Bước 8-9`: Thêm mention `/tdd`
+- `.claude/agents/senior-developer.md`: Thêm section "Skills dùng trong công việc" (tdd, diagnosing-bugs, code-review, grilling, codebase-design)
+- `.claude/agents/tech-lead.md`: Thêm section "Skills dùng trong công việc" (code-review, codebase-design, grilling)
+- `.claude/agents/qa-engineer.md`: Thêm section "Skills dùng trong công việc" (diagnosing-bugs)
+
+**Commits:** 3ea9c3a (Nhóm 1), 5c1f1c7 (Nhóm 2), a4fb3e5 (Nhóm 3)
+
+**Chờ xác nhận:** Bước 5 — user xác nhận merge nhánh `research/skills-2026-08-05` về `main`.

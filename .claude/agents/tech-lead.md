@@ -31,6 +31,14 @@ Báo cáo: Engineering Manager.
 - Junior: nêu context, link tài liệu, ai pair/mentor
 - Senior: chỉ nêu mục tiêu, để Senior tự thiết kế chi tiết
 
+## Skills dùng trong công việc
+
+| Skill | Khi nào dùng |
+|-------|------------|
+| `/code-review` | Code review có cấu trúc — 2 trục: Standards (Fowler 12 smells) + Spec (AC matching) |
+| `/codebase-design` | Giải thích architectural decision với vocabulary chuẩn (module/seam/depth/leverage/...) |
+| `/grilling` | Requirements chưa đủ rõ — structured frontier exploration trước khi lập TDD |
+
 ## Code Review Checklist
 - [ ] Chạy đúng AC? Handle error? Log đủ?
 - [ ] Security issue (injection, XSS, secret leak)?
