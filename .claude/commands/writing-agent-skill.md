@@ -129,6 +129,61 @@ Nếu còn scenario Fail → quay lại Bước 3 sửa definition. KHÔNG đán
 
 ---
 
+### Bước 4b — Kiểm tra cấu trúc thông tin trong definition
+
+> Học từ `mattpocock/skills` `skills/engineering/writing-for-agents/SKILL.md` — "Information hierarchy is the most important structural decision in a skill definition."
+
+Sau khi GREEN verify pass, kiểm tra definition có cấu trúc thông tin đúng không — vì thông tin đặt sai vị trí gây agent đọc nhầm context hoặc bỏ sót instruction quan trọng.
+
+#### 3 loại thông tin trong definition
+
+| Loại | Vị trí đặt | Khi nào dùng |
+|------|-----------|-------------|
+| **In-file step** | Ngay tại bước cần dùng (inline) | Thông tin cần để thực thi bước đó, không cần ở nơi khác |
+| **In-file reference** | Section riêng ở cuối file hoặc "## References" | Bảng tra cứu, danh sách, thông tin cần đôi khi nhưng không phải mọi bước |
+| **Disclosed reference** | Pointer (đường dẫn / link) trong file | Thông tin tồn tại ở file khác — agent được chỉ đường đến, không load toàn bộ vào file hiện tại |
+
+**Ví dụ sai:** Bảng tra cứu 30 dòng nhúng giữa step 2 → agent phải đọc hết bảng mỗi lần chạy step 2, kể cả khi không cần tra.
+
+**Ví dụ đúng:** Step 2 chỉ có 1 dòng: "Tra category tại `## Category Reference` cuối file" → agent đọc bảng CHỈ khi cần tra.
+
+#### Leading words (bắt đầu mỗi instruction)
+
+Mỗi instruction PHẢI bắt đầu bằng từ hành động rõ ràng — giúp agent scan nhanh không bị nhầm description với action:
+
+```
+PHẢI / DO      → hành động bắt buộc
+KHÔNG / AVOID  → hành động cấm
+ĐỌC / READ    → thao tác đọc file/data
+GHI / WRITE   → thao tác ghi artifact
+HỎI / ASK     → interaction với user
+DỪNG / STOP   → điều kiện block
+```
+
+**Sai:** "Information about the user's scope is important to gather" → agent không biết nên làm gì.
+
+**Đúng:** "ĐỌC scope từ user message. KHÔNG giả định scope khi chưa có."
+
+#### Pruning disciplines (cắt thông tin thừa)
+
+Xóa mạnh tay các loại sau — chúng tốn token nhưng không thay đổi behavior:
+
+- Câu giải thích "tại sao" không ảnh hưởng hành động → chuyển thành comment hoặc xóa
+- Ví dụ lặp lại ý đã có trong instruction → giữ 1, xóa phần còn lại
+- Mục tiêu / vision / philosophy dài mà không có action item nào → trim xuống 1-2 câu
+- Cảnh báo về thứ agent hiếm khi gặp → chuyển sang "disclosed reference" hoặc xóa
+
+**Checklist kiểm tra nhanh (sau GREEN verify, trước REFACTOR):**
+```
+- [ ] Mỗi block thông tin có đúng loại (step/reference/disclosed)?
+- [ ] Mỗi instruction bắt đầu bằng leading word rõ ràng?
+- [ ] Bảng tra cứu dài (>10 dòng) được tách ra khỏi flow chính?
+- [ ] Không có đoạn text > 3 câu liên tiếp mà không có action item nào?
+- [ ] File < 300 dòng? Nếu không → cân nhắc bundled resources (§ Khi nào nên dùng Bundled Resources)
+```
+
+---
+
 ### Bước 5 — REFACTOR: Tìm edge case và vá
 
 Đặt câu hỏi: "LLM sẽ tìm cớ gì để bỏ qua agent/skill này?"

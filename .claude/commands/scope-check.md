@@ -1,6 +1,7 @@
 ---
 name: scope-check
 description: "PHẢI dùng khi: yêu cầu user có thể map vào ≥2 workflow khác nhau, mô tả chỉ 1-2 câu không rõ priority, scope ảnh hưởng không rõ bao nhiêu module, hoặc chưa biết có cần CTO/EM duyệt kiến trúc không. Dùng ngay cả khi user tưởng đã rõ — 3 câu hỏi đúng lúc tiết kiệm 3 vòng sửa sau. Hỏi tối đa 5 câu để chốt scope, P0-P3 và workflow áp dụng TRƯỚC khi tạo Plan file. KHÔNG dùng khi: yêu cầu đã rõ workflow + priority (VD: SEV1 production down → thẳng WF-INCIDENT) hoặc user đã cung cấp đủ AC/constraint rõ ràng."
+disable-model-invocation: true
 ---
 
 # Scope Check (Chốt phạm vi nhanh)

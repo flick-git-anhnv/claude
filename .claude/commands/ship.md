@@ -1,6 +1,7 @@
 ---
 name: ship
 description: Chạy TRƯỚC khi deploy production cho thay đổi phạm vi hẹp (WF-HOTFIX/WF-FASTTRACK/WF-BUGFIX) — fan-out song song Tech Lead (code review) + Security Audit + QA Engineer (smoke check), tổng hợp thành quyết định GO/NO-GO kèm rollback plan bắt buộc. KHÔNG thay thế đầy đủ WF-FEATURE cho thay đổi lớn.
+disable-model-invocation: true
 ---
 
 # /ship — Pre-deploy Go/No-Go Gate
