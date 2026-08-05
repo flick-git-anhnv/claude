@@ -109,7 +109,7 @@ CTO  (L1 - Executive)
 
 ### 3.0 Bước Pre-0 — Kiểm tra / Tạo Plan File (LUÔN làm TRƯỚC Bước 0)
 
-**Pre-0a (điều kiện) — Scope Check:** Nếu yêu cầu user còn mơ hồ về phạm vi/priority/workflow áp dụng → chạy skill `scope-check` (`.claude/commands/scope-check.md`) TRƯỚC khi làm các bước dưới, để chốt scope + priority + workflow đề xuất bằng `AskUserQuestion`. Bỏ qua nếu yêu cầu đã rõ ràng (VD: SEV1 incident).
+**Pre-0a (điều kiện) — Scope Check:** Nếu yêu cầu user còn mơ hồ về phạm vi/priority/workflow áp dụng → chạy skill `scope-check` (`.claude/commands/scope-check.md`) TRƯỚC khi làm các bước dưới, để chốt scope + priority + workflow đề xuất bằng `AskUserQuestion`. Bỏ qua nếu yêu cầu đã rõ ràng (VD: SEV1 incident). Nếu sau scope-check vẫn còn nhiều unknowns (feature lớn, nhiều prerequisites chưa rõ) → escalate sang `/grilling` (`.claude/commands/grilling.md`) để khám phá structured trước khi tạo plan.
 
 **Pre-0b (khuyến nghị) — Đọc LESSONS.md:** Nếu `docs/LESSONS.md` tồn tại → đọc lướt qua 5–10 entry gần nhất để nhắc nhở workflow/business decision đã học — tránh lặp lại sai lầm quy trình đã ghi nhận. Không cần đọc lại nếu đã đọc trong cùng session.
 
@@ -211,8 +211,8 @@ Bước 5  → CTO                  : Review kiến trúc [CHỈ khi feature l�
 Bước 6  → PROJECT MANAGER      : Lên sprint, timeline, task board
 Bước 7  → TECH LEAD            : Viết Technical Design Doc, chia task chi tiết
 Bước 8  ∥ Bước 9 (song song — cùng nhận task breakdown từ Bước 7, độc lập nhau):
-Bước 8  → SENIOR DEVELOPER     : Code phần phức tạp, mentor junior
-Bước 9  → JUNIOR DEVELOPER     : Code phần CRUD/UI đơn giản theo spec
+Bước 8  → SENIOR DEVELOPER     : Code phần phức tạp, mentor junior — dùng `/tdd` (`.claude/commands/tdd.md`) khi viết feature mới có test
+Bước 9  → JUNIOR DEVELOPER     : Code phần CRUD/UI đơn giản theo spec — dùng `/tdd` cho feature mới có test
 Bước 10 → TECH LEAD            : Code review cuối, merge decision
   > **Yêu cầu trước Bước 10:** Senior/Junior Developer PHẢI chạy `/verify-pr` và đính kèm VERIFICATION REPORT vào PR description. Tech Lead chỉ mở review khi report toàn PASS. (`.claude/commands/verify-pr.md`)
   > **[CÓ ĐIỀU KIỆN — nếu project đã cài `graphify`, xem §17.6]:** Senior/Junior Developer PHẢI chạy `graphify update --diff` ngay sau khi code xong (trước `/verify-pr`), rồi bổ sung thủ công phần mô tả nghiệp vụ + Confidence labels vào CODE-GRAPH.md.
@@ -235,7 +235,7 @@ Bước 15 → DEVOPS LEAD          : Approve và deploy production, monitor
 **Trigger:** User báo bug, lỗi, behaviour không đúng.
 
 ```
-Bước 1 → QA ENGINEER / SENIOR DEV : Reproduce bug, xác định root cause, tạo BUG report
+Bước 1 → QA ENGINEER / SENIOR DEV : Reproduce bug, xác định root cause, tạo BUG report — dùng `/diagnosing-bugs` (`.claude/commands/diagnosing-bugs.md`) khi bug khó reproduce hoặc root cause chưa rõ
 Bước 2 → SENIOR DEVELOPER         : Viết fix, tạo PR với mô tả rõ
 Bước 3 → TECH LEAD                : Review PR, approve hoặc request changes
   > **Yêu cầu trước Bước 3:** Senior Developer PHẢI chạy `/verify-pr` và đính kèm VERIFICATION REPORT vào PR description. Tech Lead chỉ review khi report toàn PASS. (`.claude/commands/verify-pr.md`)

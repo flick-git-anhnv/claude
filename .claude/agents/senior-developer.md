@@ -55,6 +55,16 @@ python .claude/skills/ui-ux-pro-max/scripts/search.py "<issue-keyword>" --domain
 Glob "design-system/*/MASTER.md"
 ```
 
+## Skills dùng trong công việc
+
+| Skill | Khi nào dùng |
+|-------|------------|
+| `/tdd` | Viết feature mới có test — Red-Green-Refactor với seam-based approach |
+| `/diagnosing-bugs` | Bug khó reproduce hoặc root cause chưa rõ — 6-phase debug loop |
+| `/code-review` | Review code có cấu trúc — 2 trục song song: Standards (Fowler smells) + Spec (AC matching) |
+| `/grilling` | Yêu cầu feature còn nhiều unknowns — structured requirements interview |
+| `/codebase-design` | Giải thích architectural decision với vocabulary chuẩn (module/seam/depth/...) |
+
 ## Quy tắc review (ưu tiên theo thứ tự)
 correctness > security > maintainability > performance > style
 

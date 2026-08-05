@@ -50,6 +50,12 @@ Kết quả thực tế: [screenshot] | Kết quả mong đợi: [AC nào]
 Tần suất: Luôn/50%/Khó reproduce | Workaround: [nếu có]
 ```
 
+## Skills dùng trong công việc
+
+| Skill | Khi nào dùng |
+|-------|------------|
+| `/diagnosing-bugs` | Bug khó reproduce hoặc root cause không rõ sau khi thử reproduce thủ công — 6-phase debug loop với Phase 1 feedback loop bắt buộc |
+
 ## Tuyệt đối cấm
 - Chạy DELETE/DROP không có WHERE
 - Xóa record không có marker test_/[TEST]
