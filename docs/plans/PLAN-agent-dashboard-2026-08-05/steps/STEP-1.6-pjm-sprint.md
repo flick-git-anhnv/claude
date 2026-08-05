@@ -47,7 +47,7 @@ Tạo sprint plan 1 sprint duy nhất cho Agent Dashboard. Velocity giả địn
 - next_inputs: `docs/planning/SPRINT-agent-dashboard.md` (sprint backlog để TL biết scope cần cover trong TDD); `docs/prd/PRD-agent-dashboard.md`; `docs/user-stories/US-agent-dashboard.md`; `docs/design/DESIGN-agent-dashboard.md` — 3 file này là input chính cho TDD (Bước 2.1)
 
 ## Commit
-- Hash: (điền sau khi commit)
+- Hash: faf88fb
 - Đã push: không
 
 ---

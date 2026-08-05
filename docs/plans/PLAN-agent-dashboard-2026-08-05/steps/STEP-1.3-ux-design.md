@@ -52,7 +52,7 @@ Thiết kế layout tổng thể dashboard (wireframe text-based hoặc ASCII), 
 - next_inputs: `docs/design/DESIGN-agent-dashboard.md` — layout, component list, design tokens để EM estimate resource và PM review
 
 ## Commit
-- Hash: [điền sau khi commit]
+- Hash: db9e887
 - Đã push: không
 
 ---

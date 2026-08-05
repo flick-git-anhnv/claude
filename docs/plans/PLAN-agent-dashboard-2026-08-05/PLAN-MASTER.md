@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-05 23:59
+updated: 2026-08-05 23:37
 status: in-progress
 workflow: WF-FEATURE
 priority: P2
@@ -43,12 +43,12 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 ### Phase 2: Thiết kế Kỹ thuật
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 2.1 | Technical Design Doc — stack, kiến trúc, API contract, DB schema, file-watcher design | Tech Lead | ⬜ | `steps/STEP-2.1-tl-tdd.md` | - |
+| 2.1 | Technical Design Doc — stack, kiến trúc, API contract, DB schema, file-watcher design | Tech Lead | ✅ | `steps/STEP-2.1-tl-tdd.md` | 2026-08-06 00:15 |
 
 ### Phase 3: Triển khai
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 3.1 | Code backend: file-watcher, WebSocket server, SQLite ingestion, account mgmt API | Senior Developer | ⬜ | `steps/STEP-3.1-sd-backend.md` | - |
+| 3.1 | Code backend: file-watcher, WebSocket server, SQLite ingestion, account mgmt API | Senior Developer | ✅ | `steps/STEP-3.1-sd-backend.md` | 2026-08-05 23:37 |
 | 3.2 | Code frontend: dashboard UI (agent list, token chart, account switcher), WebSocket client | Junior Developer | ⬜ | `steps/STEP-3.2-jd-frontend.md` | - |
 | 3.3 | Code review + verify-pr + merge decision (SD + JD) | Tech Lead | ⬜ | `steps/STEP-3.3-tl-code-review.md` | - |
 | 3.4 | UX/UI Review — chạy app thật, screenshot, đánh giá C1–C7 | UX/UI Reviewer | ⬜ | `steps/STEP-3.4-uxr-review.md` | - |
@@ -91,6 +91,8 @@ Không có
 | 2026-08-05 23:05 | Bước 1.3 ✅ — Design spec 5 màn hình, 13 components, DOCX tại `docs/design/` | UI/UX Designer |
 | 2026-08-05 23:50 | Bước 1.4 ✅ — Resource estimate: SD 7nd backend, JD 9.5nd frontend, Priority P2, DOCX tại `docs/planning/` | Engineering Manager |
 | 2026-08-05 23:59 | Bước 1.6 ✅ — Sprint plan 1 sprint, 21 task, 47 SP, mốc 2026-08-29, DOCX tại `docs/planning/`; Phase 1 hoàn thành toàn bộ | Project Manager |
+| 2026-08-06 00:15 | Bước 2.1 ✅ — TDD viết xong, chốt Python/FastAPI + Vite/React/TS, API contract + DB schema + task breakdown 21 task; DOCX tại `docs/tech-design/` (PDF fail RPC — DOCX OK) | Tech Lead |
+| 2026-08-05 23:37 | Bước 3.1 ✅ — Backend implement đầy đủ: 12 modules, 47 tests pass, commit fecd37d | Senior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
