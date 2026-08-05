@@ -8,6 +8,20 @@
 
 ---
 
+## Quy tắc Archive (áp dụng khi file này phình to)
+
+> File này bị đọc **toàn bộ, mọi session** (§KHỞI ĐỘNG CLAUDE.md) — khác với `lessons/` (chỉ đọc 1-2 file theo Simple Query Rule). Vì vậy giữ file chính GỌN là ưu tiên; entry cũ/không còn liên quan phải chuyển ra ngoài, không tích lũy vô hạn ở đây.
+
+**Khi nào tách sang `GOTCHAS-ARCHIVE.md`:**
+- File chính vượt quá **15 entry active**, HOẶC
+- Entry đã > 90 ngày kể từ `Ngày phát hiện` VÀ nguyên nhân gốc đã được fix tận gốc trong code/script (không còn khả năng lặp lại, chỉ còn giá trị lịch sử).
+
+**Cách tách:** Di chuyển entry đó (nguyên khối `## G00N — ...` đến hết trước `---`) sang `.claude/shared/GOTCHAS-ARCHIVE.md` (tạo file khi có entry đầu tiên cần chuyển), xóa dòng tương ứng khỏi bảng "Mục lục nhanh" ở trên.
+
+**Khi nào mới đọc `GOTCHAS-ARCHIVE.md`:** CHỈ trong Phase 2 — Diagnose (§9a CLAUDE.md), và CHỈ khi lỗi đang gặp **không khớp** entry nào trong file chính này. Archive KHÔNG thuộc danh sách "đọc khi bắt đầu session" — không đọc mặc định mỗi lần, tránh việc tách archive lại thành thêm 1 file phải đọc đều.
+
+---
+
 ## Mục lục nhanh + Bảng lọc theo Category
 
 > **Cách dùng:** Khi gặp lỗi, xác định category loại lỗi → lọc cột Category → chỉ đọc entries thuộc category đó. Không cần đọc tuần tự toàn bộ file.
