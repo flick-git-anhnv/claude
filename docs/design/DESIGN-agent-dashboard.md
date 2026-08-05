@@ -1,0 +1,642 @@
+# DESIGN-agent-dashboard: Agent Dashboard — Dashboard Web Local Realtime Quản Lý Claude Code Agents
+
+**Feature:** Agent Dashboard
+**UX Designer:** UI/UX Designer (KZTEK)
+**Phiên bản:** 1.0
+**Ngày:** 2026-08-05
+**Tham chiếu PRD:** `docs/prd/PRD-agent-dashboard.md`
+**Tham chiếu US:** `docs/user-stories/US-agent-dashboard.md`
+
+---
+
+## Design System (Mini — nội bộ, không persist design-system folder)
+
+Dashboard nội bộ, áp dụng bộ màu KZTEK chuẩn:
+
+| Token | Hex | Ứng dụng |
+|-------|-----|----------|
+| `color.navy.dark` | `#251C53` | Heading, sidebar bg, nav active, text nhấn |
+| `color.orange` | `#F05922` | Accent button, badge Running, CTA, active indicator |
+| `color.navy.mid` | `#4A3F8C` | Sub-heading, link, sidebar item hover |
+| `color.navy.light` | `#B8B3D6` | Table header fill, sidebar item bg, border nhẹ |
+| `color.orange.light` | `#FFAA80` | Warning badge Idle, hover state |
+| `color.gray.light` | `#CBCBCB` | Divider, border, row separator |
+| `color.white` | `#FFFFFF` | Nền trang chính |
+| `color.green` | `#22C55E` | Badge Active/Connected (trạng thái hệ thống) |
+| `color.red.soft` | `#EF4444` | Badge Done, text lỗi |
+| `color.text.body` | `#1F2937` | Văn bản nội dung thông thường |
+
+**Typography:**
+- Heading H1: 20px, semibold, `#251C53`
+- Heading H2: 16px, semibold, `#251C53`
+- Body: 14px, regular, `#1F2937`
+- Label/Caption: 12px, regular, `#4A3F8C`
+- Monospace (token count, API key masked): `font-family: monospace`
+
+**Spacing:** 4px base → 8, 12, 16, 24, 32px
+**Border radius:** card: 8px | button: 6px | badge: 12px (pill)
+
+---
+
+## User Flow Tổng Thể
+
+```mermaid
+flowchart TD
+    A[Mở localhost:7770] --> B{Có active account?}
+    B -->|Không| C[Header: Warning banner\n'Chưa có tài khoản active']
+    B -->|Có| D[Header: Tên account + masked key]
+    C --> E[Dashboard tải bình thường\nkhông block chức năng xem]
+    D --> E
+    E --> F[Agent Status Panel\ntab mặc định khi mở]
+    F -->|Click tab| G[Token Analytics]
+    F -->|Click tab| H[Session History]
+    F -->|Click tab| I[Account Manager]
+    G -->|Switch filter| G1[7 ngày / 30 ngày / 12 tuần / 6 tháng]
+    I -->|Click 'Thêm tài khoản'| J[Form thêm account\noverlay/panel phải]
+    I -->|Click 'Đặt active'| K[Account active thay đổi\nWebSocket → Header cập nhật]
+    I -->|Click 'Copy API key'| L[Toast 'Đã copy'\nClipboard tự clear sau 30s]
+```
+
+---
+
+## Layout Tổng Thể
+
+Dashboard dạng **single-page app**, bố cục: **Header cố định trên cùng** + **Sidebar trái** + **Main content area** bên phải.
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  HEADER (height: 56px, bg: #251C53, text: white)                       │
+│  [KZTEK Logo]  Agent Dashboard           [Account Indicator]           │
+│                                          [Tên account | sk-ant-****XXXX]│
+└────────────────────────────────────────────────────────────────────────┘
+┌──────────────┬─────────────────────────────────────────────────────────┐
+│  SIDEBAR     │  MAIN CONTENT AREA                                       │
+│  (w: 220px)  │  (fluid width, bg: #FFFFFF, padding: 24px)              │
+│  bg: #251C53 │                                                          │
+│  text: white │                                                          │
+│              │                                                          │
+│  [>] Agents  │                                                          │
+│              │                                                          │
+│  [ ] Token   │                                                          │
+│      Usage   │                                                          │
+│              │                                                          │
+│  [ ] Session │                                                          │
+│      History │                                                          │
+│              │                                                          │
+│  [ ] Account │                                                          │
+│      Manager │                                                          │
+│              │                                                          │
+│  ──────────  │                                                          │
+│  WebSocket   │                                                          │
+│  [●] Live    │                                                          │
+│  (or [!]     │                                                          │
+│  Reconnect.) │                                                          │
+└──────────────┴─────────────────────────────────────────────────────────┘
+```
+
+**Sidebar nav items:**
+- Item active: bg `#4A3F8C`, text white, left border 3px `#F05922`
+- Item hover: bg `#4A3F8C` 50%, transition 150ms
+- Item icon: 16x16 SVG (Agents: monitor, Token: chart-bar, History: clock, Account: user-circle)
+
+**WebSocket status indicator (bottom sidebar):**
+- Connected: dot `#22C55E` + text "Live"
+- Reconnecting: dot `#FFAA80` + text "Đang kết nối lại..."
+- Disconnected: dot `#EF4444` + text "Mất kết nối"
+
+---
+
+## Màn Hình 1: Agent Status Panel (US-001, US-002)
+
+**Route/Tab:** Agents (mặc định khi mở dashboard)
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Agents đang chạy                          Cập nhật lúc: 14:32:05   │
+│  H2: #251C53                               Caption: #4A3F8C          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  [RUNNING – 2]  ─────────────────────────────────────────────────   │
+│                                                                       │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ ● [RUNNING]  senior-developer                    14:28:01    │   │
+│  │ badge: Cam #F05922                     bắt đầu: caption      │   │
+│  │ Task: "Đang viết unit test cho module auth/login.ts..."       │   │
+│  │ (tối đa 100 ký tự, truncate với ...)                         │   │
+│  │ Tokens: IN 12,450 | OUT 3,210 | Cache R 8,200 | Cache W 400  │   │
+│  │ (label: #4A3F8C, value: monospace #251C53)                   │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ ● [RUNNING]  junior-developer                    14:29:15    │   │
+│  │ badge: Cam #F05922                                           │   │
+│  │ Task: "Code màn hình Login theo spec TDD-001..."             │   │
+│  │ Tokens: IN 5,100 | OUT 1,340 | Cache R 2,100 | Cache W 0    │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  [IDLE – 1]  ───────────────────────────────────────────────────    │
+│                                                                       │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ ○ [IDLE]     tech-lead                           14:15:30    │   │
+│  │ badge: Cam nhạt #FFAA80, text #251C53                        │   │
+│  │ Task: "Review PR #47 — module authentication..."             │   │
+│  │ Tokens: IN 22,100 | OUT 8,450 | Cache R 15,000 | Cache W 900│   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  [DONE – 3]  ───────────────────────────────────────────────────    │
+│                                                                       │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ ✕ [DONE]     qa-engineer              Kết thúc: 13:45:20     │   │
+│  │ badge: #EF4444 nhạt, text #EF4444                            │   │
+│  │ Task: "Thực thi test plan TC-001 đến TC-015..."              │   │
+│  │ Tokens: IN 8,230 | OUT 2,100 | Cache R 4,500 | Cache W 200  │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  (DONE card thứ 2 và 3 — collapsed theo mặc định nếu >3 DONE items)  │
+│  [ Xem thêm 2 phiên đã kết thúc ▼ ]  (link màu #4A3F8C)            │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Agent Card — Component Spec
+
+**Cấu trúc dữ liệu 1 card:**
+
+| Field | Nguồn dữ liệu | Hiển thị |
+|-------|---------------|----------|
+| Tên agent | Tên file JSONL hoặc trường `agent` | Bold, 14px, `#251C53` |
+| Status badge | Logic timeout 60s/300s từ backend | Pill badge (xem bảng trạng thái bên dưới) |
+| Thời gian bắt đầu | Timestamp entry đầu tiên | `HH:mm:ss`, caption `#4A3F8C` |
+| Thời gian kết thúc | Chỉ với DONE: entry cuối + offset | `Kết thúc: HH:mm:ss`, caption |
+| Task description | Message assistant cuối, max 100 ký tự | 14px regular, truncate `...` |
+| Tokens IN | `usage.input_tokens` cộng dồn | Monospace, có dấu phân cách nghìn |
+| Tokens OUT | `usage.output_tokens` cộng dồn | Monospace |
+| Cache Read | `usage.cache_read_input_tokens` | Monospace |
+| Cache Write | `usage.cache_creation_input_tokens` | Monospace |
+
+**Bảng trạng thái badge:**
+
+| Trạng thái | Điều kiện | Badge bg | Badge text | Dot |
+|------------|-----------|----------|------------|-----|
+| RUNNING | Có activity trong 60s qua | `#F05922` | white | `●` filled `#F05922` |
+| IDLE | 60s–300s không có activity | `#FFAA80` | `#251C53` | `○` outline `#FFAA80` |
+| DONE | >300s không có activity | `#FEE2E2` | `#EF4444` | `✕` `#EF4444` |
+
+**States của Agent Status Panel:**
+
+**Empty State (không có agent nào):**
+```
+┌──────────────────────────────────────────────────────┐
+│                                                      │
+│        [Icon: monitor outline, 48px, #B8B3D6]       │
+│                                                      │
+│     Không có agent nào đang chạy                    │
+│     H3: #251C53                                      │
+│                                                      │
+│   Khởi động Claude Code để bắt đầu theo dõi         │
+│   Caption: #4A3F8C                                   │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Error State (thư mục log không tìm thấy):**
+```
+┌──────────────────────────────────────────────────────┐
+│  [!] Không tìm thấy thư mục log                     │
+│  Banner: bg #FEF2F2, border-left 4px #EF4444        │
+│  "~/.claude/projects/ chưa tồn tại hoặc không có    │
+│  quyền đọc. Kiểm tra lại cấu hình."                │
+└──────────────────────────────────────────────────────┘
+```
+
+**WebSocket Reconnecting State:**
+```
+┌──────────────────────────────────────────────────────┐
+│  [~] Đang kết nối lại...                            │
+│  Banner: bg #FFFBEB, border-left 4px #FFAA80        │
+│  "Mất kết nối WebSocket — tự động kết nối lại"      │
+└──────────────────────────────────────────────────────┘
+(Dữ liệu cũ vẫn hiển thị, chỉ không nhận update mới)
+```
+
+---
+
+## Màn Hình 2: Token Analytics (US-003, US-005)
+
+**Route/Tab:** Token Usage
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Token Usage                                                         │
+│  H2: #251C53                                                         │
+├───────────────────────────────────┬─────────────────────────────────┤
+│  FILTER BAR (full width, dưới heading)                               │
+│  Filter: [7 ngày] [30 ngày*] [12 tuần] [6 tháng]                   │
+│  Nút active: bg #251C53, text white                                  │
+│  Nút inactive: bg #B8B3D6 nhạt, text #251C53                        │
+│  Agent filter: [Tất cả agents ▼]  (dropdown)                        │
+├─────────────────────────────────────────────────────────────────────┤
+│  CHART AREA (height: 280px)                                          │
+│                                                                      │
+│  50K ┤                                   █                           │
+│  40K ┤                         █       █ █                           │
+│  30K ┤               █       █ █     █ █ █   █                       │
+│  20K ┤     █       █ █     █ █ █   █ █ █ █   █   █                  │
+│  10K ┤   █ █   █   █ █   █ █ █ █ █ █ █ █ █ █ █   █                  │
+│    0 └──────────────────────────────────────────────────────        │
+│      07/07  09/07  11/07  13/07  15/07  17/07  19/07  ...           │
+│                                                                      │
+│  [■] Input Tokens (#4A3F8C)   [■] Output Tokens (#F05922)           │
+│  Legend: 12px, flex row, gap 16px                                    │
+│                                                                      │
+│  Hover tooltip trên cột:                                             │
+│  ┌─────────────────────────┐                                         │
+│  │ 13/07/2026              │                                         │
+│  │ Input:   38,450         │                                         │
+│  │ Output:  12,210         │                                         │
+│  │ Sessions: 4             │                                         │
+│  └─────────────────────────┘                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│  SUMMARY CARDS (3 card ngang, spacing 16px)                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │
+│  │ Total Input  │  │ Total Output │  │ Tổng Sessions│               │
+│  │ 284,500      │  │  89,430      │  │     23       │               │
+│  │ tokens       │  │  tokens      │  │              │               │
+│  │ (trong 30 ng)│  │ (trong 30 ng)│  │ (30 ngày)    │               │
+│  └──────────────┘  └──────────────┘  └──────────────┘               │
+│  Card: border 1px #CBCBCB, radius 8px, heading #251C53, value 24px  │
+├─────────────────────────────────────────────────────────────────────┤
+│  BẢNG CHI TIẾT THEO SESSION                                          │
+│  H3: "Chi tiết theo session"                                         │
+│                                                                      │
+│  ┌──────────────┬──────────┬───────────┬──────────┬───────────────┐ │
+│  │ Agent        │ Bắt đầu  │ Input     │ Output   │ Tổng          │ │
+│  │ (header:     │          │ Tokens    │ Tokens   │ (In+Out)      │ │
+│  │ bg #251C53,  │          │           │          │               │ │
+│  │ text white)  │          │           │          │               │ │
+│  ├──────────────┼──────────┼───────────┼──────────┼───────────────┤ │
+│  │ senior-dev   │ 14:28:01 │    12,450 │    3,210 │    15,660     │ │
+│  │ junior-dev   │ 14:29:15 │     5,100 │    1,340 │     6,440     │ │
+│  │ tech-lead    │ 14:15:30 │    22,100 │    8,450 │    30,550     │ │
+│  └──────────────┴──────────┴───────────┴──────────┴───────────────┘ │
+│  Row hover: bg #B8B3D6 25%                                           │
+│  Phân trang: [ < 1 2 3 > ] nếu >50 rows                             │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**States của Token Analytics:**
+
+**Empty State (không có data trong khoảng filter):**
+```
+┌────────────────────────────────────────────────────────┐
+│  [Chart area trống]                                    │
+│                                                        │
+│      [Icon: chart-bar, 48px, #B8B3D6]                 │
+│   Không có dữ liệu trong khoảng thời gian này         │
+│   Caption: #4A3F8C                                     │
+│                                                        │
+│   Thử chọn [ 30 ngày ] hoặc [ Tất cả ]               │
+│   (Link buttons, màu #F05922)                         │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Màn Hình 3: Session History (US-006)
+
+**Route/Tab:** Session History
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Lịch sử Session                                                     │
+│  H2: #251C53                                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│  FILTER BAR                                                          │
+│  Từ ngày: [__/__/____]  Đến ngày: [__/__/____]  [Lọc]              │
+│  Input: border 1px #CBCBCB, focus border #251C53                     │
+│  [Lọc] button: bg #251C53, text white, hover bg #4A3F8C              │
+│  Hiển thị X session  (caption #4A3F8C, căn phải)                    │
+├─────────────────────────────────────────────────────────────────────┤
+│  BẢNG SESSION                                                        │
+│                                                                      │
+│  ┌──────────┬──────────────────────────┬─────────┬─────────┬──────┐ │
+│  │ Agent    │ Task Description         │ Bắt đầu │ K. thúc │ Trạng│ │
+│  │          │                          │         │         │ thái │ │
+│  │(header:  │                          │         │         │      │ │
+│  │bg #251C53│                          │         │         │      │ │
+│  │text white│                          │         │         │      │ │
+│  ├──────────┼──────────────────────────┼─────────┼─────────┼──────┤ │
+│  │ senior   │ Review PR #47 — module   │ 14:15   │ 14:45   │ Done │ │
+│  │ dev      │ authentication...        │ hôm nay │ hôm nay │ ●    │ │
+│  ├──────────┼──────────────────────────┼─────────┼─────────┼──────┤ │
+│  │ qa-eng   │ Thực thi test plan       │ 13:30   │ 13:45   │ Time │ │
+│  │          │ TC-001 đến TC-015...     │         │ (*)     │ out  │ │
+│  │          │                          │         │         │ ○    │ │
+│  └──────────┴──────────────────────────┴─────────┴─────────┴──────┘ │
+│                                                                      │
+│  (*) Tooltip khi hover cột "K. thúc" của Timeout row:               │
+│  "Phiên kết thúc do không có activity trong 5 phút"                 │
+│                                                                      │
+│  Phân trang: [ < Trang 1 / 3 > ]  Hiển thị 50/132 session           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Badge trạng thái trong bảng:**
+- Done: text `#22C55E`, dot filled
+- Timeout: text `#FFAA80`, dot outline
+
+**Empty State:**
+```
+Chưa có lịch sử session
+Caption: "Dữ liệu sẽ xuất hiện khi agent đầu tiên kết thúc"
+```
+
+---
+
+## Màn Hình 4: Account Manager (US-007, US-008)
+
+**Route/Tab:** Account Manager
+
+### Layout chính
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Quản lý tài khoản API                                               │
+│  H2: #251C53                                                         │
+│                                       [+ Thêm tài khoản] (button)   │
+│                                       bg #F05922, text white         │
+├─────────────────────────────────────────────────────────────────────┤
+│  DANH SÁCH TÀI KHOẢN                                                 │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  [★ ACTIVE]  KZTEK Production           ────────────────────  │   │
+│  │  Badge "ACTIVE": bg #F05922, text white, pill                │   │
+│  │  API key: sk-ant-****...XXXX  (monospace, 13px)              │   │
+│  │                                                              │   │
+│  │  [Copy API key]  [Xóa]                                       │   │
+│  │  Copy: border 1px #251C53, text #251C53, hover bg #B8B3D6   │   │
+│  │  Xóa: text #EF4444, hover bg #FEE2E2                         │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  KZTEK Dev                                                   │   │
+│  │  API key: sk-ant-****...YYYY  (monospace, 13px)              │   │
+│  │                                                              │   │
+│  │  [Đặt active]  [Copy API key]  [Xóa]                        │   │
+│  │  Đặt active: bg #251C53, text white                          │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  Personal                                                    │   │
+│  │  API key: sk-ant-****...ZZZZ                                 │   │
+│  │  [Đặt active]  [Copy API key]  [Xóa]                        │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Panel "Thêm tài khoản" — Slide-in từ phải (không phải modal, không block nội dung)
+
+```
+                     ┌────────────────────────────────────┐
+                     │  Thêm tài khoản mới                │
+                     │  H3: #251C53         [✕ Đóng]      │
+                     ├────────────────────────────────────┤
+                     │                                    │
+                     │  Tên hiển thị *                    │
+                     │  ┌──────────────────────────────┐  │
+                     │  │ VD: KZTEK Production         │  │
+                     │  └──────────────────────────────┘  │
+                     │  Tối đa 50 ký tự                   │
+                     │                                    │
+                     │  API Key *                         │
+                     │  ┌──────────────────────────────┐  │
+                     │  │ sk-ant-...                   │  │
+                     │  └──────────────────────────────┘  │
+                     │  Phải bắt đầu bằng "sk-ant-"       │
+                     │  (Warning nếu khác, không block)   │
+                     │                                    │
+                     │  [Huỷ]  [Lưu tài khoản]           │
+                     │  Huỷ: text #4A3F8C                 │
+                     │  Lưu: bg #F05922, text white        │
+                     └────────────────────────────────────┘
+```
+
+### States của Account Manager:
+
+**Empty State (lần đầu dùng, chưa có account):**
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│      [Icon: user-plus, 48px, #B8B3D6]                   │
+│                                                          │
+│   Chưa có tài khoản nào                                 │
+│   H3: #251C53                                            │
+│                                                          │
+│   Nhấn "Thêm tài khoản" để bắt đầu                     │
+│   Caption: #4A3F8C                                       │
+│                                                          │
+│      [+ Thêm tài khoản]                                 │
+│      bg #F05922, text white, btn centered               │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Validation Errors (inline dưới field):**
+```
+Tên hiển thị đã tồn tại, vui lòng chọn tên khác
+API key không được để trống
+(text: #EF4444, 12px, margin-top 4px)
+```
+
+**Toast sau Copy API key:**
+```
+┌──────────────────────────────────────────────┐
+│  ✓ Đã copy API key — tự nhập vào Claude Code│
+│  bg: #251C53, text: white, border-radius 6px │
+│  Tự biến mất sau 3 giây                      │
+│  (Vị trí: bottom-right, margin 24px)         │
+└──────────────────────────────────────────────┘
+```
+
+**Dialog xác nhận Xóa tài khoản:**
+```
+┌──────────────────────────────────────────────────────┐
+│  Xác nhận xóa tài khoản                             │
+│  H3: #251C53                                         │
+├──────────────────────────────────────────────────────┤
+│  Bạn có chắc muốn xóa tài khoản                     │
+│  "KZTEK Production"?                                 │
+│  Thao tác này không thể hoàn tác.                   │
+│                                                      │
+│  [Huỷ]          [Xóa tài khoản]                     │
+│  text #4A3F8C   bg #EF4444, text white               │
+└──────────────────────────────────────────────────────┘
+```
+
+**Banner lỗi file accounts.enc corrupt:**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  [!] File tài khoản bị hỏng và đã được reset.                   │
+│  Vui lòng thêm lại tài khoản.                                   │
+│  bg: #FEF2F2, border-left 4px #EF4444                           │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Màn Hình 5: Header — Active Account Indicator (US-008)
+
+Header cố định, height 56px, nền `#251C53`.
+
+### State 1 — Có active account
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ [Logo KZTEK]  Agent Dashboard       [●] KZTEK Production            │
+│ 20px white                          [●]: #22C55E filled 8px         │
+│                                     Tên: 14px white bold            │
+│                                     sk-ant-****XXXX (monospace 12px)│
+│                                     text: #B8B3D6                   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+- Tên account truncate ở 30 ký tự với "...", có tooltip tên đầy đủ
+- Không cho hover để xem API key — chỉ vào Account Manager mới copy được
+
+### State 2 — Không có active account
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ [Logo KZTEK]  Agent Dashboard       [!] Chưa có tài khoản active   │
+│                                         Vào Accounts để đặt         │
+│                                     Banner: inline, bg #F05922,     │
+│                                     text white, pill shape          │
+│                                     Click → navigate to Accounts tab│
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Quyết định UX (câu hỏi mở Q7):** Không block chức năng khi chưa có active account — dashboard vẫn hiển thị Agent Status, Token Analytics, Session History bình thường. Chỉ warning inline trên header và banner trên trang Account Manager. Lý do: admin cần theo dõi agent đang chạy ngay cả khi chưa setup account.
+
+---
+
+## Navigation Flow
+
+```mermaid
+flowchart LR
+    H[Header — luôn hiển thị\nActive Account Indicator]
+    S[Sidebar — luôn hiển thị\nNav + WebSocket status]
+    A[Agent Status Panel\ntab mặc định]
+    T[Token Analytics]
+    SH[Session History]
+    AM[Account Manager]
+    AP[Add Account Panel\nslide-in từ phải]
+
+    S -->|click Agents| A
+    S -->|click Token Usage| T
+    S -->|click Session History| SH
+    S -->|click Account Manager| AM
+    AM -->|click 'Thêm tài khoản'| AP
+    AM -->|click 'Đặt active'| H
+    H -->|click warning banner| AM
+```
+
+---
+
+## Design Spec Hand-off
+
+### Component List (cần build)
+
+| Component | Màn hình | Props chính | State |
+|-----------|----------|-------------|-------|
+| `AppHeader` | Global | `activeAccount` | with-account / no-account |
+| `SidebarNav` | Global | `activeTab`, `wsStatus` | connected / reconnecting / disconnected |
+| `AgentCard` | Agent Status | `name`, `status`, `task`, `tokens`, `startTime`, `endTime?` | running / idle / done |
+| `AgentStatusPanel` | Agent Status | `agents[]` | loading / empty / error / has-data |
+| `TokenBarChart` | Token Analytics | `data[]`, `filter`, `agentFilter` | loading / empty / has-data |
+| `SummaryCard` | Token Analytics | `label`, `value`, `unit` | — |
+| `SessionTable` | Session History | `sessions[]`, `pagination` | loading / empty / has-data |
+| `AccountCard` | Account Manager | `account`, `isActive` | active / inactive |
+| `AddAccountPanel` | Account Manager | `onSave`, `onClose` | default / validating / error |
+| `ConfirmDialog` | Account Manager | `message`, `onConfirm`, `onCancel` | — |
+| `ToastNotification` | Global | `message`, `duration` | — |
+| `BannerAlert` | Global | `type`, `message`, `action?` | info / warning / error |
+| `WebSocketStatus` | Sidebar | `status` | connected / reconnecting / disconnected |
+
+### Design Tokens Summary
+
+```css
+/* Colors */
+--color-navy-dark: #251C53;
+--color-orange: #F05922;
+--color-navy-mid: #4A3F8C;
+--color-navy-light: #B8B3D6;
+--color-orange-light: #FFAA80;
+--color-gray-light: #CBCBCB;
+--color-white: #FFFFFF;
+--color-green: #22C55E;
+--color-red: #EF4444;
+--color-red-bg: #FEE2E2;
+--color-warning-bg: #FFFBEB;
+--color-error-bg: #FEF2F2;
+--color-text-body: #1F2937;
+
+/* Spacing */
+--spacing-xs: 4px;
+--spacing-sm: 8px;
+--spacing-md: 16px;
+--spacing-lg: 24px;
+--spacing-xl: 32px;
+
+/* Typography */
+--font-size-h1: 20px;
+--font-size-h2: 16px;
+--font-size-body: 14px;
+--font-size-caption: 12px;
+--font-weight-semibold: 600;
+--font-weight-regular: 400;
+--font-family-mono: monospace;
+
+/* Layout */
+--sidebar-width: 220px;
+--header-height: 56px;
+--card-radius: 8px;
+--button-radius: 6px;
+--badge-radius: 12px;
+```
+
+### Accessibility
+
+- Tất cả button có `aria-label` rõ ràng (VD: "Copy API key cho tài khoản KZTEK Production")
+- Status badge dùng cả màu VÀ text (không chỉ dựa vào màu)
+- Sidebar navigation dùng `<nav>` semantic, mỗi item là `<button>` hoặc `<a>`
+- Toast notification có `role="status"` (polite) để screen reader đọc
+- Confirm dialog có `role="dialog"`, focus trap khi mở
+- Token values có `aria-label` mô tả đơn vị: `aria-label="12,450 input tokens"`
+- Tab order logic: Header → Sidebar → Main content
+
+### Responsive
+
+Dashboard này là **local-only tool** chạy trên máy dev — thiết kế cho màn hình 1280px+ (desktop). Không cần responsive mobile.
+
+---
+
+## Quyết định UX (Giả định cho các câu hỏi mở từ BA)
+
+| Câu hỏi mở | Quyết định UX | Lý do |
+|------------|---------------|-------|
+| Q1: Ngưỡng 60s/300s | Giữ nguyên 60s/300s | Phù hợp cho tool theo dõi realtime; nếu cần thay đổi → config trong P2 (F-12) |
+| Q2: DONE hiển thị bao lâu trên Status Panel | Giữ trong panel cùng ngày (<24h từ khi kết thúc) | Admin vẫn muốn thấy session DONE gần đây trong cùng work session |
+| Q3: Backend restart | Chỉ reconnect WebSocket, KHÔNG reload page | Giữ dữ liệu đang hiển thị, tránh mất context |
+| Q7: Không có active account | Warning only, KHÔNG block chức năng | Xem agent/token không cần account; chỉ "Copy API key" cần account active |
+
+---
+
+## Link Figma / Prototype
+
+Không có — dashboard nội bộ, thiết kế text-based đủ để implement trực tiếp.
