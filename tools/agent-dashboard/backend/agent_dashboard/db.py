@@ -183,15 +183,46 @@ async def insert_token_usage(
 
 # ── Queries ───────────────────────────────────────────────────────────────────
 
+def _row_to_session(row: aiosqlite.Row) -> dict[str, Any]:
+    """Shape a sessions-table row for API/WS responses: token_total as TokenCounts object."""
+    d = dict(row)
+    token_total = {
+        "input":          d.pop("token_input", 0) or 0,
+        "output":         d.pop("token_output", 0) or 0,
+        "cache_creation": d.pop("token_cache_creation", 0) or 0,
+        "cache_read":     d.pop("token_cache_read", 0) or 0,
+    }
+    d["token_total"] = token_total
+    return d
+
+
 async def get_active_sessions(conn: aiosqlite.Connection) -> list[dict[str, Any]]:
     async with conn.execute(
         """SELECT session_id, project, agent_type, state, started_at, last_event_at,
-                  token_input + token_output + token_cache_creation + token_cache_read AS token_total
+                  token_input, token_output, token_cache_creation, token_cache_read
            FROM sessions WHERE state != 'Ended'
            ORDER BY last_event_at DESC"""
     ) as cur:
         rows = await cur.fetchall()
-    return [dict(r) for r in rows]
+    return [_row_to_session(r) for r in rows]
+
+
+async def get_session_totals(conn: aiosqlite.Connection, session_id: str) -> dict[str, int]:
+    """Return cumulative token totals for a session as TokenCounts object."""
+    async with conn.execute(
+        """SELECT token_input, token_output, token_cache_creation, token_cache_read
+           FROM sessions WHERE session_id = ?""",
+        (session_id,),
+    ) as cur:
+        row = await cur.fetchone()
+    if not row:
+        return {"input": 0, "output": 0, "cache_creation": 0, "cache_read": 0}
+    return {
+        "input":          row["token_input"] or 0,
+        "output":         row["token_output"] or 0,
+        "cache_creation": row["token_cache_creation"] or 0,
+        "cache_read":     row["token_cache_read"] or 0,
+    }
 
 
 async def get_session_history(
@@ -217,14 +248,14 @@ async def get_session_history(
 
     async with conn.execute(
         f"""SELECT session_id, project, agent_type, state, started_at, last_event_at, ended_at,
-                   token_input + token_output + token_cache_creation + token_cache_read AS token_total
+                   token_input, token_output, token_cache_creation, token_cache_read
             FROM sessions WHERE {where}
             ORDER BY started_at DESC LIMIT ? OFFSET ?""",
         params + [limit, offset],
     ) as cur:
         rows = await cur.fetchall()
 
-    return [dict(r) for r in rows], total
+    return [_row_to_session(r) for r in rows], total
 
 
 async def get_session_detail(
@@ -309,5 +340,13 @@ async def get_token_summary(conn: aiosqlite.Connection, range_str: str) -> dict[
         for k in totals:
             totals[k] += b[k]
     totals["grand_total"] = sum(totals.values())
+
+    # Distinct session count within the same window
+    async with conn.execute(
+        "SELECT COUNT(DISTINCT session_id) AS cnt FROM token_usage WHERE ts >= ?",
+        (from_str,),
+    ) as cur:
+        row = await cur.fetchone()
+    totals["sessions"] = row["cnt"] if row else 0
 
     return {"buckets": buckets, "totals": totals}

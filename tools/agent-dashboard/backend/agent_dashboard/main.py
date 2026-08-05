@@ -204,6 +204,7 @@ async def _process_file(conn: Any, file_path: str) -> None:
             await db_module.update_session_state(conn, parsed.session_id, change.new_state)
 
         if has_tokens:
+            cumulative = await db_module.get_session_totals(conn, parsed.session_id)
             await _ws_manager.broadcast(make_delta("token_update", {
                 "session_id": parsed.session_id,
                 "delta": {
@@ -212,6 +213,7 @@ async def _process_file(conn: Any, file_path: str) -> None:
                     "cache_creation": parsed.cache_creation,
                     "cache_read": parsed.cache_read,
                 },
+                "cumulative": cumulative,
             }))
 
         is_first_in_file = False

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
+from ..accounts import mask_key
 from ..models import AccountCreate, AccountUpdate, error_response
 
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
@@ -33,7 +34,7 @@ def add_account(request: Request, body: AccountCreate):
     return {
         "id": acc["id"],
         "name": acc["name"],
-        "key_masked": __import__("agent_dashboard.accounts", fromlist=["mask_key"]).mask_key(acc["api_key"]),
+        "key_masked": mask_key(acc["api_key"]),
         "is_active": False,
         "created_at": acc["created_at"],
     }
@@ -120,6 +121,7 @@ def _broadcast_account_change(request: Request, active: dict | None) -> None:
         {
             "active_id": active["id"] if active else None,
             "name": active["name"] if active else None,
+            "key_masked": active["key_masked"] if active else None,
         },
     )
 
