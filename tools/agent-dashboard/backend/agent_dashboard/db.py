@@ -1122,38 +1122,44 @@ async def get_session_chain(
         entry["history"].append(history_item)
 
     # ── Step 6: Compute status for each roster entry ─────────────────────────
-    # "active" when:
-    #   - Parent session is Running or Idle (not Ended), AND
-    #   - Latest child session state is Running or Idle, OR no child yet (fallback)
+    # PRIMARY SIGNAL — result_summary / result_full on the Agent event:
+    #   If the parent session has already received a tool_result for this Agent call,
+    #   both fields are populated (via backfill or real-time ingest).
+    #   result_summary set → agent definitively finished, regardless of child_state.
+    #   result_summary None → no result received yet → agent possibly still running.
     #
-    # Why parent "Idle" counts as active:
-    #   After calling an Agent tool, the parent JSONL stops getting new events until
-    #   the child returns its result.  The state machine marks the parent "Idle" after
-    #   IDLE_THRESHOLD_SEC — even though the child is still executing.  We must not
-    #   treat an Idle parent with a live child as "done".
+    # SECONDARY SIGNAL — child session state (only Ended is trusted):
+    #   "Ended" is a reliable termination signal.
+    #   "Idle" / "Running" are ambiguous (cannot distinguish "waiting for LLM" from
+    #   "finished long ago but not yet timed out to Ended") — intentionally ignored.
     #
-    # Why child "Idle" counts as active:
-    #   An agent waiting for LLM inference doesn't write JSONL events.  After
-    #   IDLE_THRESHOLD_SEC the child's state becomes "Idle".  The agent is still
-    #   running — it's between tool calls or waiting for a response.
+    # PARENT GATE — session_state == "Running" only:
+    #   "Idle" parent = ambiguous (parent stopped writing events while child works).
+    #   "Ended" parent = all roles are done.
+    #   Only a "Running" parent can have an actively-executing child.
     #
-    # Fallback for missing child (None):
-    #   The child transcript file may not have been scanned yet (watcher lag) or
-    #   the file hasn't been created yet.  If the parent is Running/Idle, assume active.
-    #
-    # Ended parent → always "done" regardless of children.
-    # Ended child (latest call) + Running/Idle parent → "done" (role finished, parent busy with others).
+    # Decision table (for the LAST call of each role):
+    #   result set           → "done"  (primary, unconditional)
+    #   child Ended          → "done"  (secondary, reliable)
+    #   parent Ended/Idle    → "done"  (parent gate)
+    #   parent Running + no result + child not Ended → "active"
     roster: list[dict[str, Any]] = []
     for role_key, entry in roster_map.items():
-        # Find the child_state for the last call (re-derive from matched_calls by last entry)
+        # Find the last matched_call for this role
         last_matched = next(
             (c for c in reversed(matched_calls) if (c["subagent_type"] or "__unknown__") == role_key),
             None,
         )
         last_child_state = last_matched["child_state"] if last_matched else None
-        # is_active: parent not Ended AND child Running/Idle (or child not found yet)
-        is_active = session_state in ("Running", "Idle") and (
-            last_child_state in ("Running", "Idle") or last_child_state is None
+        last_result_summary = last_matched.get("result_summary") if last_matched else None
+        last_result_full = last_matched.get("result_full") if last_matched else None
+
+        is_active = (
+            session_state == "Running"                          # parent still alive
+            and last_matched is not None                        # at least one call exists
+            and last_result_summary is None                     # no result received yet (primary)
+            and last_result_full is None
+            and last_child_state != "Ended"                    # Ended child = definitively done
         )
         entry["status"] = "active" if is_active else "done"
 

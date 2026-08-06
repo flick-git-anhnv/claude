@@ -182,11 +182,14 @@ async def _seed_parent(conn, session_id: str = "parent-sess", state: str = "Runn
 
 
 async def _add_agent_event(conn, session_id: str, ts: str,
-                           subagent_type: str, description: str) -> None:
+                           subagent_type: str, description: str,
+                           result_summary: str | None = None,
+                           result_full: str | None = None) -> None:
     await conn.execute(
-        """INSERT INTO events (session_id, ts, type, tool_name, subagent_type, subagent_description, payload_json)
-           VALUES (?, ?, 'tool_use', 'Agent', ?, ?, '{}')""",
-        (session_id, ts, subagent_type, description),
+        """INSERT INTO events (session_id, ts, type, tool_name, subagent_type, subagent_description,
+                               payload_json, result_summary, result_full)
+           VALUES (?, ?, 'tool_use', 'Agent', ?, ?, '{}', ?, ?)""",
+        (session_id, ts, subagent_type, description, result_summary, result_full),
     )
     await conn.commit()
 
@@ -342,13 +345,11 @@ async def test_roster_status_active_when_last_child_idle(conn):
 
 
 @pytest.mark.asyncio
-async def test_roster_status_active_when_parent_idle_child_idle(conn):
-    """BUG-FIX (core case): parent Idle + child Idle → status='active'.
+async def test_roster_status_done_when_parent_idle(conn):
+    """Parent Idle → all roles status='done' (Idle is ambiguous, not a reliable 'active' signal).
 
-    When a parent session calls an Agent tool, it stops writing JSONL events
-    while waiting for the child to finish.  After IDLE_THRESHOLD_SEC the parent
-    is marked Idle.  The child also goes Idle between LLM rounds.  Both being
-    Idle while the work is ongoing should still show 'active'.
+    New logic only trusts session_state=='Running' as the parent-alive gate.
+    Idle parent → conservatively 'done' to prevent 3+ roles showing 'active' simultaneously.
     """
     sid = await _seed_parent(conn, "p-idle-parent-idle-child", state="Idle")
     await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "junior-developer", "Code feature")
@@ -357,10 +358,10 @@ async def test_roster_status_active_when_parent_idle_child_idle(conn):
 
     result = await db_module.get_session_chain(conn, sid)
     entry = result["roster"][0]
-    assert entry["status"] == "active", (
-        "Idle parent waiting for Idle child should show 'active'"
+    assert entry["status"] == "done", (
+        "Idle parent should show 'done' — Idle is ambiguous, use Running as active gate"
     )
-    assert entry["history"][-1]["status"] == "active"
+    assert entry["history"][-1]["status"] == "done"
 
 
 @pytest.mark.asyncio
@@ -435,3 +436,100 @@ async def test_history_call_index_increments_per_role(conn):
     entry = result["roster"][0]
     assert entry["history"][0]["call_index"] == 1
     assert entry["history"][1]["call_index"] == 2
+
+
+# ── New tests: result_summary-based active logic (over-correct fix) ──────────
+
+@pytest.mark.asyncio
+async def test_roster_status_done_when_result_present_child_idle(conn):
+    """result_summary set on event → 'done' even if child is Idle and parent is Running.
+
+    Primary signal: tool_result received in parent = agent definitively finished.
+    Child state (Idle/Running) is irrelevant when result_summary is set.
+    """
+    sid = await _seed_parent(conn, "p-result-idle-child", state="Running")
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "senior-developer", "Code",
+                           result_summary="Backend hoàn thành. 47 tests pass.",
+                           result_full="Backend hoàn thành. 47 tests pass. Commit abc123.")
+    await _add_child_session(conn, "c-sd-result-idle", sid, "senior-developer",
+                              "claude-sonnet-4-6", "Idle",
+                              "2026-08-06T10:05:00Z", 1000, 200, 0, 0)
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "done", (
+        "result_summary present → agent done, regardless of child Idle state"
+    )
+    assert entry["history"][-1]["status"] == "done"
+
+
+@pytest.mark.asyncio
+async def test_roster_status_done_when_result_present_child_running(conn):
+    """result_summary set → 'done' even if child session is still Running.
+
+    Stale child session (state machine lag) must not override tool_result signal.
+    """
+    sid = await _seed_parent(conn, "p-result-running-child", state="Running")
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "tech-lead", "TDD",
+                           result_summary="TDD xong. Design approved.",
+                           result_full="TDD xong. Design approved. Commit def456.")
+    await _add_child_session(conn, "c-tl-result-run", sid, "tech-lead",
+                              "claude-opus-4-7", "Running",
+                              "2026-08-06T10:05:00Z", 2000, 400, 0, 0)
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "done", (
+        "result_summary present → done, child Running state is stale/irrelevant"
+    )
+
+
+@pytest.mark.asyncio
+async def test_roster_only_one_active_among_multiple_roles(conn):
+    """Only 1 role shows 'active' when only 1 has no result; others have result_summary.
+
+    This is the core regression test: prevents 3+ roles showing 'active' simultaneously
+    when only 1 agent is actually executing.
+    """
+    sid = await _seed_parent(conn, "p-one-active", state="Running")
+    # PM called and returned result
+    await _add_agent_event(conn, sid, "2026-08-06T10:01:00Z", "product-manager", "PRD",
+                           result_summary="PRD xong.", result_full="PRD xong. Commit aaa.")
+    # TL called and returned result
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "tech-lead", "TDD",
+                           result_summary="TDD xong.", result_full="TDD xong. Commit bbb.")
+    # SD currently running — no result yet
+    await _add_agent_event(conn, sid, "2026-08-06T10:10:00Z", "senior-developer", "Code")
+    await _add_child_session(conn, "c-pm", sid, "product-manager", "claude-sonnet-4-6",
+                              "Ended", "2026-08-06T10:01:00Z", 500, 100, 0, 0)
+    await _add_child_session(conn, "c-tl", sid, "tech-lead", "claude-opus-4-7",
+                              "Ended", "2026-08-06T10:05:00Z", 2000, 400, 0, 0)
+    await _add_child_session(conn, "c-sd", sid, "senior-developer", "claude-sonnet-4-6",
+                              "Running", "2026-08-06T10:10:00Z", 300, 60, 0, 0)
+
+    result = await db_module.get_session_chain(conn, sid)
+    active_roles = [e["role"] for e in result["roster"] if e["status"] == "active"]
+    done_roles = [e["role"] for e in result["roster"] if e["status"] == "done"]
+
+    assert active_roles == ["senior-developer"], (
+        "Only the role without a result should be 'active'"
+    )
+    assert set(done_roles) == {"product-manager", "tech-lead"}
+
+
+@pytest.mark.asyncio
+async def test_roster_status_done_when_no_result_parent_ended(conn):
+    """No result_summary + parent Ended → 'done' (parent gate blocks active).
+
+    Even if result was never captured (e.g. agent crashed), Ended parent means
+    all work is complete — nothing can be 'active'.
+    """
+    sid = await _seed_parent(conn, "p-ended-no-result", state="Ended")
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "qa-engineer", "Test")
+    # No result_summary, no child session
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "done", (
+        "Ended parent with missing result should show 'done', not hang as 'active'"
+    )
