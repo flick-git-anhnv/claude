@@ -19,10 +19,18 @@ _ISO_FMT = "%Y-%m-%dT%H:%M:%S.%f"  # with microseconds
 _ISO_FMT_SHORT = "%Y-%m-%dT%H:%M:%S"  # without microseconds
 
 
+_EPOCH = datetime.min.replace(tzinfo=timezone.utc)
+
+
 def _parse_ts(ts_str: str) -> datetime:
-    """Parse ISO-8601 string → timezone-aware datetime (UTC)."""
+    """Parse ISO-8601 string → timezone-aware datetime (UTC).
+
+    Returns epoch (``datetime.min`` in UTC) when the input is empty or
+    ``None`` — this makes ``elapsed`` very large so the session is
+    correctly evaluated as ``Ended`` rather than ``Running``.
+    """
     if not ts_str:
-        return datetime.now(timezone.utc)
+        return _EPOCH
     # Strip trailing 'Z' and try both formats
     s = ts_str.rstrip("Z").split("+")[0]
     for fmt in (_ISO_FMT, _ISO_FMT_SHORT):

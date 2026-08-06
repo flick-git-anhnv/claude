@@ -21,10 +21,26 @@ def test_parse_ts_with_microseconds():
     assert dt.microsecond == 123456
 
 
-def test_parse_ts_empty_returns_now():
+def test_parse_ts_empty_returns_epoch():
+    """Empty string must return epoch (datetime.min UTC), NOT now().
+
+    Root cause of UI-002: if _parse_ts('') returns now(), elapsed ≈ 0 and
+    initialize_from_db keeps legacy rows with last_event_at='' as Running forever.
+    Epoch → elapsed = years → correctly evaluated as Ended.
+    """
     dt = _parse_ts("")
-    diff = abs((datetime.now(timezone.utc) - dt).total_seconds())
-    assert diff < 5
+    # Should be datetime.min (year=1) in UTC, far from now
+    assert dt.year == datetime.min.year
+    assert dt.tzinfo is not None
+    # Sanity: elapsed from epoch must be far larger than any threshold
+    elapsed = (datetime.now(timezone.utc) - dt).total_seconds()
+    assert elapsed > 86400 * 365  # at least 1 year in seconds
+
+
+def test_parse_ts_none_equivalent_returns_epoch():
+    """None-like falsy input also returns epoch."""
+    dt = _parse_ts(None)  # type: ignore[arg-type]
+    assert dt.year == datetime.min.year
 
 
 # ── SessionStateManager ───────────────────────────────────────────────────────
@@ -178,6 +194,36 @@ def test_initialize_from_db_multiple_stale_sessions_all_corrected():
 
     assert len(changes) == 5
     assert all(c.new_state == "Ended" for c in changes)
+
+
+def test_initialize_from_db_empty_last_event_at_becomes_ended():
+    """UI-002 regression: rows with last_event_at='' must become Ended, not Running.
+
+    Legacy/seed data often has last_event_at=''. Before the fix, _parse_ts('')
+    returned now() → elapsed ≈ 0 → Running forever. After the fix it returns
+    epoch → elapsed = years → Ended.
+    """
+    sm = SessionStateManager(idle_threshold=300, ended_threshold=1800)
+
+    changes = sm.initialize_from_db(
+        [
+            {"session_id": "legacy_1", "state": "Running", "last_event_at": ""},
+            {"session_id": "legacy_2", "state": "Running", "last_event_at": None},
+        ],
+        idle_threshold=300,
+        ended_threshold=1800,
+    )
+
+    assert sm.get_state("legacy_1") == "Ended", "empty last_event_at must → Ended"
+    assert sm.get_state("legacy_2") == "Ended", "None last_event_at must → Ended"
+
+    # Both should emit a StateChange Running → Ended
+    change_map = {c.session_id: c for c in changes}
+    assert "legacy_1" in change_map
+    assert change_map["legacy_1"].old_state == "Running"
+    assert change_map["legacy_1"].new_state == "Ended"
+    assert "legacy_2" in change_map
+    assert change_map["legacy_2"].new_state == "Ended"
 
 
 def test_multiple_sessions_evaluate_independently():
