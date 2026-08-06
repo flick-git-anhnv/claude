@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-07-12 | **Bởi:** senior-developer | **Version:** 1.0
+**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** junior-developer | **Version:** 1.1
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -50,6 +50,12 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 ├── CLAUDE.md                    ← Quy tắc bắt buộc cho Claude Code (agent config gốc)
 ├── RULES.md                     ← Quy tắc tổ chức, phân cấp, luồng giao việc
 └── WORKFLOW.md                  ← Ví dụ workflow mẫu theo từng scenario
+├── tools/                       ← Công cụ nội bộ KZTEK
+│   └── agent-dashboard/         ← Dashboard web local quản lý Claude Code agents
+│       ├── backend/             ← Python/FastAPI: file-watcher, WebSocket, SQLite (port 7770)
+│       └── frontend/            ← Vite/React/TS/Tailwind (build tĩnh)
+│           └── src/utils/format.ts  ← Tiện ích format: fmtNum, fmtTime, fmtDateTime,
+│                                        fmtDateShort, fmtDate, fmtRelative, normalizeIso
 ```
 
 ---
@@ -66,6 +72,8 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | Templates | `.claude/templates/` | Khung mẫu cho plan, eval, code-graph | `PLAN-template.md`, `EVAL-template.md`, `CODE-GRAPH-template.md` |
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
+| Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 13 components, 4 pages, WebSocket client | `utils/format.ts` (normalizeIso, fmtRelative, fmtDateShort), `api/interceptor.ts`, `state/wsReducer.ts` |
+| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt | `main.py`, `state_manager.py`, `db.py`, `watcher.py`, `routes/` |
 
 ---
 
@@ -174,6 +182,9 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | `python-docx` | latest | `md_to_docx_kztek.py` — xuất DOCX từ Markdown |
 | `Pillow` | latest | `md_to_docx_kztek.py` — xử lý ảnh/logo trong DOCX |
 | `.NET` (WinForms) | compatible | `KztekComponent/` — thư viện UI C# |
+| `vitest` | ^4.1 | `tools/agent-dashboard/frontend/` — unit test runner (format.test.ts) |
+| `FastAPI` / `uvicorn` | 0.110+ / 0.27+ | `tools/agent-dashboard/backend/` — HTTP + WebSocket server |
+| `aiosqlite` | 0.20+ | `tools/agent-dashboard/backend/` — SQLite async storage |
 
 ---
 
@@ -193,6 +204,8 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 |------|------------|------|------------|-------|
 | 2026-07-12 | `.claude/evals/` | Add | Tạo thư mục + 3 eval mẫu (task-planner, senior-developer, qa-engineer) | senior-developer |
 | 2026-07-12 | `code-graph/CODE-GRAPH.md` | Add | Tạo bản đồ codebase ban đầu cho workspace | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/utils/format.ts` | Update | Thêm `normalizeIso()` + `fmtDateShort()` — fix NaN bug với Python microseconds timestamp; thêm fallback >24h | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/` | Add | Thêm vitest + `format.test.ts` (20 tests) — coverage `fmtRelative`, `normalizeIso`, `fmtDateShort` | junior-developer |
 
 ---
 

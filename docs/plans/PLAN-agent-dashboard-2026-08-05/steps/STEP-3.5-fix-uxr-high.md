@@ -1,78 +1,80 @@
 ---
 step: "3.5"
 plan: ../PLAN-MASTER.md
-agent: Senior Developer (backend) ∥ Junior Developer (frontend)
+agent: Senior Developer (UI-002 backend) || Junior Developer (UI-001 frontend)
 status: in-progress
 completed_at:
 deps: ["3.4"]
 ---
 
-# STEP 3.5 — Fix 2 issue High từ UXR (UI-001 frontend + UI-002 backend)
+# STEP 3.5 — Fix 2 issue High từ UXR trước khi QA
 
 ## Input nhận
-Từ STEP-3.4 UX/UI Reviewer:
-- `docs/ux-review/UX-REVIEW-agent-dashboard.md` — danh sách 6 issue; 2 High cần fix trước QA:
-  - **UI-001** (frontend): "NaNh trước" — `formatRelativeTime()` parse fail với timestamp ISO cũ
-  - **UI-002** (backend): 62–240+ sessions hiển thị RUNNING dù `last_event_at` hàng trăm giờ trước;
-    root cause: `initialize_from_db()` restore state cũ từ DB thay vì re-evaluate từ `last_event_at`
+
+Từ STEP-3.4 (UXR Review), Handoff Payload:
+- **do_not_redo:** Không cần chạy lại UXR — issues đã được document rõ trong `docs/ux-review/UX-REVIEW-agent-dashboard.md`
+- **watch_out:** Bước này chạy SONG SONG — JD fix UI-001 (frontend only), SD fix UI-002 (backend only). Không được đụng file của nhau.
+- **next_inputs:**
+  - UI-001: `tools/agent-dashboard/frontend/src/utils/format.ts` → hàm `fmtRelative()` trả "NaNh trước"
+  - UI-002: `tools/agent-dashboard/backend/agent_dashboard/state_manager.py` → `initialize_from_db()` không re-evaluate state cũ
 
 ## Nhiệm vụ
-Senior Developer fix UI-002 ở backend (state_manager + main.py + tests).
-Junior Developer fix UI-001 ở frontend (formatRelativeTime + fallback). Hai người chạy song song (∥), KHÔNG đụng file của nhau.
 
-## Definition of Done
-- [x] UI-002: `initialize_from_db()` re-evaluates state từ `last_event_at` thay vì dùng stored state
-- [x] UI-002: `main.py` lifespan persist startup corrections ngay trước khi ticker chạy
-- [x] UI-002: Unit test mới — stale Running→Ended, Running→Idle, no-change, multiple stale
-- [x] UI-002: `python -m pytest tests/ -q` — 50/50 pass, 0 fail
-- [ ] UI-001: `formatRelativeTime()` frontend xử lý đúng mọi ISO format (kể cả timestamp cũ)
-- [ ] UI-001: Fallback "dd/MM HH:mm" khi diff > 24h để tránh "NaNh trước"
-- [ ] UI-001: Frontend build (tsc + vite) không có error sau fix
+### JD (Junior Developer) — UI-001 FRONTEND (file này)
 
-## Đã làm (backend — Senior Developer)
+Fix hàm `fmtRelative()` trong `tools/agent-dashboard/frontend/src/utils/format.ts` trả "NaNh trước" cho session cũ vì JavaScript `new Date()` không parse được timestamp Python (6 chữ số microseconds + `+00:00` suffix). Thêm fallback "dd/MM HH:mm" khi diff > 24h. Viết test vitest.
 
-### Root cause xác nhận
-`initialize_from_db()` trong `state_manager.py` gọi `row.get("state", "Running")` rồi dùng thẳng giá trị đó làm state in-memory. Các session cũ trong SQLite có `state = 'Running'` (mặc định khi insert) và chưa bao giờ bị ticker update vì backend đã restart nhiều lần. Hệ quả: mọi client kết nối WebSocket trong 30s đầu sau startup nhận snapshot với 200+ session RUNNING.
+### SD (Senior Developer) — UI-002 BACKEND (file riêng)
 
-### Fix thực hiện
-1. **`state_manager.py`** — `initialize_from_db()` signature thay đổi:
-   - Nhận thêm `idle_threshold: Optional[int]` và `ended_threshold: Optional[int]`
-   - Tính `elapsed = (now - last_event_ts).total_seconds()` cho từng session
-   - Gán `new_state = "Ended"` / `"Idle"` / `"Running"` theo thresholds — KHÔNG dùng stored state
-   - Trả về `List[StateChange]` cho các session cần correction (thay vì `None`)
+Fix `initialize_from_db()` trong `state_manager.py` để re-evaluate state của session cũ dựa trên `last_event_at` vs current time thay vì giữ nguyên state từ DB.
 
-2. **`main.py`** — lifespan cập nhật:
-   - Nhận `startup_changes = _state_mgr.initialize_from_db(active_sessions)`
-   - Loop persist từng change vào DB qua `db_module.update_session_state()` ngay trước khi yield
-   - Log số correction để audit
+## Definition of Done (JD — UI-001)
 
-3. **`tests/test_state_manager.py`** — 4 test mới thay thế `test_initialize_from_db` cũ:
-   - `test_initialize_from_db_recent_sessions_keep_correct_state`
-   - `test_initialize_from_db_stale_running_becomes_ended`
-   - `test_initialize_from_db_returns_no_changes_when_states_already_correct`
-   - `test_initialize_from_db_multiple_stale_sessions_all_corrected`
+- [x] `fmtRelative()` không trả "NaNh trước" cho timestamp Python isoformat (6 microseconds + +00:00)
+- [x] Fallback "dd/MM HH:mm" khi diff > 24h
+- [x] `normalizeIso()` helper export — áp dụng cho toàn bộ `fmtTime`, `fmtDateTime`, `fmtDate`, `fmtRelative`
+- [x] NaN graceful fallback khi timestamp hoàn toàn invalid
+- [x] Vitest setup + 20 test cases pass (fmtRelative + normalizeIso + fmtDateShort)
+- [x] `tsc -b` 0 lỗi
+- [x] `vite build` 0 lỗi
 
-## Đã làm (frontend — Junior Developer)
-[Chờ JD điền sau khi hoàn thành UI-001]
+## Đã làm (JD phần UI-001)
 
-## Artifact
-- `tools/agent-dashboard/backend/agent_dashboard/state_manager.py` (sửa)
-- `tools/agent-dashboard/backend/agent_dashboard/main.py` (sửa)
-- `tools/agent-dashboard/backend/tests/test_state_manager.py` (sửa)
+Root cause xác nhận: Python `datetime.now(timezone.utc).isoformat()` sinh `"2026-08-06T08:30:00.123456+00:00"` — 6 chữ số microseconds không được ECMAScript Date.parse hỗ trợ (chỉ hỗ trợ tối đa 3 chữ số milliseconds) → `new Date().getTime()` = NaN. Session rất mới (~55s) không bị ảnh hưởng vì microseconds tình cờ bằng 0 hoặc backend trả timestamp khác.
+
+Đã làm:
+1. Thêm `normalizeIso()` helper: truncate 6-digit microseconds → 3-digit, đổi `+00:00` → `Z`
+2. Cập nhật toàn bộ hàm format (`fmtTime`, `fmtDateTime`, `fmtDate`) dùng `normalizeIso()` trước khi `new Date()`
+3. Thêm `fmtDateShort()` (dd/MM HH:mm — không có năm) làm fallback cho diff > 24h và timestamp NaN
+4. Cập nhật `fmtRelative()`: sử dụng `normalizeIso`, kiểm tra `isNaN(ts)`, fallback > 24h sang `fmtDateShort()`
+5. Cài đặt `vitest@^4.1` + `@vitest/coverage-v8` làm devDependency
+6. Cập nhật `vite.config.ts`: import `defineConfig` từ `vitest/config`, thêm `test` block
+7. Thêm `"test": "vitest run"` vào `package.json` scripts
+8. Tạo `src/utils/format.test.ts` với 20 test cases: normalizeIso (5), fmtRelative JS-native (6), fmtRelative Python-style (5), fmtRelative edge cases (2), fmtDateShort (2)
+
+Verification:
+- `npm test` → 20 passed (20), 0 failed
+- `npm run build` → tsc 0 errors, vite built in 5.13s (858 modules)
+
+## Artifact (JD)
+
+- `tools/agent-dashboard/frontend/src/utils/format.ts` — sửa `fmtRelative`, thêm `normalizeIso`, `fmtDateShort`
+- `tools/agent-dashboard/frontend/src/utils/format.test.ts` — 20 vitest tests (mới)
+- `tools/agent-dashboard/frontend/vite.config.ts` — thêm vitest config
+- `tools/agent-dashboard/frontend/package.json` — thêm vitest devDeps + test scripts
+- `C:\Users\nguye\.claude\lessons\react-web\js-date-parse-python-microseconds-nan.md` — lesson mới
+- `C:\Users\nguye\.claude\lessons\react-web\js-date-parse-python-microseconds-nan.docx` — DOCX
+- `code-graph/CODE-GRAPH.md` — cập nhật: thêm tools/agent-dashboard, normalizeIso/fmtDateShort, vitest
 
 ## Quyết định quan trọng
-- Re-evaluate tại `initialize_from_db()` thay vì chỉ gọi `evaluate_all()` sau — để state in-memory sạch ngay khi seeded, không phụ thuộc vào caller nhớ gọi thêm.
-- `initialize_from_db()` override không dùng `_idle_override`/`_ended_override` nếu là 0 (falsy) — dùng pattern `x if x is not None else (self._override or config.X)` để truyền `0` từ test không bị ignore.
 
-## Handoff Payload — bước sau đọc phần này (chỉ phần này, không cần đọc "Đã làm")
-- do_not_redo: Backend UI-002 đã fix và commit ed84b69. Test 50/50 pass. Không cần sửa thêm state_manager/main.py cho issue này.
-- watch_out: `initialize_from_db()` bây giờ trả về `List[StateChange]` thay vì `None` — nếu có test mock cũ gọi method này mà không dùng return value sẽ vẫn pass nhưng cần aware về signature change.
-- next_inputs: Sau khi JD xong UI-001, cả 2 fix merge vào branch → QA (bước 4.1) verify: (1) backend restart → agent panel chỉ hiện session thực sự active, (2) timestamps frontend hiển thị đúng định dạng, không "NaNh trước".
+1. Dùng `normalizeIso()` thay vì chỉ patch `fmtRelative` — áp dụng cho toàn bộ format functions vì cùng nguồn dữ liệu (backend Python), tránh lỗi tương tự ở `fmtTime`/`fmtDateTime`.
+2. Chọn `vitest` (không phải Jest) vì project đã dùng Vite — `vitest` tích hợp native, không cần cấu hình thêm, nhanh hơn (~1.1s cho 20 tests).
+3. Fallback > 24h → `fmtDateShort` (dd/MM HH:mm) thay vì tiếp tục "240h trước" — UX tốt hơn cho session cũ.
 
-## Commit
-- Hash (backend): ed84b69
-- Hash (frontend UI-001): [JD điền]
-- Đã push: có (branch research/skills-2026-08-05)
+## Handoff Payload — bước sau đọc phần này
 
----
-**Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
+- **Đã làm:** JD fix UI-001 frontend xong — fmtRelative không còn NaN, 20 test pass, build sạch.
+- **do_not_redo:** Không install lại vitest, không sửa lại normalizeIso — đã hoàn thành và test pass.
+- **watch_out:** Bước 3.5 chưa hoàn toàn Done — SD còn phần UI-002 backend. Chỉ coi bước này Done khi CẢ HAI phần JD + SD xong. Bước 4.1 (QA) phải đợi cả 2.
+- **next_inputs:** Sau khi SD merge UI-002 fix, bước 4.1 QA sẽ test trên cả frontend + backend đã fix; lưu ý test case: mở lại app sau restart backend, verify session cũ không còn hiện RUNNING, và verify fmtRelative không còn NaN.

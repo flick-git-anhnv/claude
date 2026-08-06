@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 08:30
+updated: 2026-08-06 08:40
 status: in-progress
 workflow: WF-FEATURE
 priority: P2
@@ -98,6 +98,7 @@ Không có
 | 2026-08-06 00:45 | Bước 3.3 ✅ — TL review PASS, fix 5 lệch schema mock↔backend + refactor mask_key, tích hợp thật port 7770 verify OK, commit b1c148f+affb0c6 | Tech Lead |
 | 2026-08-06 08:30 | Bước 3.4 ✅ — UXR review xong (2 lần bị dừng giữa chừng, resume qua SendMessage + hoàn tất sổ sách thủ công): 6 issue (0 Critical, 2 High, 2 Medium, 2 Low). Thêm Bước 3.5 (fix High) trước khi vào QA | UX/UI Reviewer / Dispatcher |
 | 2026-08-06 08:19 | Bước 3.5 🔄 — Backend UI-002 fix xong (commit ed84b69): initialize_from_db() re-evaluate stale state; 50/50 tests pass. Frontend UI-001 đang chạy song song (JD) | Senior Developer |
+| 2026-08-06 08:40 | Bước 3.5 🔄 JD phần UI-001 xong — normalizeIso()+fmtDateShort() fix NaN bug Python microseconds; vitest setup, 20 tests pass; tsc+build 0 lỗi; lesson ghi vào react-web/; CODE-GRAPH cập nhật | Junior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
