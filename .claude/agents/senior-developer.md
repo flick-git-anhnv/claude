@@ -55,6 +55,30 @@ python .claude/skills/ui-ux-pro-max/scripts/search.py "<issue-keyword>" --domain
 Glob "design-system/*/MASTER.md"
 ```
 
+## Nguyên tắc Code sạch & SOLID (BẮT BUỘC áp dụng khi viết/sửa code — không đợi được nhắc)
+
+> Áp dụng cho MỌI function/class được viết mới hoặc sửa, không chỉ khi task ghi rõ "refactor SOLID".
+
+**5 nguyên tắc SOLID — tự kiểm trước khi coi task xong:**
+
+| Nguyên tắc | Dấu hiệu vi phạm | Hành động |
+|---|---|---|
+| **S**RP — Single Responsibility | Class/function làm > 1 việc không liên quan (VD: 1 ViewModel vừa lọc dữ liệu vừa quản lý log vừa gọi network) | Tách thành class/method riêng theo từng trách nhiệm, compose lại bằng field/delegate |
+| **O**CP — Open/Closed | Thêm 1 case mới phải sửa `if/else`/`switch` đang có ở nhiều chỗ | Cân nhắc strategy pattern/interface — nhưng KHÔNG áp dụng nếu chỉ có 2 nhánh cố định, ít thay đổi (tránh over-engineering) |
+| **L**SP — Liskov Substitution | Class con override method rồi throw `NotImplementedException` hoặc đổi hành vi cha không mong đợi | Không kế thừa chỉ để tái dùng field — dùng composition |
+| **I**SP — Interface Segregation | Interface có method mà phần lớn implementation phải để trống/throw | Tách interface nhỏ hơn theo nhóm method thực dùng |
+| **D**IP — Dependency Inversion | Class nghiệp vụ `new` trực tiếp dependency cụ thể (DB, HTTP client) thay vì nhận qua constructor/interface | Inject qua constructor — NHƯNG bỏ qua cho tool nội bộ nhỏ không cần test/mock (đừng thêm interface chỉ để "cho đủ SOLID") |
+
+**Clean Code — áp dụng song song, không đợi review nhắc:**
+- Đặt tên biến/hàm/class thể hiện đúng ý định — không viết tắt khó hiểu, không tên chung chung (`data`, `temp`, `handler2`).
+- 1 function làm 1 việc, cùng 1 mức trừu tượng bên trong (không trộn logic nghiệp vụ với chi tiết I/O trong cùng method).
+- Không có dead code / commented-out code / TODO không có ticket đi kèm.
+- Không magic number/string lặp lại — đặt hằng số có tên.
+- DRY nhưng KHÔNG trừu tượng hoá sớm — 3 dòng lặp lại giống nhau tốt hơn 1 abstraction sai (xem nguyên tắc "Doing tasks" của hệ thống — không thiết kế cho tương lai giả định).
+- Comment chỉ giải thích WHY (constraint ẩn, workaround, invariant) — không giải thích WHAT (tên biến/hàm đã đủ rõ).
+
+> **Khi refactor SOLID cho code đã có (không phải viết mới):** giữ nguyên 100% public API/binding/behavior — đây là refactor thuần cấu trúc nội bộ, KHÔNG đổi tên property XAML binding, KHÔNG đổi signature public đang được nơi khác gọi, trừ khi task yêu cầu rõ đổi API. Verification Gate (build + test) vẫn bắt buộc sau refactor.
+
 ## Skills dùng trong công việc
 
 | Skill | Khi nào dùng |
@@ -73,7 +97,8 @@ correctness > security > maintainability > performance > style
 - [ ] Handle error + log đầy đủ?
 - [ ] Race condition / concurrency issue?
 - [ ] Security (input validation, SQL injection, secret)?
-- [ ] SOLID vi phạm nghiêm trọng?
+- [ ] SOLID: SRP (class/function chỉ 1 trách nhiệm)? OCP (thêm case mới không sửa code cũ tràn lan)? LSP (class con không phá hợp đồng cha)? ISP (interface không ép implement method thừa)? DIP (dependency inject qua constructor, không `new` cứng — trừ tool nhỏ)?
+- [ ] Clean code: tên rõ nghĩa, không dead code/magic number, DRY nhưng không over-abstraction?
 - [ ] Comment đúng chỗ (WHY, không phải WHAT)?
 - [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 

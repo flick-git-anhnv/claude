@@ -85,6 +85,10 @@ SetValue(ForegroundProperty, typeForeground, BindingPriority.Style);
 - ⚠️ Cùng họ với lỗi `KzBadge`: CLR setter gọi `UpdateClasses()` nhưng binding ghi thẳng
   vào StyledProperty nên không đi qua setter — nguyên tắc chung: **binding và XAML KHÔNG
   đi qua CLR setter**, phải xử lý trong `OnPropertyChanged` hoặc dùng đúng `BindingPriority`.
+  Đã fix và ghi lại chi tiết ở [[avalonia-kzbadge-onattachedtovisualtree-forces-neutral-class]]
+  (2026-08-06) — khác với case `Foreground` ở trên, `KzBadge` dùng property enum thường
+  (không phải `DynamicResource`) nên `IsSet(...)` dùng được, không gặp vấn đề resource
+  chưa phân giải xong.
 
 ## Tham chiếu
 

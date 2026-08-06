@@ -50,3 +50,6 @@ code-graph/*.pdf
 # Frontend build output & dependencies
 node_modules/
 tools/agent-dashboard/dist/
+.claude/settings.local.json
+tools/agent-dashboard/backend/agent_dashboard.db
+tools/agent-dashboard/backend/agent_dashboard/agent_dashboard.db
