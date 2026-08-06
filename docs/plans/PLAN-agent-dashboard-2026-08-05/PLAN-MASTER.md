@@ -1,8 +1,8 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 21:09
-status: active
+updated: 2026-08-06 21:35
+status: completed
 workflow: WF-FEATURE
 priority: P2
 ---
@@ -89,11 +89,11 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 ### Phase 7: Sprint 4 — Token thật theo từng step pipeline + fix UI-003 (Output token chart)
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 7.0 | Fix UI-003 — Output Tokens bị "nuốt" bởi Cache Read trên chart (tách 2 chart riêng) | Junior Developer | 🔄 | `steps/STEP-7.0-jd-fix-ui003.md` | - |
+| 7.0 | Fix UI-003 — Output Tokens bị "nuốt" bởi Cache Read trên chart (tách 2 chart riêng) | Junior Developer | ✅ | `steps/STEP-7.0-jd-fix-ui003.md` | 2026-08-06 20:20 |
 | 7.1 | Backend: parser lưu `parent_session_id`/`attribution_agent` cho session con (subagent transcript), DB join token thật, endpoint `/chain` trả `tokens_step` | Senior Developer | ✅ | `steps/STEP-7.1-sd-token-step.md` | 2026-08-06 20:47 |
 | 7.1b | Follow-up: thêm `result_summary`/`result_full`/`duration_ms` vào mỗi `history[]` entry của `/chain` — sync (tool_result) + async (queue-operation XML) | Senior Developer | ✅ | `steps/STEP-7.1b-result-summary.md` | 2026-08-06 21:09 |
 | 7.2 | Frontend: hiển thị token thật (input/output/cache) cho từng step trong PipelineCard/StepStation | Junior Developer | ✅ | `steps/STEP-7.2-jd-token-step-ui.md` | 2026-08-06 21:15 |
-| 7.3 | Review cuối + verify-pr + merge | Tech Lead | ⬜ | `steps/STEP-7.3-tl-review-sprint4.md` | - |
+| 7.3 | Review cuối + verify-pr + merge | Tech Lead | ✅ | `steps/STEP-7.3-tl-review-sprint4.md` | 2026-08-06 21:35 |
 
 > **Ghi chú Phase 7:** 7.0 độc lập, chạy song song mọi bước khác. 7.1 → 7.2 (frontend cần token_step API) → 7.3.
 
@@ -161,6 +161,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 19:53 | Bước 6.6 ✅ — UXR Sprint 3: 0 Critical/High, 2 Medium (dangling connector wrap, fallback title), 1 Low (spec deviation scroll→wrap). Sprint 3 PASS sẵn sàng dùng. Report+DOCX tại `docs/ux-review/`. | UX/UI Reviewer |
 | 2026-08-06 20:47 | Bước 7.1 ✅ — Backend Sprint 4: parser parent_session_id+attribution_agent, DB migration Sprint 4 (idempotent, backfill), get_session_chain → roster (14 vai trò, tech-lead 11 calls/9 matched, senior-dev 9 calls/7 matched), 201 tests pass. Commit 0ae3bed. result_summary defer → follow-up. | Senior Developer |
 | 2026-08-06 21:15 | Bước 7.2 ✅ — Frontend Sprint 4: AgentRosterItem.tsx (NEW), PipelineCard redesign roster[], fmtTokensCompact, RosterResponse types, history panel inline. tsc 0 errors, vite 861 modules. Commit 53b2a18. | Junior Developer |
+| 2026-08-06 21:35 | Bước 7.3 ✅ APPROVED — TL review Sprint 4: 220/220 pytest, tsc+vite build 0 errors, schema `/chain` khớp 100% backend↔frontend (roster + history{result_summary?,result_full?,duration_ms?}). Tích hợp thật port 7770 PASS 5/5: (a) UI-003 chart tách Input/Output rõ (output=12.96M visible), (b) roster 14 roles duplicates=[], (c) token+model đúng per role, (d) 36/45 history có result_summary (9 async chưa có tool_result — hành vi đúng), (e) không có session con `agent-xxx` trong list chính. **Sprint 4 APPROVED merge, PLAN → completed.** | Tech Lead |
 | 2026-08-06 15:55 | Bước 6.5 ✅ APPROVED — TL review Sprint 3: 170/170 pytest, tsc+vite 0 errors. Phát hiện & fix 2 lệch schema: (1) `ChainStep.subagent_type/display/description` từ string → `string\|null` + StepStation null-safe; (2) **BUG lớn**: `events.payload_json` truncate 2000 chars làm hỏng chain endpoint trên session thật — thêm 2 cột `subagent_type/subagent_description` vào events table, pipe qua insert_event, get_session_chain đọc trực tiếp. Backfill 1013 events + 333 titles từ JSONL. Tích hợp thật PASS 4/4: BUG-003 (0 empty started_at) + FR-002 (ctx_pct 50.1%/78.8%, max_context 200K/1M theo model) + FR-003 (72/100 recent sessions có title) + FR-001 (32 steps, 14 subagent types thật trên session 973154ca). Merge APPROVED → chuyển Bước 6.6 UXR. | Tech Lead |
 
 ---
