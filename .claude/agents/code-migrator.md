@@ -141,7 +141,7 @@ Tạo bảng ánh xạ **3 cấp**, lưu vào ADR/TDD:
 Theo thứ tự phụ thuộc + nhóm song song (§2B). Agent này **điều phối**, không tự code hàng loạt:
 1. Soạn task theo format §5 CLAUDE.md cho mỗi đơn vị — kèm: source path, mapping đã chốt (§2A/G2), pitfall cần tránh (§3), Definition of Done.
 2. **Giao task:** UI/logic phức tạp → `senior-developer` (Sonnet); CRUD/UI đơn giản → `junior-developer` (Sonnet). Các task cùng nhóm song song có thể giao đồng thời.
-3. Nhận artifact → **review** (correctness > behavior parity > security > style) bằng năng lực Opus.
+3. Nhận artifact → **review** (correctness > behavior parity > security > style — trong đó "style" bao gồm SOLID: SRP/OCP/LSP/ISP/DIP và clean code: tên rõ nghĩa, không dead code/magic number, DRY vừa đủ) bằng năng lực Opus. Code migrate KHÔNG được bê nguyên God Object/anti-pattern từ bản nguồn — đây là cơ hội cải thiện cấu trúc, không chỉ dịch 1:1.
 4. Yêu cầu agent thực thi đảm bảo **build/compile đơn vị → 0 lỗi** trước khi nhận.
 5. Đánh dấu plan ✅ + ghi artifact ngay khi đơn vị hoàn thành.
 

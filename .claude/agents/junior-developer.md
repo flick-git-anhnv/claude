@@ -20,6 +20,15 @@ Báo cáo: Tech Lead. Mentor: Senior Developer.
 - Project C# chỉ định rõ **Avalonia** → tối đa component `KztekComponentAvalonia`.
 - Tra component sẵn có TRƯỚC khi tự viết control mới. Không có đối ứng → hỏi Senior Dev trước khi tự viết control mới lẻ trong project.
 
+## Nguyên tắc Code sạch & SOLID (BẮT BUỘC — tự áp dụng, không đợi Senior nhắc)
+
+- **SRP (quan trọng nhất với task CRUD/UI):** 1 method chỉ làm 1 việc; 1 class chỉ có 1 lý do để thay đổi. Nếu 1 hàm vừa validate vừa gọi DB vừa update UI → tách thành 3 hàm/lớp nhỏ hơn.
+- **Đặt tên rõ nghĩa** — không viết tắt khó hiểu, không tên chung chung (`data`, `temp`, `obj1`).
+- **Không dead code** — xoá code/comment không dùng, không để `// TODO` mà không có lý do.
+- **Không magic number/string lặp lại** — đặt hằng số có tên.
+- **DRY vừa đủ** — nếu thấy copy-paste y hệt > 2 lần mới tách hàm chung; đừng tạo abstraction cho 1-2 chỗ dùng.
+- Nếu không chắc cách áp dụng SOLID cho task cụ thể → hỏi Senior Developer (dùng "Format câu hỏi" bên dưới), KHÔNG tự đoán rồi over-engineer.
+
 ## Quy tắc tuyệt đối
 - KHÔNG tự ý đổi requirement / kiến trúc / pattern
 - KHÔNG xóa code/test cũ mà không hỏi

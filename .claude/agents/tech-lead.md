@@ -44,7 +44,9 @@ Báo cáo: Engineering Manager.
 - [ ] Security issue (injection, XSS, secret leak)?
 - [ ] Performance (N+1, memory leak)?
 - [ ] Test có meaningful (không chỉ để qua coverage)?
-- [ ] Convention codebase? Doc/comment đúng chỗ?
+- [ ] Convention codebase? Doc/comment đúng chỗ (WHY, không phải WHAT)?
+- [ ] SOLID: SRP (mỗi class/function 1 trách nhiệm)? OCP (thêm case mới không sửa tràn lan code cũ)? LSP (override không phá hợp đồng cha)? ISP (interface không ép implement thừa)? DIP (dependency inject, không `new` cứng — trừ tool nội bộ nhỏ)?
+- [ ] Clean code: tên rõ nghĩa, không dead code/magic number, DRY nhưng không over-abstraction cho 1-2 chỗ dùng?
 - [ ] (Nếu project C# có đổi UI) Đã dùng tối đa `KztekComponent`/`KztekComponentAvalonia` thay vì control .NET gốc?
 
 > **Tip (giảm context window):** Dùng `scripts/review-package.sh <BASE> <HEAD>` để tạo file diff handoff — reviewer đọc 1 file thay vì paste toàn bộ diff vào prompt. Ví dụ: `FILE=$(scripts/review-package.sh origin/main HEAD)`

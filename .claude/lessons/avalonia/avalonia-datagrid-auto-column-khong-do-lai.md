@@ -3,7 +3,7 @@ category: avalonia
 tags: [datagrid, column-width, auto-sizing, kzbadge]
 severity: medium
 created: 2026-07-27
-updated: 2026-07-27
+updated: 2026-08-06
 project-origin: iPGSv4
 ---
 
@@ -72,3 +72,19 @@ MinWidth quá nhỏ.
 
 - Commit tham chiếu: `f2ea635` (repo iPGSv4), phát hiện 2026-07-27.
 - Project liên quan: `iPGSv4`.
+
+## Lần gặp lại (App-Access-V2, 2026-08-06)
+
+Cùng root cause, biến thể khác: KHÔNG cần thêm dòng mới — chỉ cần Status/Result của MỘT dòng
+đã tồn tại đổi qua INPC (VD "Đang thực hiện" → "Xong", "Đang xử lý" → "Đã xử lý") là badge đã
+bị kẹt bề rộng cũ, hiện cụt không dấu "..." (VD "Thành công" hiện "Th", "Xong" hiện "Xo") —
+KHÔNG cần đợi tới lúc user thêm dòng ở cuối list. Kèm thêm effect phụ: đổi
+`ObservableCollection.Add` → `Insert(0, ...)` (newest-on-top) làm container DataGrid bị tái sử
+dụng dồn dập hơn (đặc biệt khi code-behind có tầng filter riêng — `_filteredRows.Clear()` +
+`Add()` lại toàn bộ mỗi lần `CollectionChanged`), khiến bug lộ ra RÕ và THƯỜNG XUYÊN hơn hẳn so
+với trước (trước đó Add ở cuối, dòng top ít đổi nên ít khi lộ). Đã thử `DataGrid.InvalidateMeasure()`
+sau khi rebuild ItemsSource trước — KHÔNG fix được (cột Auto tự "chốt" bề rộng nội bộ, không phải
+do view chưa remeasure) — đúng như ghi chú "Đừng cố fix bằng MinWidth" ở trên, InvalidateMeasure
+cũng vô ích vì lý do tương tự. Fix cuối cùng: đổi `Width="Auto" MinWidth="..."` → `Width="<số cố
+định>"` cho đúng 3 cột (`RegisterStatusPanelView.axaml` "Trạng thái", `RegisterStatusTabView.axaml`
+"Trạng thái", `ServerDataChangeCardView.axaml` "Kết quả") — khớp 100% giải pháp gốc ở trên.

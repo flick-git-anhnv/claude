@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "agent-dashboard"
+version = "0.1.0"
+description = "KZTEK Agent Dashboard — realtime Claude Code session monitor"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "watchdog>=4.0",
+    "aiosqlite>=0.20",
+    "pydantic>=2.5",
+]
+
+[project.scripts]
+agent-dashboard = "agent_dashboard.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["agent_dashboard"]
+omit = ["tests/*"]
