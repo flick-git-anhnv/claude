@@ -40,8 +40,9 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
         className="inline-flex flex-col rounded p-2"
         style={{
           width: 196,
-          minHeight: 88,
+          height: 100,
           flexShrink: 0,
+          overflow: 'hidden',
           background: 'rgba(255, 170, 128, 0.12)',
           border: '1px solid rgba(240, 89, 34, 0.3)',
           borderLeft: '4px solid #F05922',
@@ -140,8 +141,9 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
       className="inline-flex flex-col rounded p-2 cursor-default"
       style={{
         width: 196,
-        minHeight: 88,
+        height: 100,
         flexShrink: 0,
+        overflow: 'hidden',
         background: '#F5F5F5',
         border: '1px solid #CBCBCB',
         borderRadius: 6,
