@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 11:15
+updated: 2026-08-06 08:52
 status: in-progress
 workflow: WF-FEATURE
 priority: P2
@@ -58,7 +58,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 ### Phase 4: Kiểm thử & Deploy
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 4.1 | Thực thi test plan, log bug | QA Engineer | ⬜ | `steps/STEP-4.1-qae-test.md` | - |
+| 4.1 | Thực thi test plan, log bug | QA Engineer | ✅ | `steps/STEP-4.1-qae-test.md` | 2026-08-06 08:52 |
 | 4.2 | Sign-off chất lượng (P2 — QAL review nếu còn P0/P1 bug) | QA Lead | ⬜ | `steps/STEP-4.2-qal-signoff.md` | - |
 | 4.3 | Deploy local (npm/uvicorn start, verify chạy được) | DevOps Engineer | ⬜ | `steps/STEP-4.3-doe-deploy.md` | - |
 | 4.4 | Approve + smoke test cuối, verify dashboard live | DevOps Lead | ⬜ | `steps/STEP-4.4-dol-approve.md` | - |
@@ -103,6 +103,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 08:40 | Bước 3.5 🔄 JD phần UI-001 xong — normalizeIso()+fmtDateShort() fix NaN bug Python microseconds; vitest setup, 20 tests pass; tsc+build 0 lỗi; lesson ghi vào react-web/; CODE-GRAPH cập nhật | Junior Developer |
 | 2026-08-06 08:35 | Bước 3.6 🛑 REQUEST CHANGES — UI-001 APPROVED, UI-002 fix chưa xử lý edge case `last_event_at=''` (242/245 sessions Running sai sau restart). SD cần sửa `_parse_ts('')` → epoch + thêm test + optional cleanup migration. Chưa chuyển QA. | Tech Lead |
 | 2026-08-06 11:15 | Bước 3.6 ✅ verify #2 PASS — `_parse_ts('')`→epoch OK, 52/52 tests, Running 244→3 sau restart uvicorn 7770, 347 Ended trong history. APPROVED merge → Bước 4.1 QAE. | Tech Lead |
+| 2026-08-06 08:52 | Bước 4.1 ✅ — QAE thực thi 44 TC (39 Pass, 2 Fail, 2 Skip); UI-001/UI-002 regression PASS; BUG-001 DELETE 500 (P2), BUG-002 Duplicate name (P2); TC+BUG DOCX/PDF tạo xong | QA Engineer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
