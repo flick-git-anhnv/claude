@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 08:35
+updated: 2026-08-06 10:30
 status: in-progress
 workflow: WF-FEATURE
 priority: P2
@@ -52,8 +52,8 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 3.2 | Code frontend: dashboard UI (agent list, token chart, account switcher), WebSocket client | Junior Developer | ✅ | `steps/STEP-3.2-jd-frontend.md` | 2026-08-05 23:59 |
 | 3.3 | Code review + verify-pr + merge decision (SD + JD) | Tech Lead | ✅ | `steps/STEP-3.3-tl-code-review.md` | 2026-08-06 00:45 |
 | 3.4 | UX/UI Review — chạy app thật, screenshot, đánh giá C1–C7 | UX/UI Reviewer | ✅ | `steps/STEP-3.4-uxr-review.md` | 2026-08-06 08:30 |
-| 3.5 | Fix 2 issue High từ UXR (UI-001 frontend, UI-002 backend) trước khi QA | Senior Developer ∥ Junior Developer | ✅ | `steps/STEP-3.5-fix-uxr-high.md` | 2026-08-06 09:10 |
-| 3.6 | TL verify 2 fix + quyết định merge cuối trước QA | Tech Lead | 🛑 | `steps/STEP-3.6-tl-verify-fix.md` | - |
+| 3.5 | Fix 2 issue High từ UXR (UI-001 frontend, UI-002 backend) trước khi QA | Senior Developer ∥ Junior Developer | ✅ | `steps/STEP-3.5-fix-uxr-high.md` | 2026-08-06 10:30 |
+| 3.6 | TL verify 2 fix + quyết định merge cuối trước QA | Tech Lead | 🔄 | `steps/STEP-3.6-tl-verify-fix.md` | - |
 
 ### Phase 4: Kiểm thử & Deploy
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
@@ -76,7 +76,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 - [ ] `docs/devops/DEPLOY-agent-dashboard.md` — Deploy checklist
 
 ## Blockers
-- Bước 3.6 🛑 REQUEST CHANGES: UI-002 chưa xử lý edge case `last_event_at=''` — 242/245 sessions cũ vẫn Running sau restart. SD cần sửa `_parse_ts('')` → epoch (thay vì `now()`), thêm test, và optional cleanup migration. Chi tiết: `steps/STEP-3.6-tl-verify-fix.md`.
+- ~~Bước 3.6 🛑 REQUEST CHANGES~~ — RESOLVED (commit `2c0196d`): `_parse_ts('')` giờ trả epoch, Running → 3 sessions. Chờ TL re-verify Bước 3.6.
 
 ## Quyết định / Ghi chú tổng
 - CTO step (1.5) ⏭️ Skipped: P2, tool nội bộ, không đụng production auth/payment/DB schema — không đủ điều kiện WF-FEATURE Bước 5.
