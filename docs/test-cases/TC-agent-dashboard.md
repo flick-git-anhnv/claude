@@ -869,3 +869,41 @@
 - UI-004: Icon color — vẫn là Low, không thay đổi
 - UI-005: Reactive update AccountManager — vẫn là Medium, không thay đổi
 - UI-006: Missing Reveal button — vẫn là Low, không thay đổi
+
+---
+
+## Sign-off QA Lead
+
+**Ngày:** 2026-08-06
+**QA Lead:** QA Lead (KZTEK)
+**Build:** commit ff0bd2e (post-merge Bước 3.6 APPROVED)
+
+### Đánh giá Priority
+
+| Bug | QAE Priority | QAL Đánh giá | Lý do |
+|---|---|---|---|
+| BUG-001 DELETE HTTP 500 | P2 | **Đồng ý P2** | Data operation thành công (account bị xóa đúng). Chỉ HTTP status code sai (500 thay vì 204). Không có data loss, không crash hệ thống. UX confusion là real nhưng không đủ mức P1 với tool nội bộ 1 user. |
+| BUG-002 Duplicate name | P2 | **Đồng ý P2** | Missing business constraint validation. Không gây crash hay mất data. Single-user nội bộ — risk chấp nhận được khi biết workaround (kiểm tra trước khi tạo). |
+
+**Lưu ý về TC-030 (Priority P1 trong test case vs BUG-001 Priority P2):** Priority trong test case (P1) phản ánh tầm quan trọng của path DELETE khi test — đây là critical path cần cover. Priority bug (P2) phản ánh mức độ khẩn cấp fix — vì data integrity không bị ảnh hưởng, P2 là đúng.
+
+### Checklist Exit Criteria
+
+- [x] P0 bug = 0 (confirmed, không có P0)
+- [x] P1 bug = 0 (confirmed, không có P1)
+- [x] Regression P0 user stories = 100% PASS (US-001..US-004 tất cả PASS)
+- [x] UI-001/UI-002 regression PASS
+- [x] Coverage P0 stories: 100% (TC-001..TC-015 tất cả PASS hoặc SKIP có lý do)
+- [x] Coverage P1 stories: ≥80% PASS (US-005, US-006 100%; US-007: 13/15 PASS; US-008: PASS)
+
+### Quyết định
+
+**SIGN-OFF: PASS — Cho phép deploy**
+
+Không còn P0/P1 bug. Hai bug tồn đọng đều là P2, phù hợp với risk tolerance của tool nội bộ P2 (1 user, local only). Core functionality hoạt động đúng: realtime agent monitoring, token tracking, data persistence, account management (CRUD đúng về data, chỉ HTTP status sai một route).
+
+**Known Issues (backlog fix vào iteration tiếp theo):**
+1. BUG-001: Fix `delete_account` route → `async def` + await broadcast. Ref: `docs/bugs/BUG-001-delete-account-500.md`
+2. BUG-002: Thêm duplicate-name check trong `AccountStore.add_account()`. Ref: `docs/bugs/BUG-002-duplicate-account-name.md`
+
+**QA Lead ký:** QA Lead — 2026-08-06
