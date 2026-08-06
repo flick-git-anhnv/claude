@@ -61,11 +61,25 @@ Cộng với test có sẵn `test_activate_oauth_restores_on_write_failure` → 
 ## Artifact
 - Không tạo file mới (audit-only). Rủi ro ghi trong step file này + Handoff Payload cho Bước 5.5.
 
+## H-1 FIXED (2026-08-06 — Bước 5.4b)
+
+H-1 được fix trong cùng bước này (không trì hoãn sang Sprint 3) bởi Senior Developer:
+
+**Thay đổi:**
+- `oauth_service.py`: `activate_oauth_account` nhận thêm param `refresh_lock: asyncio.Lock`; toàn bộ Steps 1–6 (read + backup + write credentials) wrapped bởi `async with refresh_lock:`.
+- `main.py`: expose `_oauth_refresh_lock` lên `app.state.oauth_refresh_lock` trong lifespan.
+- `routes/accounts.py`: thêm `_get_refresh_lock()` helper; truyền lock vào `activate_oauth_account` call.
+- `tests/test_accounts_oauth.py`: cập nhật 5 test hiện có (pass `asyncio.Lock()`); thêm `test_activate_and_scheduler_serialized_by_lock` — regression test concurrency dùng `asyncio.gather`.
+
+**Deadlock analysis:** Không có deadlock — `_do_swap_and_invoke` giữ lock KHÔNG gọi `activate_oauth_account`; `activate` chỉ được gọi từ HTTP route handler, không giữ lock nào khi đó.
+
+**Verification:** 119/119 tests pass. Commit: `b1866cc`.
+
 ## Handoff Payload — bước sau đọc phần này
-- do_not_redo: Đã audit code + chạy test exception mid-swap. Bước 5.5 (TL code review cuối) KHÔNG cần audit lại STRIDE.
-- watch_out: **H-1 race** — nếu Bước 5.5 review thấy có thể thêm 1 dòng `refresh_lock` vào `activate_oauth_account` mà không tăng scope quá — có thể inline fix; nếu không → mở BUG P1 Sprint 3.
-- next_inputs: Kết luận PASS có điều kiện. 3 known-issues (H-1, M-1, M-2) — ghi vào PR description của Sprint 2 merge.
+- do_not_redo: Đã audit STRIDE + fix H-1 + 119 tests pass. Bước 5.5 KHÔNG cần audit STRIDE lại.
+- watch_out: H-1 đã fix (commit b1866cc). Known-issues còn lại: M-1 (endpoint auth), M-2 (backup cleanup) — Sprint 3. Không còn BUG P1 blocking.
+- next_inputs: Kết luận PASS đầy đủ. 2 known-issues còn lại (M-1, M-2) là tech debt Sprint 3 — ghi vào PR description Sprint 2 merge.
 
 ## Commit
-- Hash: (chưa commit — sẽ push cùng cập nhật MASTER)
-- Đã push: sẽ push
+- Hash: b1866cc (H-1 fix — fix(oauth): activate_oauth_account acquires refresh_lock)
+- Đã push: branch research/skills-2026-08-05

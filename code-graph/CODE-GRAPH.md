@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** senior-developer | **Version:** 1.2
+**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** senior-developer | **Version:** 1.3
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -73,7 +73,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
 | Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 13 components, 4 pages, WebSocket client | `utils/format.ts` (normalizeIso, fmtRelative, fmtDateShort), `api/interceptor.ts`, `state/wsReducer.ts` |
-| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py`, `state_manager.py`, `db.py`, `watcher.py`, `routes/`, `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate swap, auto-refresh scheduler, subprocess invoke) |
+| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py` (exposes `app.state.oauth_refresh_lock`), `state_manager.py`, `db.py`, `watcher.py`, `routes/accounts.py` (CRUD + activate, `_get_refresh_lock()` helper — H-1 fix), `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate_oauth_account requires `refresh_lock: asyncio.Lock`, auto-refresh scheduler, subprocess invoke) |
 
 ---
 
@@ -210,6 +210,9 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-07-12 | `code-graph/CODE-GRAPH.md` | Add | Tạo bản đồ codebase ban đầu cho workspace | senior-developer |
 | 2026-08-06 | `tools/agent-dashboard/frontend/src/utils/format.ts` | Update | Thêm `normalizeIso()` + `fmtDateShort()` — fix NaN bug với Python microseconds timestamp; thêm fallback >24h | junior-developer |
 | 2026-08-06 | `tools/agent-dashboard/frontend/` | Add | Thêm vitest + `format.test.ts` (20 tests) — coverage `fmtRelative`, `normalizeIso`, `fmtDateShort` | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/oauth_service.py` | Update | H-1 fix: `activate_oauth_account` thêm param `refresh_lock: asyncio.Lock`, wrap Steps 1-6 với `async with refresh_lock:` — serialise với background refresh scheduler | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/main.py` | Update | H-1 fix: expose `_oauth_refresh_lock` lên `app.state.oauth_refresh_lock` trong lifespan | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/routes/accounts.py` | Update | H-1 fix: thêm `_get_refresh_lock()` helper, truyền lock vào `activate_oauth_account` call | senior-developer |
 
 ---
 
