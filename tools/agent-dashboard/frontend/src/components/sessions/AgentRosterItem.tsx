@@ -131,7 +131,7 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
     )
   }
 
-  /* DONE — hover expand */
+  /* DONE — fixed size, hover chỉ đổi màu nền/border (không thay đổi kích thước) */
   return (
     <div
       role="listitem"
@@ -139,30 +139,28 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
       title={entry.latest_description || undefined}
       className="inline-flex flex-col rounded p-2 cursor-default"
       style={{
-        width: 148,
-        minHeight: 80,
+        width: 196,
+        minHeight: 88,
         flexShrink: 0,
         background: '#F5F5F5',
         border: '1px solid #CBCBCB',
         borderRadius: 6,
         opacity: 0.65,
-        transition: 'width 150ms ease, opacity 150ms ease, box-shadow 150ms ease',
+        transition: 'opacity 150ms ease, box-shadow 150ms ease, background 150ms ease, border-color 150ms ease',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLDivElement
-        el.style.width = '168px'
         el.style.opacity = '1'
         el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.1)'
-        el.style.position = 'relative'
-        el.style.zIndex = '1'
+        el.style.background = '#EBEBEB'
+        el.style.borderColor = '#B8B3D6'
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLDivElement
-        el.style.width = '148px'
         el.style.opacity = '0.65'
         el.style.boxShadow = ''
-        el.style.position = ''
-        el.style.zIndex = ''
+        el.style.background = '#F5F5F5'
+        el.style.borderColor = '#CBCBCB'
       }}
     >
       {/* Dòng 1: checkmark + tên + "(xN)" badge */}
