@@ -1,4 +1,4 @@
-import type { Session, HistorySession, Account, TokenSummaryResponse, SessionHistoryResponse } from '../types'
+import type { Session, HistorySession, Account, TokenSummaryResponse, SessionHistoryResponse, ChainResponse } from '../types'
 
 // ─── Mock sessions (active) ────────────────────────────────────────────────────
 
@@ -7,6 +7,7 @@ const ago = (secs: number) => new Date(now.getTime() - secs * 1000).toISOString(
 
 export const MOCK_SESSIONS: Session[] = [
   {
+    // FR-003: title from ai_title | FR-002: low context | FR-001: has chain (dispatcher)
     session_id: 'sess-001',
     project: 'claude-git',
     agent_type: 'senior-developer',
@@ -14,8 +15,19 @@ export const MOCK_SESSIONS: Session[] = [
     started_at: ago(480),
     last_event_at: ago(15),
     token_total: { input: 12450, output: 3210, cache_creation: 400, cache_read: 8200 },
+    current_subagent: {
+      type: 'senior-developer',
+      display_name: 'Senior Developer',
+      activity: 'Implement backend: parser, DB migration, chain endpoint',
+      at: ago(15),
+    },
+    title: 'WF-FEATURE: Agent Dashboard Sprint 3 — Backend Track C',
+    context_pct: 4.5,
+    last_input_total: 45000,
+    max_context: 1000000,
   },
   {
+    // FR-003: null title (fallback to session_id) | FR-002: warning range | no chain
     session_id: 'sess-002',
     project: 'claude-git',
     agent_type: 'junior-developer',
@@ -23,8 +35,13 @@ export const MOCK_SESSIONS: Session[] = [
     started_at: ago(300),
     last_event_at: ago(5),
     token_total: { input: 5100, output: 1340, cache_creation: 0, cache_read: 2100 },
+    title: null,
+    context_pct: 72.3,
+    last_input_total: 144600,
+    max_context: 200000,
   },
   {
+    // FR-003: title | FR-002: context_pct=0 → badge hidden | FR-001: has done chain
     session_id: 'sess-003',
     project: 'ipgs-v4',
     agent_type: 'tech-lead',
@@ -32,8 +49,13 @@ export const MOCK_SESSIONS: Session[] = [
     started_at: ago(2700),
     last_event_at: ago(420),
     token_total: { input: 22100, output: 8450, cache_creation: 900, cache_read: 15000 },
+    title: 'WF-BUGFIX: Fix BUG-001 DELETE /api/accounts 500',
+    context_pct: 0,
+    last_input_total: 0,
+    max_context: 200000,
   },
   {
+    // FR-003: title | FR-002: danger range (>90%) | no chain
     session_id: 'sess-004',
     project: 'ipgs-v4',
     agent_type: 'qa-engineer',
@@ -41,8 +63,13 @@ export const MOCK_SESSIONS: Session[] = [
     started_at: ago(8400),
     last_event_at: ago(3600),
     token_total: { input: 8230, output: 2100, cache_creation: 200, cache_read: 4500 },
+    title: 'WF-FEATURE: QA sign-off Sprint 2 — test plan execution',
+    context_pct: 91.5,
+    last_input_total: 91500,
+    max_context: 100000,
   },
   {
+    // FR-003: null title (fallback) | FR-002: null → badge hidden | no chain
     session_id: 'sess-005',
     project: 'claude-git',
     agent_type: 'product-manager',
@@ -50,8 +77,13 @@ export const MOCK_SESSIONS: Session[] = [
     started_at: ago(14400),
     last_event_at: ago(7200),
     token_total: { input: 15600, output: 4200, cache_creation: 300, cache_read: 9800 },
+    title: null,
+    context_pct: null,
+    last_input_total: null,
+    max_context: null,
   },
   {
+    // No Sprint 3 fields — backward-compat test (undefined fields)
     session_id: 'sess-006',
     project: 'kztek-site',
     agent_type: 'business-analyst',
@@ -61,6 +93,101 @@ export const MOCK_SESSIONS: Session[] = [
     token_total: { input: 6800, output: 1900, cache_creation: 150, cache_read: 3200 },
   },
 ]
+
+// ─── Mock chain data (FR-001 — GET /api/sessions/{id}/chain) ─────────────────
+
+export function getMockChain(sessionId: string): ChainResponse {
+  // sess-001 (Running): 5-step chain — 4 done, 1 active (SD)
+  if (sessionId === 'sess-001') {
+    return {
+      session_id: 'sess-001',
+      session_state: 'Running',
+      steps: [
+        {
+          step_index: 0,
+          subagent_type: 'product-manager',
+          subagent_display: 'Product Manager',
+          description: 'Viết PRD Agent Dashboard: mục tiêu, user persona, feature list',
+          started_at: ago(480),
+          status: 'done',
+        },
+        {
+          step_index: 1,
+          subagent_type: 'business-analyst',
+          subagent_display: 'Business Analyst',
+          description: 'Viết User Stories FR-001/FR-002/FR-003 với Acceptance Criteria',
+          started_at: ago(420),
+          status: 'done',
+        },
+        {
+          step_index: 2,
+          subagent_type: 'ui-ux-designer',
+          subagent_display: 'UI/UX Designer',
+          description: 'Wireframe pipeline view, ContextBadge, SessionCard v2',
+          started_at: ago(360),
+          status: 'done',
+        },
+        {
+          step_index: 3,
+          subagent_type: 'tech-lead',
+          subagent_display: 'Tech Lead',
+          description: 'TDD ADDENDUM Sprint 3: §22-28 chain endpoint, context snapshot, title field',
+          started_at: ago(240),
+          status: 'done',
+        },
+        {
+          step_index: 4,
+          subagent_type: 'senior-developer',
+          subagent_display: 'Senior Developer',
+          description: 'Implement backend: parser ai_title, DB migration, snapshot last_*, endpoint /chain',
+          started_at: ago(60),
+          status: 'active',
+        },
+      ],
+    }
+  }
+
+  // sess-003 (Idle): 3-step chain — all done
+  if (sessionId === 'sess-003') {
+    return {
+      session_id: 'sess-003',
+      session_state: 'Idle',
+      steps: [
+        {
+          step_index: 0,
+          subagent_type: 'senior-developer',
+          subagent_display: 'Senior Developer',
+          description: 'Fix BUG-001: DELETE /api/accounts/:id returns 500 khi account active',
+          started_at: ago(2700),
+          status: 'done',
+        },
+        {
+          step_index: 1,
+          subagent_type: 'tech-lead',
+          subagent_display: 'Tech Lead',
+          description: 'Code review PR fix BUG-001, request changes: thiếu test edge case',
+          started_at: ago(2100),
+          status: 'done',
+        },
+        {
+          step_index: 2,
+          subagent_type: 'qa-engineer',
+          subagent_display: 'QA Engineer',
+          description: 'Verify fix BUG-001 trên staging, regression test DELETE account',
+          started_at: ago(1800),
+          status: 'done',
+        },
+      ],
+    }
+  }
+
+  // All other sessions: empty chain (no Agent tool calls)
+  return {
+    session_id: sessionId,
+    session_state: 'Ended',
+    steps: [],
+  }
+}
 
 // ─── Mock session history (ended) ─────────────────────────────────────────────
 

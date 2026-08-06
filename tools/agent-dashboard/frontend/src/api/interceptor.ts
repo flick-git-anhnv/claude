@@ -8,6 +8,7 @@ import {
   MOCK_ACCOUNTS,
   getMockTokenSummary,
   getMockSessionHistory,
+  getMockChain,
 } from './mockData'
 import type { Account } from '../types'
 
@@ -107,6 +108,13 @@ function handleMockRequest(input: RequestInfo | URL, init?: RequestInit): Respon
     if (!account) return errorResponse('ACCOUNT_NOT_FOUND', 'Không tìm thấy tài khoản', 404)
     // Return a fake full key for mock
     return jsonResponse({ api_key: `sk-ant-api01-mock-key-for-${id}-XXXX` })
+  }
+
+  // GET /api/sessions/:id/chain  (FR-001 — Sprint 3)
+  const chainMatch = path.match(/^\/api\/sessions\/([^/]+)\/chain$/)
+  if (method === 'GET' && chainMatch) {
+    const sessionId = chainMatch[1]
+    return jsonResponse(getMockChain(sessionId))
   }
 
   // GET /api/health

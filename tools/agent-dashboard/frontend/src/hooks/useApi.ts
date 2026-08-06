@@ -1,4 +1,4 @@
-import type { Account, OAuthStatus, Session, SessionHistoryResponse, TokenSummaryResponse, RangeFilter } from '../types'
+import type { Account, OAuthStatus, Session, SessionHistoryResponse, TokenSummaryResponse, RangeFilter, ChainResponse } from '../types'
 
 const BASE = '/api'
 
@@ -81,6 +81,11 @@ export function useApi() {
     return apiFetch<{ api_key: string }>(`${BASE}/accounts/${id}/reveal`).then(d => d.api_key)
   }
 
+  // ─── Chain (FR-001 Sprint 3) ──────────────────────────────────────────────
+  function getSessionChain(sessionId: string): Promise<ChainResponse> {
+    return apiFetch<ChainResponse>(`${BASE}/sessions/${sessionId}/chain`)
+  }
+
   return {
     getSessions,
     getSessionsHistory,
@@ -93,5 +98,6 @@ export function useApi() {
     deleteAccount,
     activateAccount,
     revealApiKey,
+    getSessionChain,
   }
 }

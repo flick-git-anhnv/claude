@@ -65,6 +65,24 @@ function applyDelta(sessions: Session[], delta: DeltaEvent): Session[] {
       )
     }
 
+    // Sprint 3: session title update (ai_title or user_text)
+    case 'session_title_changed': {
+      return sessions.map(s =>
+        s.session_id === delta.session_id
+          ? { ...s, title: delta.title }
+          : s
+      )
+    }
+
+    // Sprint 3: context window snapshot update
+    case 'session_context_updated': {
+      return sessions.map(s =>
+        s.session_id === delta.session_id
+          ? { ...s, context_pct: delta.context_pct, last_input_total: delta.last_input_total, max_context: delta.max_context }
+          : s
+      )
+    }
+
     default:
       return sessions
   }

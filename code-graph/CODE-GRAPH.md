@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** senior-developer | **Version:** 1.3
+**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** junior-developer | **Version:** 1.4
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -72,7 +72,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | Templates | `.claude/templates/` | Khung mẫu cho plan, eval, code-graph | `PLAN-template.md`, `EVAL-template.md`, `CODE-GRAPH-template.md` |
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
-| Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 13 components, 4 pages, WebSocket client | `utils/format.ts` (normalizeIso, fmtRelative, fmtDateShort), `api/interceptor.ts`, `state/wsReducer.ts` |
+| Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 17 components, 4 pages, WebSocket client | `utils/format.ts`, `api/interceptor.ts`, `state/wsReducer.ts`, `types/index.ts` (ChainStep, ChainResponse, Sprint 3 Session fields), `components/sessions/ContextBadge.tsx` (FR-002), `components/sessions/StepStation.tsx` (FR-001), `components/sessions/PipelineCard.tsx` (FR-001), `components/sessions/SessionCard.tsx` (v2 — FR-001/002/003), `hooks/useApi.ts` (+getSessionChain) |
 | Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py` (exposes `app.state.oauth_refresh_lock`), `state_manager.py`, `db.py`, `watcher.py`, `routes/accounts.py` (CRUD + activate, `_get_refresh_lock()` helper — H-1 fix), `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate_oauth_account requires `refresh_lock: asyncio.Lock`, auto-refresh scheduler, subprocess invoke) |
 
 ---
@@ -213,6 +213,16 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/oauth_service.py` | Update | H-1 fix: `activate_oauth_account` thêm param `refresh_lock: asyncio.Lock`, wrap Steps 1-6 với `async with refresh_lock:` — serialise với background refresh scheduler | senior-developer |
 | 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/main.py` | Update | H-1 fix: expose `_oauth_refresh_lock` lên `app.state.oauth_refresh_lock` trong lifespan | senior-developer |
 | 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/routes/accounts.py` | Update | H-1 fix: thêm `_get_refresh_lock()` helper, truyền lock vào `activate_oauth_account` call | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/types/index.ts` | Update | Sprint 3: thêm `ChainStep`, `ChainResponse`; thêm `title`, `context_pct`, `last_input_total`, `max_context` vào Session; thêm `session_title_changed`, `session_context_updated` DeltaEvent | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/sessions/ContextBadge.tsx` | Add | NEW FR-002: progress bar 48×8px + %text, ngưỡng màu navy/warning/danger, ẩn khi context_pct=0/null | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/sessions/StepStation.tsx` | Add | NEW FR-001: station done (96px, mờ, hover expand) / active (164px, pulse dot #F05922, border-left cam) | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/sessions/PipelineCard.tsx` | Add | NEW FR-001: fetch /chain, scroll ngang + fade gradient (pointer-events:none), auto-scroll active station | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/sessions/SessionCard.tsx` | Add | NEW v2 (upgrade AgentCard): tích hợp FR-001/002/003 — title row, ContextBadge, PipelineCard | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/agents/AgentStatusPanel.tsx` | Update | Switch AgentCard → SessionCard (Sprint 3 upgrade) | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/state/wsReducer.ts` | Update | Sprint 3: handle session_title_changed + session_context_updated delta events | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/api/mockData.ts` | Update | Sprint 3: thêm title/context_pct/last_input_total/max_context vào MOCK_SESSIONS; thêm getMockChain() | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/api/interceptor.ts` | Update | Sprint 3: thêm handler GET /api/sessions/:id/chain | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/hooks/useApi.ts` | Update | Sprint 3: thêm getSessionChain(sessionId) | junior-developer |
 
 ---
 

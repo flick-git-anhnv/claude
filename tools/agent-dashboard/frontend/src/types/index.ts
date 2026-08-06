@@ -5,6 +5,22 @@ export type WsStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnect
 export type RangeFilter = '7d' | '30d' | '12w' | '6m';
 export type ViewMode = 'by-agent' | 'by-project';
 
+// Sprint 3 — Chain types (FR-001)
+export interface ChainStep {
+  step_index: number;
+  subagent_type: string;
+  subagent_display: string;
+  description: string;
+  started_at: string;       // ISO8601
+  status: 'done' | 'active';
+}
+
+export interface ChainResponse {
+  session_id: string;
+  session_state: SessionState;
+  steps: ChainStep[];
+}
+
 export interface TokenCounts {
   input: number;
   output: number;
@@ -29,6 +45,11 @@ export interface Session {
   last_event_at: string;    // ISO8601
   token_total: TokenCounts;
   current_subagent?: CurrentSubagent | null;  // Track B
+  // Sprint 3 fields — optional, populated when backend Track C is deployed
+  title?: string | null;
+  context_pct?: number | null;
+  last_input_total?: number | null;
+  max_context?: number | null;
 }
 
 /** Track B: project group for 'Theo Dự án' view */
@@ -117,7 +138,9 @@ export type DeltaEvent =
   | { event: 'token_update'; session_id: string; delta: Partial<TokenCounts>; cumulative: TokenCounts }
   | { event: 'account_changed'; active_id: string; name: string; key_masked: string }
   | { event: 'watcher_status'; alive: boolean; error?: string }
-  | { event: 'subagent_changed'; session_id: string; subagent: CurrentSubagent };  // Track B
+  | { event: 'subagent_changed'; session_id: string; subagent: CurrentSubagent }   // Track B
+  | { event: 'session_title_changed'; session_id: string; title: string; source: 'ai_title' | 'user_text' }  // Sprint 3
+  | { event: 'session_context_updated'; session_id: string; context_pct: number; last_input_total: number; max_context: number };  // Sprint 3
 
 export interface WsMessage {
   type: 'snapshot' | 'delta' | 'pong';

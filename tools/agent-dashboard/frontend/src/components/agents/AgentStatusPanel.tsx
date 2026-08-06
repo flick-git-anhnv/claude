@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Session, ViewMode } from '../../types'
 import { fmtNum } from '../../utils/format'
-import AgentCard from './AgentCard'
+import SessionCard from '../sessions/SessionCard'
 
 interface AgentStatusPanelProps {
   sessions: Session[]
@@ -190,7 +190,7 @@ function ByAgentView({ sessions, showAllDone, setShowAllDone }: ByAgentViewProps
             <div className="flex-1 h-px bg-kz-gray" />
           </div>
           <div className="flex flex-col gap-2">
-            {running.map(s => <AgentCard key={s.session_id} session={s} />)}
+            {running.map(s => <SessionCard key={s.session_id} session={s} />)}
           </div>
         </section>
       )}
@@ -204,7 +204,7 @@ function ByAgentView({ sessions, showAllDone, setShowAllDone }: ByAgentViewProps
             <div className="flex-1 h-px bg-kz-gray" />
           </div>
           <div className="flex flex-col gap-2">
-            {idle.map(s => <AgentCard key={s.session_id} session={s} />)}
+            {idle.map(s => <SessionCard key={s.session_id} session={s} />)}
           </div>
         </section>
       )}
@@ -218,7 +218,7 @@ function ByAgentView({ sessions, showAllDone, setShowAllDone }: ByAgentViewProps
             <div className="flex-1 h-px bg-kz-gray" />
           </div>
           <div className="flex flex-col gap-2">
-            {visibleDone.map(s => <AgentCard key={s.session_id} session={s} />)}
+            {visibleDone.map(s => <SessionCard key={s.session_id} session={s} />)}
           </div>
           {done.length > DONE_COLLAPSE_THRESHOLD && (
             <button
@@ -276,7 +276,7 @@ function ByProjectView({ groups }: ByProjectViewProps) {
           {/* Expanded session list */}
           <div className="p-3 pl-5 flex flex-col gap-2 border-t border-kz-gray bg-white">
             {group.sessions.map(s => (
-              <AgentCard key={s.session_id} session={s} />
+              <SessionCard key={s.session_id} session={s} />
             ))}
           </div>
         </details>
