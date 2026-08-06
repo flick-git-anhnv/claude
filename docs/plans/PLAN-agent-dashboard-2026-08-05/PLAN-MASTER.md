@@ -1,8 +1,8 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 15:10
-status: completed
+updated: 2026-08-06 16:00
+status: active
 workflow: WF-FEATURE
 priority: P2
 ---
@@ -63,6 +63,17 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 4.3 | Deploy local (npm/uvicorn start, verify chạy được) | DevOps Engineer | ✅ | `steps/STEP-4.3-doe-deploy.md` | 2026-08-06 09:01 |
 | 4.4 | Approve + smoke test cuối, verify dashboard live | DevOps Lead | ✅ | `steps/STEP-4.4-dol-approve.md` | 2026-08-06 15:10 |
 
+### Phase 5: Sprint 2 — OAuth Support (Track A) + Agent Name/Activity + 2 View Modes (Track B)
+| # | Bước | Agent | Status | Step file | Hoàn thành lúc |
+|---|------|-------|--------|-----------|-----------------|
+| 5.1 | TDD ADDENDUM Sprint 2 (§15–21 trong TDD v1.1) — data model OAuth, auto-refresh strategy, parser mở rộng, 2 view mode, task breakdown 12 task | Tech Lead | ✅ | `steps/STEP-5.1-tl-tdd-addendum.md` | 2026-08-06 16:00 |
+| 5.2 | Track A: OAuth Account Support (migration v1→v2, activate flow swap credentials, auto-refresh scheduler, UI 2-tab, security banner) — S2-T01..T06 | Senior Developer | ⬜ | `steps/STEP-5.2-sd-oauth.md` | - |
+| 5.3 | Track B: Parser mở rộng subagent_type/description, DB 3 column mới, mapping VN, API by-project, UI 2 view mode "Theo Agent"/"Theo Dự án" — S2-T07..T12 | Junior Developer | ✅ | `steps/STEP-5.3-jd-agent-view.md` | 2026-08-06 17:30 |
+| 5.4 | security-audit-stride cho Track A (đụng credential nhạy cảm, ghi file `.credentials.json`) — BLOCK merge nếu Fail nhóm rủi ro cao | Tech Lead | ⬜ | `steps/STEP-5.4-tl-security-audit.md` | - |
+| 5.5 | Code review cuối cả 2 track + verify-pr + merge decision | Tech Lead | ⬜ | `steps/STEP-5.5-tl-review-sprint2.md` | - |
+
+> **Ghi chú Phase 5:** 5.2 ∥ 5.3 (song song). 5.4 chỉ chạy sau 5.2 (Track A). 5.5 chờ cả 5.2, 5.3, 5.4 xong. UXR/QA/Deploy sẽ mở Phase 6 sau khi 5.5 pass.
+
 ## Artifacts dự kiến (tổng)
 - [ ] `docs/prd/PRD-agent-dashboard.md` — Product Requirements Document
 - [ ] `docs/prd/PRD-agent-dashboard.docx` + `.pdf`
@@ -106,6 +117,8 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 08:52 | Bước 4.1 ✅ — QAE thực thi 44 TC (39 Pass, 2 Fail, 2 Skip); UI-001/UI-002 regression PASS; BUG-001 DELETE 500 (P2), BUG-002 Duplicate name (P2); TC+BUG DOCX/PDF tạo xong | QA Engineer |
 | 2026-08-06 14:30 | Bước 4.2 ✅ — QAL SIGN-OFF PASS: P0=0, P1=0, exit criteria met. 2 bug P2 tồn đọng (BUG-001, BUG-002) ghi known issues — deploy được phép. TC file cập nhật sign-off section. | QA Lead |
 | 2026-08-06 09:01 | Bước 4.3 ✅ — start.bat tạo xong; server verify HTTP 200 + watcher_alive:true tại port 7770; DEPLOY-agent-dashboard.md + .docx tạo xong (PDF RPC fail non-blocking) | DevOps Engineer |
+| 2026-08-06 16:00 | Bước 5.1 ✅ — TDD ADDENDUM v1.1 Sprint 2 viết xong (§15–21): Track A OAuth (data model v2, swap-and-invoke refresh, 12 task), Track B agent name+2 view mode; status plan → active để mở Sprint 2 | Tech Lead |
+| 2026-08-06 17:30 | Bước 5.3 ✅ — Track B hoàn thành: parser subagent, DB 3 cột mới (idempotent), SUBAGENT_DISPLAY 19 agents, /by-project endpoint, WS subagent_changed, AgentCard badge, toggle 2 view mode + accordion; 85/85 tests, tsc+vite 0 errors; commit 5c23e75 | Junior Developer |
 | 2026-08-06 15:10 | Bước 4.4 ✅ — DOL smoke test PASS (health/frontend/sessions/accounts 4/4); isolation OK; DEPLOY doc reviewed; **WF-FEATURE HOÀN THÀNH** — status → completed | DevOps Lead |
 
 ---
