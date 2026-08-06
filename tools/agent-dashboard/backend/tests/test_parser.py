@@ -198,16 +198,22 @@ def test_parse_non_dict_returns_none():
 
 
 def test_parse_missing_fields_does_not_crash():
-    """Minimal valid JSON object should not crash — missing fields get defaults."""
+    """Lines without timestamp now return None (BUG-003 fix — early-return guard).
+
+    Previously this test expected a non-None result. After the Sprint 3 fix,
+    any line without a timestamp (except ai-title) returns None to prevent
+    started_at='' being written to the DB ('Invalid Date' bug).
+    """
     line = json.dumps({"type": "system"}) + "\n"
     result = parse_line(line, _FAKE_PATH)
-    assert result is not None
-    assert result.input_tokens == 0
-    assert result.tool_name is None
+    # BUG-003 fix: no timestamp → None, does not crash
+    assert result is None
 
 
 def test_raw_json_truncated_at_2000():
-    big = {"type": "user", "data": "x" * 3000}
+    # Must include timestamp so BUG-003 early-return does not fire
+    big = {"type": "user", "timestamp": "2026-08-05T10:00:00.000Z",
+           "message": {}, "data": "x" * 3000}
     line = json.dumps(big) + "\n"
     result = parse_line(line, _FAKE_PATH)
     assert result is not None

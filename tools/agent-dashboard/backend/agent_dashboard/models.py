@@ -80,6 +80,10 @@ class ParsedLine:
     raw_json: str           # compact, truncated to 2000 chars for audit
     subagent_type: Optional[str] = None      # Track B: from tool_use Agent input.subagent_type
     subagent_activity: Optional[str] = None  # Track B: from tool_use Agent input.description
+    # Sprint 3 fields
+    ai_title: Optional[str] = None           # FR-003: from type="ai-title" aiTitle field
+    first_user_text: Optional[str] = None    # FR-003: fallback from first user text block
+    is_meta: bool = False                    # True for ai-title lines (no timestamp, no session create)
 
 
 @dataclass

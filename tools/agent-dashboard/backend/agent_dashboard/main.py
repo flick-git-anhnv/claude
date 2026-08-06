@@ -158,14 +158,36 @@ async def _process_file(conn: Any, file_path: str) -> None:
     if not lines:
         return
 
-    path = Path(file_path)
-    project = path.parent.name
-    is_first_in_file = True
-
     for line in lines:
         parsed = parse_line(line, file_path)
         if parsed is None:
             continue
+
+        # ── Sprint 3: handle ai-title meta lines (FR-003) ────────────────────
+        # is_meta=True lines have no timestamp and must NOT create a session.
+        # They only update the title of an already-known session.
+        if parsed.is_meta:
+            if parsed.ai_title:
+                await db_module.update_title(
+                    conn, parsed.session_id, parsed.ai_title, source="ai_title"
+                )
+                await _ws_manager.broadcast(make_delta("session_title_changed", {
+                    "session_id": parsed.session_id,
+                    "title":      parsed.ai_title,
+                    "source":     "ai_title",
+                }))
+            continue
+
+        # ── Sprint 3: snapshot last_* params (FR-002) — only for messages with usage
+        # input_tokens > 0 indicates an assistant message with usage data.
+        snap_kwargs: dict = {}
+        if parsed.input_tokens > 0:
+            snap_kwargs = {
+                "last_input_tokens":          parsed.input_tokens,
+                "last_cache_creation_tokens": parsed.cache_creation,
+                "last_cache_read_tokens":     parsed.cache_read,
+                "last_usage_at":              parsed.timestamp,
+            }
 
         # DB: upsert session + insert event + token usage
         is_new = await db_module.upsert_session(
@@ -179,7 +201,20 @@ async def _process_file(conn: Any, file_path: str) -> None:
             output_tokens=parsed.output_tokens,
             cache_creation=parsed.cache_creation,
             cache_read=parsed.cache_read,
+            **snap_kwargs,
         )
+
+        # ── Sprint 3: set fallback title from first user text (FR-003) ───────
+        if parsed.first_user_text:
+            updated = await db_module.update_title_if_null(
+                conn, parsed.session_id, parsed.first_user_text, source="user_text"
+            )
+            if updated:
+                await _ws_manager.broadcast(make_delta("session_title_changed", {
+                    "session_id": parsed.session_id,
+                    "title":      parsed.first_user_text,
+                    "source":     "user_text",
+                }))
 
         await db_module.insert_event(
             conn,
@@ -212,23 +247,23 @@ async def _process_file(conn: Any, file_path: str) -> None:
         if is_new:
             await _ws_manager.broadcast(make_delta("agent_started", {
                 "session_id": parsed.session_id,
-                "project": parsed.project,
+                "project":    parsed.project,
                 "agent_type": parsed.agent_type,
                 "started_at": parsed.timestamp,
             }))
         else:
             delta_payload: dict = {
-                "session_id": parsed.session_id,
+                "session_id":    parsed.session_id,
                 "last_event_at": parsed.timestamp,
             }
             if parsed.tool_name:
                 delta_payload["tool_use"] = parsed.tool_name
             if has_tokens:
                 delta_payload["tokens_added"] = {
-                    "input": parsed.input_tokens,
-                    "output": parsed.output_tokens,
+                    "input":          parsed.input_tokens,
+                    "output":         parsed.output_tokens,
                     "cache_creation": parsed.cache_creation,
-                    "cache_read": parsed.cache_read,
+                    "cache_read":     parsed.cache_read,
                 }
             await _ws_manager.broadcast(make_delta("agent_update", delta_payload))
 
@@ -254,24 +289,30 @@ async def _process_file(conn: Any, file_path: str) -> None:
         if change and change.new_state != change.old_state:
             await _ws_manager.broadcast(make_delta("agent_state_changed", {
                 "session_id": parsed.session_id,
-                "state": change.new_state,
+                "state":      change.new_state,
             }))
             await db_module.update_session_state(conn, parsed.session_id, change.new_state)
 
         if has_tokens:
+            from .config import resolve_max_context
             cumulative = await db_module.get_session_totals(conn, parsed.session_id)
+            # Sprint 3 FR-002: include last-lượt context_pct in token_update delta
+            last_total = parsed.input_tokens + parsed.cache_creation + parsed.cache_read
+            max_ctx = resolve_max_context(parsed.agent_type or "")
+            ctx_pct = round(last_total / max_ctx * 100, 1) if max_ctx > 0 else 0.0
             await _ws_manager.broadcast(make_delta("token_update", {
                 "session_id": parsed.session_id,
                 "delta": {
-                    "input": parsed.input_tokens,
-                    "output": parsed.output_tokens,
+                    "input":          parsed.input_tokens,
+                    "output":         parsed.output_tokens,
                     "cache_creation": parsed.cache_creation,
-                    "cache_read": parsed.cache_read,
+                    "cache_read":     parsed.cache_read,
                 },
-                "cumulative": cumulative,
+                "cumulative":     cumulative,
+                "last_input_total": last_total,
+                "max_context":    max_ctx,
+                "context_pct":    ctx_pct,
             }))
-
-        is_first_in_file = False
 
     # Persist updated cursor to DB
     await db_module.save_cursor(conn, file_path, _tail_reader.get_cursor(file_path))

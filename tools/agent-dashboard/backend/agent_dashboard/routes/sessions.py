@@ -50,6 +50,25 @@ async def session_history(
     return {"items": items, "total": total}
 
 
+@router.get("/{session_id}/chain")
+async def session_chain(request: Request, session_id: str):
+    """Pipeline chain for a session — ordered Agent tool_use calls (FR-001).
+
+    Returns the list of agent steps extracted from `events WHERE tool_name='Agent'`.
+    Status logic (TDD §26.4): last step = 'active' when session is Running,
+    otherwise all steps = 'done'.
+    """
+    from .. import db as db_module
+    conn = _get_db(request)
+    result = await db_module.get_session_chain(conn, session_id)
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=error_response("SESSION_NOT_FOUND", f"Session '{session_id}' not found"),
+        )
+    return result
+
+
 @router.get("/{session_id}")
 async def session_detail(request: Request, session_id: str):
     from .. import db as db_module

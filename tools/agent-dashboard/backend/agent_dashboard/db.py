@@ -87,6 +87,48 @@ async def _migrate_subagent_columns(conn: aiosqlite.Connection) -> None:
     await conn.commit()
 
 
+async def _migrate_sprint3_columns(conn: aiosqlite.Connection) -> None:
+    """Idempotent: add Sprint 3 columns to sessions if missing.
+
+    Columns:
+      title             TEXT          — friendly session name (FR-003)
+      last_input_tokens INTEGER       — last-lượt snapshot, NOT cumulative (FR-002)
+      last_cache_creation INTEGER
+      last_cache_read   INTEGER
+      last_usage_at     TEXT          — ISO timestamp of the last assistant message with usage
+
+    After all ALTER TABLE calls, run a one-time cleanup for BUG-003:
+      UPDATE sessions SET started_at = last_event_at
+        WHERE started_at = '' OR started_at IS NULL
+    This is idempotent — after the first run there are no '' rows left.
+    """
+    async with conn.execute("PRAGMA table_info(sessions)") as cur:
+        rows = await cur.fetchall()
+    existing = {row["name"] for row in rows}
+
+    for col, typedef in (
+        ("title",              "TEXT"),
+        ("last_input_tokens",  "INTEGER DEFAULT 0"),
+        ("last_cache_creation","INTEGER DEFAULT 0"),
+        ("last_cache_read",    "INTEGER DEFAULT 0"),
+        ("last_usage_at",      "TEXT"),
+    ):
+        if col not in existing:
+            await conn.execute(f"ALTER TABLE sessions ADD COLUMN {col} {typedef}")
+            logger.info("DB migration: added column sessions.%s", col)
+
+    await conn.commit()
+
+    # BUG-003 cleanup — one-time fix: replace '' started_at with last_event_at
+    await conn.execute(
+        """UPDATE sessions
+             SET started_at = last_event_at
+           WHERE started_at = '' OR started_at IS NULL"""
+    )
+    await conn.commit()
+    logger.info("DB migration: BUG-003 cleanup applied (started_at='' → last_event_at)")
+
+
 async def init(db_path: Path) -> aiosqlite.Connection:
     """Open DB, enable WAL, create tables, run migrations. Returns open connection."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -95,6 +137,7 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await conn.executescript(_SCHEMA_SQL)
     await conn.commit()
     await _migrate_subagent_columns(conn)
+    await _migrate_sprint3_columns(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 
@@ -130,8 +173,24 @@ async def upsert_session(
     output_tokens: int,
     cache_creation: int,
     cache_read: int,
+    # Sprint 3 — snapshot of LAST message usage (FR-002, ghi đè không cộng dồn)
+    last_input_tokens: Optional[int] = None,
+    last_cache_creation_tokens: Optional[int] = None,
+    last_cache_read_tokens: Optional[int] = None,
+    last_usage_at: Optional[str] = None,
 ) -> bool:
-    """Insert new session or update existing. Returns True if brand-new session."""
+    """Insert new session or update existing. Returns True if brand-new session.
+
+    Two UPDATE groups:
+      1. Cumulative token totals — always updated (token_* columns).
+      2. Last-lượt snapshot — only updated when caller passes last_usage_at
+         (i.e. assistant message with usage.input_tokens > 0).
+    """
+    # Guard: defensive skip if timestamp is empty (BUG-003 double-guard)
+    if not timestamp:
+        logger.warning("upsert_session called with empty timestamp for %s — skipped", session_id)
+        return False
+
     # Insert only if not already present
     cur = await conn.execute(
         """INSERT OR IGNORE INTO sessions
@@ -141,7 +200,7 @@ async def upsert_session(
     )
     is_new = cur.rowcount > 0
 
-    # Always update last_event_at + token totals + agent_type (fill in if null)
+    # Always update last_event_at + cumulative token totals + agent_type (fill in if null)
     await conn.execute(
         """UPDATE sessions SET
              last_event_at         = ?,
@@ -153,8 +212,62 @@ async def upsert_session(
            WHERE session_id = ?""",
         (timestamp, agent_type, input_tokens, output_tokens, cache_creation, cache_read, session_id),
     )
+
+    # Snapshot last_* columns — only when assistant message with usage (ghi đè)
+    if last_usage_at is not None:
+        await conn.execute(
+            """UPDATE sessions SET
+                 last_input_tokens   = ?,
+                 last_cache_creation = ?,
+                 last_cache_read     = ?,
+                 last_usage_at       = ?
+               WHERE session_id = ?""",
+            (
+                last_input_tokens or 0,
+                last_cache_creation_tokens or 0,
+                last_cache_read_tokens or 0,
+                last_usage_at,
+                session_id,
+            ),
+        )
+
     await conn.commit()
     return is_new
+
+
+# ── Title helpers (FR-003) ────────────────────────────────────────────────────
+
+async def update_title(
+    conn: aiosqlite.Connection,
+    session_id: str,
+    title: str,
+    source: str = "ai_title",
+) -> None:
+    """Always overwrite title (ai_title source takes priority over user_text)."""
+    await conn.execute(
+        "UPDATE sessions SET title = ? WHERE session_id = ?",
+        (title, session_id),
+    )
+    await conn.commit()
+    logger.debug("Title updated (%s) for session %s: %.40s", source, session_id, title)
+
+
+async def update_title_if_null(
+    conn: aiosqlite.Connection,
+    session_id: str,
+    title: str,
+    source: str = "user_text",
+) -> bool:
+    """Set title only when currently NULL. Returns True if an update was made."""
+    cur = await conn.execute(
+        "UPDATE sessions SET title = ? WHERE session_id = ? AND title IS NULL",
+        (title, session_id),
+    )
+    await conn.commit()
+    updated = cur.rowcount > 0
+    if updated:
+        logger.debug("Title set via fallback (%s) for session %s: %.40s", source, session_id, title)
+    return updated
 
 
 async def update_session_state(
@@ -208,13 +321,20 @@ async def insert_token_usage(
 # ── Queries ───────────────────────────────────────────────────────────────────
 
 def _row_to_session(row: aiosqlite.Row) -> dict[str, Any]:
-    """Shape a sessions-table row for API/WS responses: token_total as TokenCounts object.
+    """Shape a sessions-table row for API/WS responses.
 
-    Also builds current_subagent dict from the 3 subagent columns (may be None).
+    Computes:
+      - token_total (cumulative, all 4 buckets)
+      - current_subagent dict (Track B)
+      - last_input_total, max_context, context_pct (Sprint 3 FR-002)
+      - title (Sprint 3 FR-003, may be None)
     """
     from .models import get_subagent_display_name
+    from .config import resolve_max_context
 
     d = dict(row)
+
+    # ── Cumulative token totals (existing) ────────────────────────────────────
     token_total = {
         "input":          d.pop("token_input", 0) or 0,
         "output":         d.pop("token_output", 0) or 0,
@@ -223,7 +343,7 @@ def _row_to_session(row: aiosqlite.Row) -> dict[str, Any]:
     }
     d["token_total"] = token_total
 
-    # Build current_subagent object (Track B)
+    # ── Current subagent (Track B) ────────────────────────────────────────────
     sub_type     = d.pop("current_subagent_type",     None)
     sub_activity = d.pop("current_subagent_activity", None)
     sub_at       = d.pop("current_subagent_at",       None)
@@ -237,6 +357,21 @@ def _row_to_session(row: aiosqlite.Row) -> dict[str, Any]:
     else:
         d["current_subagent"] = None
 
+    # ── Sprint 3: last-lượt snapshot + context_pct (FR-002) ──────────────────
+    last_inp  = d.pop("last_input_tokens",  0) or 0
+    last_cc   = d.pop("last_cache_creation", 0) or 0
+    last_cr   = d.pop("last_cache_read",    0) or 0
+    # last_usage_at stays in d (useful for debugging, small field)
+
+    agent_type_val: Optional[str] = d.get("agent_type")
+    max_ctx: int = resolve_max_context(agent_type_val or "")
+    last_total: int = last_inp + last_cc + last_cr
+    ctx_pct: float = round(last_total / max_ctx * 100, 1) if max_ctx > 0 else 0.0
+
+    d["last_input_total"] = last_total
+    d["max_context"]      = max_ctx
+    d["context_pct"]      = ctx_pct
+
     return d
 
 
@@ -244,7 +379,8 @@ async def get_active_sessions(conn: aiosqlite.Connection) -> list[dict[str, Any]
     async with conn.execute(
         """SELECT session_id, project, agent_type, state, started_at, last_event_at,
                   token_input, token_output, token_cache_creation, token_cache_read,
-                  current_subagent_type, current_subagent_activity, current_subagent_at
+                  current_subagent_type, current_subagent_activity, current_subagent_at,
+                  title, last_input_tokens, last_cache_creation, last_cache_read, last_usage_at
            FROM sessions WHERE state != 'Ended'
            ORDER BY last_event_at DESC"""
     ) as cur:
@@ -294,7 +430,8 @@ async def get_session_history(
     async with conn.execute(
         f"""SELECT session_id, project, agent_type, state, started_at, last_event_at, ended_at,
                    token_input, token_output, token_cache_creation, token_cache_read,
-                   current_subagent_type, current_subagent_activity, current_subagent_at
+                   current_subagent_type, current_subagent_activity, current_subagent_at,
+                   title, last_input_tokens, last_cache_creation, last_cache_read, last_usage_at
             FROM sessions WHERE {where}
             ORDER BY started_at DESC LIMIT ? OFFSET ?""",
         params + [limit, offset],
@@ -368,7 +505,8 @@ async def get_sessions_by_project(
     async with conn.execute(
         f"""SELECT session_id, project, agent_type, state, started_at, last_event_at,
                    token_input, token_output, token_cache_creation, token_cache_read,
-                   current_subagent_type, current_subagent_activity, current_subagent_at
+                   current_subagent_type, current_subagent_activity, current_subagent_at,
+                   title, last_input_tokens, last_cache_creation, last_cache_read, last_usage_at
             FROM sessions {where}
             ORDER BY project ASC, last_event_at DESC""",
         params,
@@ -395,6 +533,89 @@ async def get_sessions_by_project(
         })
 
     return result
+
+
+async def get_session_chain(
+    conn: aiosqlite.Connection,
+    session_id: str,
+) -> Optional[dict[str, Any]]:
+    """Return pipeline chain for a session (FR-001).
+
+    Chain = ordered list of Agent tool_use calls recorded in the events table.
+    Status logic (TDD §26.4):
+      - Last step + session Running → "active"
+      - Everything else → "done"
+      - Session Idle/Ended → all steps "done"
+
+    Returns None if the session does not exist.
+    """
+    import json as _json
+    from .models import get_subagent_display_name
+
+    # Verify session exists + get its state
+    async with conn.execute(
+        "SELECT state FROM sessions WHERE session_id = ?", (session_id,)
+    ) as cur:
+        row = await cur.fetchone()
+    if not row:
+        return None
+    session_state: str = row["state"]
+
+    # Fetch Agent tool_use events ordered chronologically
+    async with conn.execute(
+        """SELECT ts, payload_json
+             FROM events
+            WHERE session_id = ? AND tool_name = 'Agent'
+            ORDER BY ts ASC""",
+        (session_id,),
+    ) as cur:
+        event_rows = await cur.fetchall()
+
+    steps = []
+    for i, ev in enumerate(event_rows):
+        # payload_json is the raw JSONL line — extract subagent_type + description
+        subagent_type: Optional[str] = None
+        description: Optional[str] = None
+        try:
+            data = _json.loads(ev["payload_json"] or "{}")
+            message = data.get("message") or {}
+            content = message.get("content")
+            if isinstance(content, list):
+                for block in content:
+                    if (
+                        isinstance(block, dict)
+                        and block.get("type") == "tool_use"
+                        and block.get("name") == "Agent"
+                    ):
+                        tool_input = block.get("input") or {}
+                        subagent_type = tool_input.get("subagent_type") or None
+                        description = tool_input.get("description") or None
+                        break
+        except (ValueError, AttributeError):
+            pass
+
+        steps.append({
+            "step_index":        i,
+            "subagent_type":     subagent_type,
+            "subagent_display":  get_subagent_display_name(subagent_type) if subagent_type else None,
+            "description":       description,
+            "started_at":        ev["ts"],
+            "status":            _compute_step_status(i, len(event_rows), session_state),
+        })
+
+    return {
+        "session_id":    session_id,
+        "session_state": session_state,
+        "steps":         steps,
+    }
+
+
+def _compute_step_status(step_index: int, total_steps: int, session_state: str) -> str:
+    """TDD §26.4: last step + Running → 'active'; everything else → 'done'."""
+    is_last = step_index == total_steps - 1
+    if is_last and session_state == "Running":
+        return "active"
+    return "done"
 
 
 async def get_token_summary(conn: aiosqlite.Connection, range_str: str) -> dict[str, Any]:

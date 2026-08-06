@@ -52,8 +52,37 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
     session_id = p.stem           # filename without extension = session uuid
     project = p.parent.name       # parent folder = project slug
 
-    timestamp: str = data.get("timestamp") or data.get("ts") or ""
     msg_type: str = data.get("type", "unknown")
+
+    # ── Sprint 3: handle ai-title meta lines (FR-003 / BUG-003) ──────────────
+    # ai-title lines have no timestamp; they carry a session title update, not
+    # a content event — return is_meta=True so the ingest loop can update the
+    # title without creating a session record.
+    if msg_type == "ai-title":
+        ai_title_val: Optional[str] = data.get("aiTitle") or None
+        return ParsedLine(
+            session_id=session_id,
+            project=project,
+            file_path=file_path,
+            timestamp="",
+            msg_type="ai-title",
+            tool_name=None,
+            agent_type=None,
+            input_tokens=0,
+            output_tokens=0,
+            cache_creation=0,
+            cache_read=0,
+            raw_json=line[:2000],
+            ai_title=ai_title_val,
+            is_meta=True,
+        )
+
+    # ── BUG-003 fix: early-return for any other line missing timestamp ────────
+    # Lines without timestamp (e.g. "last-prompt") are metadata — they MUST NOT
+    # create a session record (would set started_at="", causing "Invalid Date").
+    timestamp: str = data.get("timestamp") or data.get("ts") or ""
+    if not timestamp:
+        return None
 
     message: dict = data.get("message") or {}
     usage: dict = message.get("usage") or {}
@@ -62,6 +91,18 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
     output_tokens: int  = _int(usage.get("output_tokens", 0))
     cache_creation: int = _int(usage.get("cache_creation_input_tokens", 0))
     cache_read: int     = _int(usage.get("cache_read_input_tokens", 0))
+
+    # ── FR-003: extract first user text as fallback title ────────────────────
+    first_user_text: Optional[str] = None
+    if msg_type == "user":
+        content_blocks = message.get("content")
+        if isinstance(content_blocks, list):
+            for block in content_blocks:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    raw_text: str = block.get("text") or ""
+                    if raw_text.strip():
+                        first_user_text = raw_text[:60]
+                        break
 
     # Detect tool_use inside content blocks (assistant messages)
     tool_name: Optional[str] = None
@@ -107,6 +148,7 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
         raw_json=raw_json,
         subagent_type=subagent_type,
         subagent_activity=subagent_activity,
+        first_user_text=first_user_text,
     )
 
 
