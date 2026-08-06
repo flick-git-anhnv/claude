@@ -159,6 +159,45 @@ async def _migrate_events_subagent_columns(conn: aiosqlite.Connection) -> None:
     await conn.commit()
 
 
+async def _migrate_fix_subagent_project_attribution(conn: aiosqlite.Connection) -> None:
+    """One-shot: re-attribute sessions where project='subagents' (bug) to the
+    top-level project slug derived from file_path.
+
+    Root cause: watcher is recursive; subagent transcripts live at
+      <projects>/<project-slug>/<session-uuid>/subagents/agent-*.jsonl
+    Old parser used p.parent.name → yielded "subagents" instead of the real
+    project slug. Fixed in parser.py; this migration cleans up stale rows.
+    """
+    from . import config as _cfg
+    try:
+        async with conn.execute(
+            "SELECT session_id, file_path FROM sessions WHERE project = 'subagents'"
+        ) as cur:
+            rows = await cur.fetchall()
+        if not rows:
+            return
+        root = _cfg.CLAUDE_PROJECTS_DIR.resolve()
+        fixed = 0
+        for row in rows:
+            fp = row["file_path"]
+            try:
+                rel = Path(fp).resolve().relative_to(root)
+                new_project = rel.parts[0] if rel.parts else None
+            except (ValueError, OSError):
+                new_project = None
+            if new_project and new_project != "subagents":
+                await conn.execute(
+                    "UPDATE sessions SET project = ? WHERE session_id = ?",
+                    (new_project, row["session_id"]),
+                )
+                fixed += 1
+        await conn.commit()
+        if fixed:
+            logger.info("Migrated %d subagent sessions to correct project slug", fixed)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("subagent project migration skipped: %s", exc)
+
+
 async def init(db_path: Path) -> aiosqlite.Connection:
     """Open DB, enable WAL, create tables, run migrations. Returns open connection."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -169,6 +208,7 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await _migrate_subagent_columns(conn)
     await _migrate_sprint3_columns(conn)
     await _migrate_events_subagent_columns(conn)
+    await _migrate_fix_subagent_project_attribution(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 

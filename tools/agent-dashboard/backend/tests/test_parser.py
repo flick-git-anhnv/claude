@@ -218,3 +218,30 @@ def test_raw_json_truncated_at_2000():
     result = parse_line(line, _FAKE_PATH)
     assert result is not None
     assert len(result.raw_json) <= 2000
+
+
+# ── BUG-FIX: subagent transcript nested under session-uuid folder ─────────────
+# Watcher is recursive over CLAUDE_PROJECTS_DIR; subagent transcripts live at
+#   <projects>/<project-slug>/<session-uuid>/subagents/agent-*.jsonl
+# Parser must attribute to <project-slug>, NOT "subagents".
+
+def test_parse_subagent_transcript_attributes_to_parent_project(tmp_path, monkeypatch):
+    from agent_dashboard import config as _cfg
+    monkeypatch.setattr(_cfg, "CLAUDE_PROJECTS_DIR", tmp_path)
+    sub_dir = tmp_path / "c--Users-nguye-Desktop-Claude-Git-claude" / "session-uuid" / "subagents"
+    sub_dir.mkdir(parents=True)
+    fp = sub_dir / "agent-a0b0914afcc8591f1.jsonl"
+    fp.write_text("")
+    line = json.dumps({
+        "type": "user",
+        "timestamp": "2026-08-06T03:20:41.430Z",
+        "isSidechain": True,
+        "agentId": "a0b0914afcc8591f1",
+        "sessionId": "session-uuid",
+        "message": {"role": "user", "content": "hi"},
+    }) + "\n"
+    result = parse_line(line, str(fp))
+    assert result is not None
+    assert result.project == "c--Users-nguye-Desktop-Claude-Git-claude"
+    assert result.project != "subagents"
+    assert result.session_id == "agent-a0b0914afcc8591f1"

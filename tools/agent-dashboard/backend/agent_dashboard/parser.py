@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from . import config
 from .models import ParsedLine
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,16 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
 
     p = Path(file_path)
     session_id = p.stem           # filename without extension = session uuid
-    project = p.parent.name       # parent folder = project slug
+    # BUG-FIX: subagent transcripts live at
+    #   <projects>/<project-slug>/<session-uuid>/subagents/agent-*.jsonl
+    # Using p.parent.name would give "subagents" as project. Instead, resolve
+    # to the FIRST path segment under CLAUDE_PROJECTS_DIR so subagent transcripts
+    # are attributed to the top-level project of their parent session.
+    try:
+        rel = p.resolve().relative_to(config.CLAUDE_PROJECTS_DIR.resolve())
+        project = rel.parts[0] if rel.parts else p.parent.name
+    except (ValueError, OSError):
+        project = p.parent.name
 
     msg_type: str = data.get("type", "unknown")
 
