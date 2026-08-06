@@ -1,8 +1,8 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 10:30
-status: completed
+updated: 2026-08-06 11:05
+status: active
 workflow: WF-FEATURE
 priority: P2
 ---
@@ -72,7 +72,19 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 5.4 | security-audit-stride cho Track A (đụng credential nhạy cảm, ghi file `.credentials.json`) — BLOCK merge nếu Fail nhóm rủi ro cao | Tech Lead | ✅ | `steps/STEP-5.4-tl-security-audit.md` | 2026-08-06 10:02 |
 | 5.5 | Code review cuối cả 2 track + verify-pr + merge decision | Tech Lead | ✅ | `steps/STEP-5.5-tl-review-sprint2.md` | 2026-08-06 10:30 |
 
-> **Ghi chú Phase 5:** 5.2 ∥ 5.3 (song song). 5.4 chỉ chạy sau 5.2 (Track A). 5.5 chờ cả 5.2, 5.3, 5.4 xong. UXR/QA/Deploy sẽ mở Phase 6 sau khi 5.5 pass.
+> **Ghi chú Phase 5:** 5.2 ∥ 5.3 (song song). 5.4 chỉ chạy sau 5.2 (Track A). 5.5 chờ cả 5.2, 5.3, 5.4 xong.
+
+### Phase 6: Sprint 3 — BUG-003 + FR-001 (Pipeline view) + FR-002 (% context) + FR-003 (tên session)
+| # | Bước | Agent | Status | Step file | Hoàn thành lúc |
+|---|------|-------|--------|-----------|-----------------|
+| 6.1 | TDD ADDENDUM Sprint 3 — xác minh field log thật (FR-003, BUG-003), thiết kế chain-identification cho pipeline view (FR-001), thiết kế backend snapshot usage lượt gần nhất + cache max_input_tokens (FR-002) | Tech Lead | ✅ | `steps/STEP-6.1-tl-tdd-addendum.md` | 2026-08-06 11:05 |
+| 6.2 | Thiết kế wireframe pipeline view (FR-001) dựa trên chain-identification đã chốt | UI/UX Designer | ⬜ | `steps/STEP-6.2-ux-pipeline-design.md` | - |
+| 6.3 | Track C Backend: fix BUG-003, thêm snapshot usage lượt gần nhất + cache Models API (FR-002), endpoint chain-grouping (FR-001) | Senior Developer | ⬜ | `steps/STEP-6.3-sd-backend.md` | - |
+| 6.4 | Track D Frontend: tên session thân thiện (FR-003), hiển thị %context (FR-002), UI pipeline view theo design 6.2 (FR-001) | Junior Developer | ⬜ | `steps/STEP-6.4-jd-frontend.md` | - |
+| 6.5 | Code review cuối + verify-pr + merge decision | Tech Lead | ⬜ | `steps/STEP-6.5-tl-review-sprint3.md` | - |
+| 6.6 | UX/UI Review — pipeline view mới (thay đổi UI đáng kể) | UX/UI Reviewer | ⬜ | `steps/STEP-6.6-uxr-review.md` | - |
+
+> **Ghi chú Phase 6:** 6.1 → 6.2 (chờ chain-identification chốt) → 6.3 ∥ 6.4 (song song) → 6.5 → 6.6.
 
 ## Artifacts dự kiến (tổng)
 - [ ] `docs/prd/PRD-agent-dashboard.md` — Product Requirements Document
@@ -92,6 +104,8 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 ## Backlog Sprint 3 (mở từ Bước 5.5)
 - **BUG-003 (P2):** Session hiển thị "Bắt đầu: Invalid Date" — `started_at: ""` trả về từ `/api/sessions/by-project` + WS `agent_started`. Root cause: `parser.py:55` fallback `""` + state_manager snapshot cho legacy sessions. Fix pattern giống UI-001 (frontend safe-guard) HOẶC chuẩn hóa backend không trả `""`. Reproduce: `curl /api/sessions/by-project | jq '.[0].sessions[0].started_at'` → `""`.
 - **FR-001 (feature request):** Redesign `AgentStatusPanel` thành pipeline view — chain PM→BA→…→SD/JD→TL→QA→Deploy xếp hàng, agent đang hoạt động highlight sáng (tên + việc + token), agent khác trong chain mờ. Cần UX design lại + xác định cách nhận diện "chain" (session_id gốc? parent-task marker trong JSONL?). Câu hỏi mở cho PM/UX ở kick-off Sprint 3.
+- **FR-002 (feature request):** Hiển thị % context window đã dùng/còn lại mỗi session — công thức xác minh: `(input+cache_creation+cache_read)` của lượt gọi GẦN NHẤT (không cộng dồn) ÷ `max_input_tokens` (Models API, không hardcode). Chi tiết PRD Q-FR-002.
+- **FR-003 (feature request):** Thay session ID thô bằng tên dễ đọc cho session không có subagent_type (fallback hiện tại). Đề xuất dùng tin nhắn đầu tiên của user — CẦN xác minh field log thật trước khi code. Chi tiết PRD Q-FR-003.
 - **DEBT-001 (Sprint 3):** Thắt lại `kind: AccountKind` thành required trong `Account`/`ActiveAccount` sau khi backend gửi `kind` trong WS delta `account_changed` + snapshot. Hiện đang optional (hotfix 5.5).
 - **H-1 (đã fix Sprint 2, ghi để tra cứu):** OAuth race activate↔refresh — fix `b1866cc` bằng `refresh_lock` shared trong `activate_oauth_account`.
 - ~~Bước 3.6 🛑 REQUEST CHANGES~~ — RESOLVED lần verify #2 (2026-08-06 11:15): `_parse_ts('')`→epoch, 52/52 tests, Running 244→3. Merge APPROVED → Bước 4.1 QAE.
@@ -129,6 +143,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 09:53 | Bước 5.2 ✅ — Track A OAuth: migration v2, oauth_service.py (activate+scheduler+subprocess), routes, main scheduler wired, frontend 2-tab+badge+banner, 33 tests (118 total pass), claude -p verified exit 0; CODE-GRAPH v1.2 cập nhật | Senior Developer |
 | 2026-08-06 10:30 | Bước 5.5 ✅ — TL review Sprint 2 PASS: 119/119 backend tests, tsc+vite build 0 lỗi (sau hotfix nới `kind?: AccountKind`), tích hợp thật 3/3 endpoint OK. Phát hiện BUG-003 (Invalid Date started_at, P2) + FR-001 (pipeline view) → Backlog Sprint 3. **Sprint 2 APPROVED merge, status plan → completed.** | Tech Lead |
 | 2026-08-06 10:02 | Bước 5.4 ✅ — Security audit PASS có điều kiện: 1 High (H-1 race activate↔refresh, không share `refresh_lock`, mở BUG P1 Sprint 3), 3 Medium (auth endpoint, backup cleanup, XOR obfuscation), 2 Low (log không lộ token ✅, migration v1→v2 safe ✅); verified mid-swap restore bằng chạy thử thật. Không BLOCK merge Sprint 2 → sẵn sàng Bước 5.5. | Tech Lead |
+| 2026-08-06 11:05 | Bước 6.1 ✅ — TDD ADDENDUM v1.2 Sprint 3 (§22–28): verified `ai-title` native field (FR-003), root cause BUG-003 tại parser.py:55 (fix backend guard + migration cleanup), chốt chain=1 session cha (FR-001) + endpoint `/api/sessions/{id}/chain`, snapshot last_* cột mới (FR-002) + giá trị tĩnh MODEL_CONTEXT_WINDOW; 8 task S3-T01..T08 chia SD (3nd) + JD (2.75nd); DOCX+PDF xuất OK; status plan → active mở Sprint 3 | Tech Lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
