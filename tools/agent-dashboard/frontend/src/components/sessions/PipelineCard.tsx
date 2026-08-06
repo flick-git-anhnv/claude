@@ -98,9 +98,9 @@ function HistoryPanel({
         </button>
       </div>
 
-      {/* Danh sách history entries */}
+      {/* Danh sách history entries — mới nhất lên trên (sort giảm dần theo call_index) */}
       <div className="flex flex-col" style={{ gap: 6 }}>
-        {entry.history.map((h: RosterHistoryEntry) => {
+        {[...entry.history].sort((a, b) => b.call_index - a.call_index).map((h: RosterHistoryEntry) => {
           const tokenLabel = h.tokens
             ? fmtTokensCompact(h.tokens.input + h.tokens.output)
             : null

@@ -85,48 +85,54 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
           )}
         </div>
 
-        {/* Dòng 2: model · description */}
+        {/* Dòng 2: model (bold) : description */}
         {(modelShort || entry.latest_description) && (
           <p
             className="line-clamp-2"
             style={{ fontSize: 10, color: '#4A3F8C', lineHeight: 1.4, marginBottom: 4 }}
           >
             {modelShort && (
-              <span style={{ fontWeight: 600 }}>{modelShort}</span>
+              <span style={{ fontWeight: 700, color: '#251C53' }}>{modelShort}</span>
             )}
-            {modelShort && entry.latest_description && ' · '}
+            {modelShort && entry.latest_description && (
+              <span style={{ fontWeight: 400, color: '#251C53' }}> : </span>
+            )}
             {entry.latest_description}
           </p>
         )}
 
-        {/* Dòng 3: tokens (ẩn nếu null/0) */}
-        {tokensLabel && (
+        {/* Dòng 3: tokens (trái) + Xem lịch sử (phải) — 1 hàng */}
+        {(tokensLabel || hasHistory) && (
           <div
-            style={{ fontSize: 10, color: '#6B7280', marginTop: 'auto', paddingTop: 2 }}
-          >
-            {tokensLabel} tokens
-          </div>
-        )}
-
-        {/* Dòng 4: nút lịch sử */}
-        {hasHistory && (
-          <button
-            onClick={() => onShowHistory(entry)}
             style={{
-              fontSize: 10,
-              color: '#F05922',
-              marginTop: 4,
-              textAlign: 'left',
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              textDecorationStyle: 'dotted',
+              display: 'flex',
+              alignItems: 'center',
+              marginTop: 'auto',
+              paddingTop: 2,
             }}
           >
-            Xem lịch sử ▾
-          </button>
+            <span style={{ fontSize: 10, color: '#6B7280', flex: 1 }}>
+              {tokensLabel ? `${tokensLabel} tokens` : ''}
+            </span>
+            {hasHistory && (
+              <button
+                onClick={() => onShowHistory(entry)}
+                style={{
+                  fontSize: 10,
+                  color: '#F05922',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  textDecorationStyle: 'dotted',
+                  flexShrink: 0,
+                }}
+              >
+                Xem lịch sử ▾
+              </button>
+            )}
+          </div>
         )}
       </div>
     )
@@ -181,44 +187,54 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
         )}
       </div>
 
-      {/* Dòng 2: description (2 dòng max) */}
-      {entry.latest_description && (
+      {/* Dòng 2: model (bold) : description (2 dòng max) */}
+      {(modelShort || entry.latest_description) && (
         <p
           className="line-clamp-2"
           style={{ fontSize: 10, color: '#9CA3AF', lineHeight: 1.4, wordBreak: 'break-word' }}
         >
+          {modelShort && (
+            <span style={{ fontWeight: 700, color: '#4A3F8C' }}>{modelShort}</span>
+          )}
+          {modelShort && entry.latest_description && (
+            <span style={{ fontWeight: 400, color: '#6B7280' }}> : </span>
+          )}
           {entry.latest_description}
         </p>
       )}
 
-      {/* Dòng 3: tokens (ẩn nếu null/0) */}
-      {tokensLabel && (
+      {/* Dòng 3: tokens (trái) + Xem lịch sử (phải) — 1 hàng */}
+      {(tokensLabel || hasHistory) && (
         <div
-          style={{ fontSize: 9, color: '#B8B3D6', marginTop: 'auto', paddingTop: 2 }}
-        >
-          {tokensLabel} tokens
-        </div>
-      )}
-
-      {/* Dòng 4: nút lịch sử */}
-      {hasHistory && (
-        <button
-          onClick={() => onShowHistory(entry)}
           style={{
-            fontSize: 9,
-            color: '#4A3F8C',
-            marginTop: 4,
-            textAlign: 'left',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            textDecorationStyle: 'dotted',
+            display: 'flex',
+            alignItems: 'center',
+            marginTop: 'auto',
+            paddingTop: 2,
           }}
         >
-          Xem lịch sử
-        </button>
+          <span style={{ fontSize: 9, color: '#B8B3D6', flex: 1 }}>
+            {tokensLabel ? `${tokensLabel} tokens` : ''}
+          </span>
+          {hasHistory && (
+            <button
+              onClick={() => onShowHistory(entry)}
+              style={{
+                fontSize: 9,
+                color: '#4A3F8C',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                textDecorationStyle: 'dotted',
+                flexShrink: 0,
+              }}
+            >
+              Xem lịch sử
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
