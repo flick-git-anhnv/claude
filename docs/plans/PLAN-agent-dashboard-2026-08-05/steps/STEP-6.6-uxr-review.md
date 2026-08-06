@@ -46,5 +46,5 @@ Design spec §Sprint3 quy định scroll ngang cho pipeline, nhưng commit `79f3
 - next_inputs: Report tại `docs/ux-review/UX-REVIEW-agent-dashboard-sprint3.md`; 2 issue Medium cần fix: UI-SPR3-001 (fallback title) và UI-SPR3-002 (dangling connector). Sprint 3 đã PASS, sẵn sàng sử dụng.
 
 ## Commit
-- Hash: (điền sau khi commit)
+- Hash: ea0c134
 - Đã push: không
