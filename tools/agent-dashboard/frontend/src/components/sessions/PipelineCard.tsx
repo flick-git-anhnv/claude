@@ -1,13 +1,13 @@
 /**
  * PipelineCard — FR-001 Sprint 3
- * Hàng ngang các "trạm" (StepStation) thể hiện chain của 1 session cha.
+ * Lưới wrap các "trạm" (StepStation) thể hiện chain của 1 session cha.
  * - Fetch /api/sessions/{id}/chain khi mount và khi lastSubagentAt thay đổi
  *   (lastSubagentAt = current_subagent?.at → bắt signal WS subagent_changed)
- * - Scroll ngang với fade gradient 2 bên (pointer-events: none)
- * - Auto-scroll tới active station khi steps cập nhật
+ * - flex-wrap: nhiều hàng — hiển thị TOÀN BỘ pipeline, không scroll ngang
+ * - Active station (cam #F05922) nổi bật tự nhiên dù ở vị trí bất kỳ trong lưới
  * - Fail silently khi API lỗi hoặc steps rỗng
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ChainResponse, SessionState } from '../../types'
 import StepStation from './StepStation'
 
@@ -55,7 +55,6 @@ function PipelineSkeleton() {
 export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }: PipelineCardProps) {
   const [chainData, setChainData] = useState<ChainResponse | null>(null)
   const [fetchState, setFetchState] = useState<FetchState>('loading')
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Fetch chain khi mount hoặc khi lastSubagentAt thay đổi (mới có subagent)
   useEffect(() => {
@@ -83,17 +82,6 @@ export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }
 
     return () => { cancelled = true }
   }, [sessionId, lastSubagentAt])
-
-  // Auto-scroll tới active station sau khi steps render
-  useEffect(() => {
-    if (!scrollContainerRef.current || fetchState !== 'ready') return
-    const activeEl = scrollContainerRef.current.querySelector(
-      '[data-station-active="true"]'
-    ) as HTMLElement | null
-    if (activeEl) {
-      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' })
-    }
-  }, [chainData, fetchState])
 
   // Fail silently: empty / error → không render gì
   if (fetchState === 'empty' || fetchState === 'error') return null
@@ -149,52 +137,22 @@ export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }
         )}
       </div>
 
-      {/* Scroll container với fade gradient 2 bên */}
+      {/* Pipeline wrap container — hiển thị toàn bộ, không scroll ngang */}
       {fetchState === 'loading' ? (
         <PipelineSkeleton />
       ) : (
-        <div className="relative" style={{ opacity: isEnded ? 0.6 : 1 }}>
-          {/* Fade left — pointer-events: none để không chặn scroll/click */}
-          <div
-            className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none"
-            style={{
-              width: 32,
-              background: 'linear-gradient(to right, #FAFAFA, transparent)',
-            }}
-          />
-          {/* Fade right — pointer-events: none */}
-          <div
-            className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none"
-            style={{
-              width: 32,
-              background: 'linear-gradient(to left, #FAFAFA, transparent)',
-            }}
-          />
-
-          {/* Stations scroll container */}
-          <div
-            ref={scrollContainerRef}
-            className="overflow-x-auto"
-            style={{ paddingBottom: 6 }}
-            tabIndex={0}
-            aria-label={`Pipeline chain: ${stepCount} bước`}
-            role="list"
-            onKeyDown={(e) => {
-              if (!scrollContainerRef.current) return
-              if (e.key === 'ArrowRight') scrollContainerRef.current.scrollBy({ left: 120, behavior: 'smooth' })
-              if (e.key === 'ArrowLeft') scrollContainerRef.current.scrollBy({ left: -120, behavior: 'smooth' })
-            }}
-          >
-            {/* align-items: center (KHÔNG stretch) — watch_out */}
-            <div className="inline-flex items-center" style={{ whiteSpace: 'nowrap', minWidth: 'max-content' }}>
-              {steps.map((step, idx) => (
-                <span key={step.step_index} className="inline-flex items-center">
-                  <StepStation step={step} position={idx + 1} />
-                  {idx < steps.length - 1 && <StepConnector />}
-                </span>
-              ))}
-            </div>
-          </div>
+        <div
+          className="flex flex-wrap items-center"
+          style={{ opacity: isEnded ? 0.6 : 1, gap: '6px 0', paddingBottom: 4 }}
+          aria-label={`Pipeline chain: ${stepCount} bước`}
+          role="list"
+        >
+          {steps.map((step, idx) => (
+            <span key={step.step_index} className="inline-flex items-center">
+              <StepStation step={step} position={idx + 1} />
+              {idx < steps.length - 1 && <StepConnector />}
+            </span>
+          ))}
         </div>
       )}
     </div>
