@@ -223,6 +223,10 @@ async def _process_file(conn: Any, file_path: str) -> None:
             msg_type=parsed.msg_type,
             tool_name=parsed.tool_name,
             payload_json=parsed.raw_json,
+            # FR-001 fix: persist subagent info at ingest — payload_json truncation
+            # at 2000 chars often corrupts Agent tool_use lines with large prompts.
+            subagent_type=parsed.subagent_type if parsed.tool_name == "Agent" else None,
+            subagent_description=parsed.subagent_activity if parsed.tool_name == "Agent" else None,
         )
 
         has_tokens = any([

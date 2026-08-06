@@ -8,9 +8,10 @@ export type ViewMode = 'by-agent' | 'by-project';
 // Sprint 3 — Chain types (FR-001)
 export interface ChainStep {
   step_index: number;
-  subagent_type: string;
-  subagent_display: string;
-  description: string;
+  // Backend can return null when Agent tool_use has no subagent_type/description
+  subagent_type: string | null;
+  subagent_display: string | null;
+  description: string | null;
   started_at: string;       // ISO8601
   status: 'done' | 'active';
 }

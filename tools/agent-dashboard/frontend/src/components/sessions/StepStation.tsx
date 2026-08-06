@@ -15,9 +15,11 @@ interface StepStationProps {
 export default function StepStation({ step, position }: StepStationProps) {
   const isActive = step.status === 'active'
 
+  const displayName = step.subagent_display || step.subagent_type || 'Agent'
+  const descText = step.description || ''
   const ariaLabel = isActive
-    ? `Bước ${position}: ${step.subagent_display} — ${step.description} — đang chạy`
-    : `Bước ${position}: ${step.subagent_display} — ${step.description} — đã hoàn thành`
+    ? `Bước ${position}: ${displayName}${descText ? ' — ' + descText : ''} — đang chạy`
+    : `Bước ${position}: ${displayName}${descText ? ' — ' + descText : ''} — đã hoàn thành`
 
   if (isActive) {
     return (
@@ -53,7 +55,7 @@ export default function StepStation({ step, position }: StepStationProps) {
             className="font-semibold truncate"
             style={{ fontSize: 13, color: '#251C53', lineHeight: 1.3 }}
           >
-            {step.subagent_display}
+            {displayName}
           </span>
         </div>
         {/* Description: max 3 dòng */}
@@ -74,7 +76,7 @@ export default function StepStation({ step, position }: StepStationProps) {
     <div
       role="listitem"
       aria-label={ariaLabel}
-      title={step.description}
+      title={step.description || undefined}
       className="inline-flex flex-col rounded p-2 cursor-default group"
       style={{
         width: 96,

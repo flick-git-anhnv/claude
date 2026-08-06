@@ -34,12 +34,14 @@ CREATE INDEX IF NOT EXISTS idx_sessions_state         ON sessions(state);
 CREATE INDEX IF NOT EXISTS idx_sessions_last_event_at ON sessions(last_event_at);
 
 CREATE TABLE IF NOT EXISTS events (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id   TEXT NOT NULL,
-  ts           TEXT NOT NULL,
-  type         TEXT NOT NULL,
-  tool_name    TEXT,
-  payload_json TEXT,
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id           TEXT NOT NULL,
+  ts                   TEXT NOT NULL,
+  type                 TEXT NOT NULL,
+  tool_name            TEXT,
+  payload_json         TEXT,
+  subagent_type        TEXT,
+  subagent_description TEXT,
   FOREIGN KEY (session_id) REFERENCES sessions(session_id)
 );
 CREATE INDEX IF NOT EXISTS idx_events_session_ts ON events(session_id, ts);
@@ -129,6 +131,34 @@ async def _migrate_sprint3_columns(conn: aiosqlite.Connection) -> None:
     logger.info("DB migration: BUG-003 cleanup applied (started_at='' → last_event_at)")
 
 
+async def _migrate_events_subagent_columns(conn: aiosqlite.Connection) -> None:
+    """Idempotent: add subagent_type + description columns to events table.
+
+    Rationale: `payload_json` is truncated at 2000 chars (parser.py), which
+    frequently corrupts Agent tool_use lines whose input contains large task
+    prompts (>2000 chars). Re-parsing the truncated JSON in get_session_chain
+    fails silently → chain steps get null subagent_type/description → FR-001
+    pipeline UI shows unhelpful placeholders.
+
+    Fix: persist subagent_type and description as first-class columns at
+    ingest time (already parsed by parser.py into ParsedLine) so get_session_chain
+    can read them directly instead of re-parsing truncated JSON.
+    """
+    async with conn.execute("PRAGMA table_info(events)") as cur:
+        rows = await cur.fetchall()
+    existing = {row["name"] for row in rows}
+
+    for col, typedef in (
+        ("subagent_type",        "TEXT"),
+        ("subagent_description", "TEXT"),
+    ):
+        if col not in existing:
+            await conn.execute(f"ALTER TABLE events ADD COLUMN {col} {typedef}")
+            logger.info("DB migration: added column events.%s", col)
+
+    await conn.commit()
+
+
 async def init(db_path: Path) -> aiosqlite.Connection:
     """Open DB, enable WAL, create tables, run migrations. Returns open connection."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -138,6 +168,7 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await conn.commit()
     await _migrate_subagent_columns(conn)
     await _migrate_sprint3_columns(conn)
+    await _migrate_events_subagent_columns(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 
@@ -292,10 +323,14 @@ async def insert_event(
     msg_type: str,
     tool_name: Optional[str],
     payload_json: str,
+    subagent_type: Optional[str] = None,
+    subagent_description: Optional[str] = None,
 ) -> None:
     await conn.execute(
-        "INSERT INTO events (session_id, ts, type, tool_name, payload_json) VALUES (?, ?, ?, ?, ?)",
-        (session_id, ts, msg_type, tool_name, payload_json),
+        "INSERT INTO events (session_id, ts, type, tool_name, payload_json, "
+        "subagent_type, subagent_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (session_id, ts, msg_type, tool_name, payload_json,
+         subagent_type, subagent_description),
     )
     await conn.commit()
 
@@ -561,9 +596,11 @@ async def get_session_chain(
         return None
     session_state: str = row["state"]
 
-    # Fetch Agent tool_use events ordered chronologically
+    # Fetch Agent tool_use events ordered chronologically.
+    # subagent_type/description are first-class columns (populated at ingest);
+    # payload_json is a fallback for legacy rows written before the migration.
     async with conn.execute(
-        """SELECT ts, payload_json
+        """SELECT ts, payload_json, subagent_type, subagent_description
              FROM events
             WHERE session_id = ? AND tool_name = 'Agent'
             ORDER BY ts ASC""",
@@ -573,26 +610,28 @@ async def get_session_chain(
 
     steps = []
     for i, ev in enumerate(event_rows):
-        # payload_json is the raw JSONL line — extract subagent_type + description
-        subagent_type: Optional[str] = None
-        description: Optional[str] = None
-        try:
-            data = _json.loads(ev["payload_json"] or "{}")
-            message = data.get("message") or {}
-            content = message.get("content")
-            if isinstance(content, list):
-                for block in content:
-                    if (
-                        isinstance(block, dict)
-                        and block.get("type") == "tool_use"
-                        and block.get("name") == "Agent"
-                    ):
-                        tool_input = block.get("input") or {}
-                        subagent_type = tool_input.get("subagent_type") or None
-                        description = tool_input.get("description") or None
-                        break
-        except (ValueError, AttributeError):
-            pass
+        # Prefer stored columns (post-Sprint3-fix); fall back to parsing raw JSON
+        # for legacy rows written when only payload_json was persisted.
+        subagent_type: Optional[str] = ev["subagent_type"] if "subagent_type" in ev.keys() else None
+        description: Optional[str] = ev["subagent_description"] if "subagent_description" in ev.keys() else None
+        if not subagent_type:
+            try:
+                data = _json.loads(ev["payload_json"] or "{}")
+                message = data.get("message") or {}
+                content = message.get("content")
+                if isinstance(content, list):
+                    for block in content:
+                        if (
+                            isinstance(block, dict)
+                            and block.get("type") == "tool_use"
+                            and block.get("name") == "Agent"
+                        ):
+                            tool_input = block.get("input") or {}
+                            subagent_type = tool_input.get("subagent_type") or None
+                            description = tool_input.get("description") or None
+                            break
+            except (ValueError, AttributeError):
+                pass
 
         steps.append({
             "step_index":        i,
