@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 21:15
+updated: 2026-08-06 21:09
 status: active
 workflow: WF-FEATURE
 priority: P2
@@ -91,6 +91,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 |---|------|-------|--------|-----------|-----------------|
 | 7.0 | Fix UI-003 — Output Tokens bị "nuốt" bởi Cache Read trên chart (tách 2 chart riêng) | Junior Developer | 🔄 | `steps/STEP-7.0-jd-fix-ui003.md` | - |
 | 7.1 | Backend: parser lưu `parent_session_id`/`attribution_agent` cho session con (subagent transcript), DB join token thật, endpoint `/chain` trả `tokens_step` | Senior Developer | ✅ | `steps/STEP-7.1-sd-token-step.md` | 2026-08-06 20:47 |
+| 7.1b | Follow-up: thêm `result_summary`/`result_full`/`duration_ms` vào mỗi `history[]` entry của `/chain` — sync (tool_result) + async (queue-operation XML) | Senior Developer | ✅ | `steps/STEP-7.1b-result-summary.md` | 2026-08-06 21:09 |
 | 7.2 | Frontend: hiển thị token thật (input/output/cache) cho từng step trong PipelineCard/StepStation | Junior Developer | ✅ | `steps/STEP-7.2-jd-token-step-ui.md` | 2026-08-06 21:15 |
 | 7.3 | Review cuối + verify-pr + merge | Tech Lead | ⬜ | `steps/STEP-7.3-tl-review-sprint4.md` | - |
 
