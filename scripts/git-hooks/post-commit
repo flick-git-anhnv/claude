@@ -1,0 +1,25 @@
+#!/bin/sh
+# Tu dong dong bo cau hinh dung chung sang GeminiGit sau moi commit trong repo nay.
+# KHONG BAO GIO lam fail commit -- moi loi chi in canh bao roi thoat 0.
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  exit 0
+fi
+
+CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+if [ -z "$CHANGED" ]; then
+  exit 0
+fi
+
+if echo "$CHANGED" | grep -qE '^(CLAUDE\.md|RULES\.md|WORKFLOW\.md|\.claude/(agents|commands|evals|templates|shared|references|hooks|lessons)/|scripts/)'; then
+  echo "[sync-to-gemini] Phat hien thay doi cau hinh dung chung -- dang dong bo sang GeminiGit..."
+  PYTHONIOENCODING=utf-8 python "$REPO_ROOT/scripts/sync-to-gemini.py" --apply
+  if [ $? -ne 0 ]; then
+    echo "[sync-to-gemini] CANH BAO: dong bo that bai, xem log tren. Commit van giu nguyen, khong bi anh huong."
+  else
+    echo "[sync-to-gemini] Da dong bo xong. Vao repo GeminiGit kiem tra 'git status' roi tu commit khi san sang."
+  fi
+fi
+
+exit 0
