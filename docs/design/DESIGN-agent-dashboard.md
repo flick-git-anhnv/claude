@@ -640,3 +640,391 @@ Dashboard này là **local-only tool** chạy trên máy dev — thiết kế ch
 ## Link Figma / Prototype
 
 Không có — dashboard nội bộ, thiết kế text-based đủ để implement trực tiếp.
+
+---
+
+## Sprint 3 — Pipeline View, Tên Session & %Context (FR-001, FR-002, FR-003)
+
+> Phiên bản: 2.0 | Ngày: 2026-08-06 | Designer: UI/UX Designer (KZTEK)
+> Tham chiếu TDD: `docs/tech-design/TDD-agent-dashboard.md` §24–26
+
+### Tổng quan thay đổi Sprint 3
+
+| FR | Thay đổi | Vị trí áp dụng |
+|----|----------|----------------|
+| FR-003 | Tên session thân thiện thay session_id thô | Tiêu đề SessionCard |
+| FR-002 | Badge %context window (progress bar + %) | Hàng token trong SessionCard |
+| FR-001 | PipelineCard — hàng ngang stations trong SessionCard | Bên trong SessionCard (chỉ khi có chain) |
+
+---
+
+### Cập nhật SessionCard — Layout v2.0
+
+SessionCard hiện tại (Sprint 1-2) đổi tên thành **SessionCard v2** — giữ nguyên cấu trúc header nhưng bổ sung:
+
+1. **Dòng tiêu đề session** (FR-003) — thay thế session_id thô
+2. **Badge %context** (FR-002) — nhét vào hàng token
+3. **PipelineCard** (FR-001) — block mới bên dưới token row, chỉ render khi `steps.length > 0`
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  ● [RUNNING]  WF-FEATURE: Dashboard Planning       bắt đầu 10:05   │  ← header row (giữ nguyên v1)
+│              [Tên session từ ai-title hoặc user text]               │  ← THÊM MỚI FR-003
+│  Đang gọi: "Senior Developer thực hiện backend..."                 │  ← task description (giữ nguyên)
+│  IN 8,200 | OUT 1,450 | Cache R 3,100 | [▓▓░░░░░░░░] 4.5%         │  ← THÊM badge FR-002 ở cuối
+├─────────────────────────────────────────────────────────────────────┤  ← divider mỏng #CBCBCB
+│  🔗 Pipeline [5 bước]                     [← cuộn →]               │  ← THÊM MỚI header pipeline FR-001
+│                                                                     │
+│  ┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐   ┌──────────┐  │
+│  │ ✓ PM   │──▶│ ✓ BA   │──▶│ ✓ UX   │──▶│ ✓ TL   │──▶│ ● SD     │  │  ← pipeline stations
+│  │Product │   │Business│   │UI/UX   │   │Tech    │   │Senior    │  │
+│  │Manager │   │Analyst │   │Designer│   │Lead    │   │Developer │  │
+│  │"Viết   │   │"Viết   │   │"Wire   │   │"TDD    │   │"Code     │  │
+│  │PRD..." │   │US..."  │   │frame.."│   │v1.0.." │   │backend.."│  │
+│  │ (mờ)   │   │ (mờ)   │   │ (mờ)   │   │ (mờ)   │   │▌ACTIVE   │  │  ← border trái cam #F05922
+│  └────────┘   └────────┘   └────────┘   └────────┘   └──────────┘  │
+│                                                ← overflow-x: auto → │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### FR-003 — Tên Session Thân Thiện
+
+#### Vị trí và hiển thị
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  ● [RUNNING]  senior-developer                      bắt đầu 10:05  │
+│  WF-FEATURE: Dashboard Planning Sprint 3                            │  ← dòng tiêu đề mới
+│  Task: "Đang viết unit test cho parser.py..."                       │
+│  ...                                                                │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Spec
+
+| Field | Giá trị | Style |
+|-------|---------|-------|
+| Nguồn 1 (ưu tiên) | `ai_title` từ JSONL (dòng cuối) | 13px, `#4A3F8C`, truncate 80 ký tự |
+| Nguồn 2 (fallback) | Tin nhắn user đầu tiên (text block) | 13px, `#4A3F8C`, truncate 60 ký tự |
+| Nguồn 3 (fallback) | `session_id.slice(0, 8)` như v1 | 13px monospace, `#9CA3AF` |
+| Khi title = null | Không hiển thị dòng tiêu đề | (giữ layout cũ) |
+
+**Typography:** 13px, regular, `#4A3F8C` — phân biệt với task description bên dưới (14px, `#1F2937`)
+
+**Truncation:** max 1 dòng, ellipsis `...`, tooltip trên hover hiển thị đầy đủ
+
+---
+
+### FR-002 — Badge %Context Window
+
+#### Vị trí trong hàng token
+
+```
+Tokens: IN 12,450 | OUT 3,210 | Cache R 8,200 | Cache W 400    [▓▓░░░░░░░░] 4.5%
+                                                                 ↑ badge %context ↑
+```
+
+Badge nằm cuối dòng token, căn phải, không xuống dòng (hàng token flex row, badge `margin-left: auto`).
+
+#### Component spec — ContextBadge
+
+```
+┌─────────────────────────────┐
+│ [▓▓░░░░░░░░]  4.5%          │
+│  progress    percentage     │
+└─────────────────────────────┘
+
+Progress bar: 48px × 8px, border-radius 4px (pill)
+Percentage text: 12px monospace, margin-left 6px
+Tooltip on hover: "32,000 / 1,000,000 tokens (lượt gần nhất)"
+```
+
+#### Màu sắc theo ngưỡng
+
+| Ngưỡng | Màu progress bar | Màu text | Ý nghĩa |
+|--------|-----------------|----------|---------|
+| 0–70% | `#4A3F8C` (navy mid) | `#4A3F8C` | Bình thường |
+| 70–90% | `#FFAA80` (cam nhạt) | `#251C53` | Cảnh báo |
+| 90–100% | `#EF4444` (đỏ) | `#EF4444` | Nguy hiểm — sắp hết context |
+
+**Accessibility:** `aria-label="4.5% context window đã dùng (32,000 / 1,000,000 tokens)"`
+
+**States đặc biệt:**
+- `context_pct = 0` (session chưa có assistant message) → ẩn badge (không hiển thị `0%`)
+- `context_pct = null` / backend chưa có data → ẩn badge
+- Session DONE → vẫn hiển thị badge (chụp lại trạng thái lúc kết thúc), màu nhạt hơn 50% opacity
+
+---
+
+### FR-001 — PipelineCard Component
+
+#### Khi nào render
+
+| Điều kiện | Hành động |
+|-----------|-----------|
+| `steps.length > 0` | Render PipelineCard bên dưới token row |
+| `steps.length = 0` hoặc API trả empty | Không render — SessionCard hiển thị bình thường như v1 |
+| API đang loading (`/api/sessions/{id}/chain`) | Hiện skeleton mờ (1 hàng 3 station placeholder, pulse animation) |
+| API lỗi | Không hiển thị PipelineCard (fail silently — không làm vỡ SessionCard) |
+
+#### Layout PipelineCard
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ border-top: 1px #CBCBCB                                             │
+│ background: #FAFAFA (phân biệt nhẹ với SessionCard header trắng)   │
+│ padding: 10px 16px 12px                                             │
+│                                                                     │
+│  🔗 Pipeline  [3 bước]                        (caption #4A3F8C)    │
+│                                                                     │
+│  [overflow-x: auto container]                                       │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  [Station Done]  ──▶  [Station Done]  ──▶  [Station Active] │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                 (fade gradient phải)│
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Overflow behavior:**
+- Container: `overflow-x: auto`, `white-space: nowrap`, `padding-bottom: 6px` (khoảng cho scrollbar)
+- Scrollbar: `height: 4px`, `background: #E5E7EB`, thumb `#B8B3D6` — mỏng, không chiếm nhiều không gian
+- Fade gradient phải: pseudo-element `::after` với `background: linear-gradient(to right, transparent, #FAFAFA)`, chỉ hiện khi content tràn
+
+---
+
+#### Step Station — 2 trạng thái
+
+##### Trạm DONE (đã qua)
+
+```
+┌──────────────┐
+│ ✓            │  ← icon checkmark, màu #22C55E, 12px
+│ Product      │  ← subagent_display, 11px bold, #4A3F8C, truncate 1 dòng
+│ Manager      │
+│ "Viết PRD    │  ← description, 10px, #9CA3AF, max 2 dòng, ellipsis
+│  cho dash..."│
+└──────────────┘
+Kích thước: width 96px, height 80px
+Style: bg #F5F5F5, border 1px #CBCBCB, border-radius 6px
+Opacity: 0.65
+Hover: opacity 1.0, box-shadow 0 1px 4px rgba(0,0,0,0.1), z-index: 1
+       → tooltip hiển thị description đầy đủ
+```
+
+##### Trạm ACTIVE (đang chạy — chỉ có 1 trong chain, luôn là bước cuối)
+
+```
+┌──────────────────┐
+│ ●  (pulse dot)   │  ← animated dot #F05922, 8px
+│ Senior           │  ← subagent_display, 13px semibold, #251C53
+│ Developer        │
+│                  │
+│ "Code backend    │  ← description, 12px, #1F2937, max 3 dòng, no truncate
+│  ingest loop..." │
+│                  │
+└──────────────────┘
+Kích thước: width 164px, height 80px (wider để đọc được description)
+Style:
+  bg: rgba(255, 170, 128, 0.12)  (FFAA80 ở 12% opacity — cam nhạt nhẹ)
+  border: 1px rgba(240, 89, 34, 0.3)
+  border-left: 4px solid #F05922  ← accent chính
+  border-radius: 6px
+Opacity: 1.0 (không mờ)
+Animation: dot pulse keyframe (scale 1→1.3→1, 1.5s infinite)
+```
+
+##### Connector giữa các trạm
+
+```
+  [Station]  ──▶  [Station]
+             ↑
+             Connector: 20px wide
+             SVG hoặc CSS: line 1px #CBCBCB + arrowhead #CBCBCB
+             display: inline-flex, align-items: center
+             flex-shrink: 0  (không bị co khi overflow)
+```
+
+---
+
+#### Pipeline header row
+
+```
+  🔗 Pipeline  [5 bước]
+
+  Style:
+  - Icon 🔗: thay bằng SVG chain-link 14px, màu #4A3F8C
+  - Text "Pipeline": 12px semibold, #251C53
+  - Badge "[5 bước]": 11px, bg #B8B3D6, text #251C53, border-radius 10px, padding 1px 6px
+  - Khoảng cách trên pipeline header: margin-bottom 8px
+```
+
+---
+
+#### SessionCard DONE — PipelineCard collapsed
+
+Khi session DONE, PipelineCard vẫn hiển thị nhưng:
+- Toàn bộ container opacity 0.6
+- Tất cả stations ở trạng thái DONE (không có ACTIVE station)
+- Pipeline header: "🔗 Pipeline  [5 bước — kết thúc]"
+
+```
+┌─────────────────────────────────────────────────────────────────────┐ ← opacity 0.6
+│ 🔗 Pipeline  [5 bước — kết thúc]                                   │
+│ [✓ PM]──▶[✓ BA]──▶[✓ UX]──▶[✓ TL]──▶[✓ SD]                        │ ← tất cả done
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Xử lý chain dài (10–20+ bước)
+
+Đây là trường hợp thực tế quan trọng nhất (WF-FEATURE full chain có thể đến 15 bước).
+
+**Chiến lược:**
+
+1. **Scroll ngang** — toàn bộ stations trong `overflow-x: auto`. Không wrap 2 dòng, không ẩn bước.
+2. **Auto-scroll to active** — khi `active` station nằm ngoài viewport của scroll container → `scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' })` khi component mount hoặc khi `steps` cập nhật.
+3. **Fade gradient** — overlay mờ phía phải (`::after` pseudo-element, width 32px, gradient `transparent → #FAFAFA`) khi nội dung tràn → gợi ý có thể scroll.
+4. **Step counter label** — "🔗 Pipeline [12 bước]" trong header luôn hiển thị tổng số bước để user biết chain dài bao nhiêu mà không cần scroll hết.
+5. **Hover expand** — done station width 96px (compact); khi hover: expand inline (transition 150ms) thêm 16px để đọc description dễ hơn — KHÔNG làm layout shift đột ngột.
+
+**Benchmark test cases (JD cần test tay):**
+
+| Số bước | Mô tả | Kỳ vọng |
+|---------|-------|---------|
+| 1 | Chỉ gọi 1 agent | 1 station ACTIVE (nếu Running), không scroll |
+| 5 | WF-BUGFIX | Tất cả visible không cần scroll |
+| 10 | WF-FEATURE (từ PM đến QA) | Scroll, auto-scroll to active |
+| 20+ | WF-FEATURE full + re-call | Scroll, active ở cuối tự hiện ra |
+
+---
+
+### Wireframe tổng thể — Agent Status Panel (Sprint 3)
+
+#### Session CÓ chain (Dispatcher session gọi nhiều agent)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  RUNNING [1]  ─────────────────────────────────────────────────     │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ ● [RUNNING]  (phiên Dispatcher)           bắt đầu: 10:05     │  │  ← row 1: status + time
+│  │ WF-FEATURE: Dashboard Planning Sprint 3                      │  │  ← row 2: FR-003 session title
+│  │ "Đang gọi Senior Developer thực hiện backend..."             │  │  ← row 3: description
+│  │ IN 8,200 | OUT 1,450 | Cache R 3,100 | [▓▓░░] 4.5%          │  │  ← row 4: tokens + FR-002 badge
+│  ├──────────────────────────────────────────────────────────────┤  │  ← divider
+│  │ 🔗 Pipeline  [5 bước]                      [← cuộn →]       │  │  ← pipeline header
+│  │                                                              │  │
+│  │  ┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐   ┌──────────┐  │  │
+│  │  │ ✓ PM │──▶│ ✓ BA │──▶│ ✓ UX │──▶│ ✓ TL │──▶│ ● SD     │  │  │  ← stations
+│  │  │(mờ)  │   │(mờ)  │   │(mờ)  │   │(mờ)  │   │ACTIVE    │  │  │
+│  │  └──────┘   └──────┘   └──────┘   └──────┘   └──────────┘  │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  DONE [2]  ─────────────────────────────────────────────────────   │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │  ← session đơn (không có chain)
+│  │ ✕ [DONE]   senior-developer                  kết thúc 09:45  │  │
+│  │ Viết unit test cho module auth                               │  │  ← FR-003: title (nếu có)
+│  │ Task: "Review PR #47 — module authentication..."             │  │
+│  │ IN 22,100 | OUT 8,450 | Cache R 15,000 | [▓▓▓▓▓░░░░░] 22.8% │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │  ← session đơn có pipeline (DONE)
+│  │ ✕ [DONE]   (phiên QA)                        kết thúc 09:30  │  │
+│  │ WF-BUGFIX: Fix BUG-001 DELETE 500                            │  │
+│  │ "Verify fix trên staging, regression test..."                │  │
+│  │ IN 5,100 | OUT 1,200 | [░░░░░░░░░░] 2.1%                    │  │
+│  ├──────────────────────────────────────────────────────────────┤  │
+│  │ 🔗 Pipeline [3 bước — kết thúc]                              │  │  ← pipeline DONE (opacity 0.6)
+│  │  ┌──────┐   ┌──────┐   ┌──────┐                              │  │
+│  │  │ ✓ SD │──▶│ ✓ TL │──▶│ ✓ QA │                              │  │
+│  │  │(mờ)  │   │(mờ)  │   │(mờ)  │                              │  │
+│  │  └──────┘   └──────┘   └──────┘                              │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### States tổng hợp của PipelineCard
+
+| State | Trigger | Hiển thị |
+|-------|---------|---------|
+| Loading | Component mount, đang gọi `/chain` endpoint | Skeleton row: 3 pill mờ, pulse animation |
+| Active chain (Running) | Steps > 0, session Running | Pipeline đầy đủ, active station highlight Cam |
+| Ended chain | Steps > 0, session Idle/Ended | Pipeline hiển thị opacity 0.6, tất cả done |
+| Empty (no chain) | Steps = 0 hoặc API empty | Không render — SessionCard v1 bình thường |
+| API error | Network/backend lỗi | Fail silently — ẩn PipelineCard, không lỗi toàn bộ card |
+
+---
+
+### Component List (bổ sung Sprint 3)
+
+| Component | Loại | Props | State |
+|-----------|------|-------|-------|
+| `PipelineCard` | New | `sessionId`, `steps[]`, `sessionState` | loading / active / ended / empty / error |
+| `StepStation` | New (child of PipelineCard) | `step`, `isActive`, `isDone` | active / done |
+| `StepConnector` | New (utility) | — | — |
+| `ContextBadge` | New | `contextPct`, `lastInputTotal`, `maxContext` | normal / warning / danger / hidden |
+| `SessionCard` | Updated (v2) | + `title?`, `contextPct?`, `steps[]?` | (các state cũ + pipeline) |
+
+---
+
+### Design Tokens bổ sung Sprint 3
+
+```css
+/* Pipeline */
+--pipeline-bg: #FAFAFA;
+--pipeline-border: var(--color-gray-light);          /* #CBCBCB */
+--station-done-bg: #F5F5F5;
+--station-done-opacity: 0.65;
+--station-active-bg: rgba(255, 170, 128, 0.12);      /* #FFAA80 12% */
+--station-active-border: rgba(240, 89, 34, 0.3);
+--station-active-accent: var(--color-orange);        /* #F05922 */
+--station-width-done: 96px;
+--station-width-active: 164px;
+--station-height: 80px;
+--connector-color: var(--color-gray-light);          /* #CBCBCB */
+--connector-width: 20px;
+
+/* Context Badge */
+--context-bar-width: 48px;
+--context-bar-height: 8px;
+--context-normal: var(--color-navy-mid);             /* #4A3F8C */
+--context-warning: var(--color-orange-light);        /* #FFAA80 */
+--context-danger: var(--color-red);                  /* #EF4444 */
+--context-threshold-warning: 70;
+--context-threshold-danger: 90;
+
+/* Session title */
+--session-title-color: var(--color-navy-mid);        /* #4A3F8C */
+--session-title-size: 13px;
+```
+
+---
+
+### Accessibility (Sprint 3)
+
+- `PipelineCard`: `role="list"`, mỗi StepStation là `role="listitem"`
+- StepStation done: `aria-label="Bước [N]: [subagent_display] — [description] — đã hoàn thành"`
+- StepStation active: `aria-label="Bước [N]: [subagent_display] — [description] — đang chạy"`
+- ContextBadge: `role="progressbar"`, `aria-valuenow={contextPct}`, `aria-valuemin="0"`, `aria-valuemax="100"`, `aria-label="[pct]% context window"`
+- Session title: không thêm heading mới — dùng `<p>` với class `.session-title` (semantic đủ trong card context)
+- Pipeline scroll container: `tabindex="0"`, keyboard Left/Right arrow để scroll ngang
+
+---
+
+### Quyết định UX Sprint 3
+
+| Câu hỏi | Quyết định | Lý do |
+|---------|-----------|-------|
+| Pipeline nằm ở đâu trong SessionCard? | Bên dưới token row, phân cách bằng divider mỏng | Không làm vỡ layout header; pipeline là thông tin phụ trợ, không phải chính |
+| Session không có chain? | Hiển thị SessionCard v1 thuần (không có pipeline block) | Không làm nhiễu những session simple/single-agent |
+| Chain dài (10-20+ bước) scroll hay ẩn bớt? | Scroll ngang, KHÔNG ẩn bước nào | Transparency — user cần thấy đầy đủ WF đã đi qua; auto-scroll đến active |
+| Done station collapsed hay expanded mặc định? | Compact mặc định (96px), expand on hover | Tiết kiệm không gian; hover cho chi tiết khi cần |
+| Khi session IDLE (không có active step)? | Tất cả stations = done (không có active highlight) | Phản ánh đúng TDD §26.4: active chỉ có khi session Running |
+| %Context khi = 0? | Ẩn badge | Không có data hữu ích để hiển thị; tránh "0%" gây nhầm lẫn |
+| Title null fallback? | session_id.slice(0,8) theo v1 | Backward compatible; không hiển thị chữ "null" hay dòng trống |
