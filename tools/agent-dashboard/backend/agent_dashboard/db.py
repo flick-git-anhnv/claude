@@ -64,13 +64,37 @@ CREATE TABLE IF NOT EXISTS file_cursors (
 """
 
 
+async def _migrate_subagent_columns(conn: aiosqlite.Connection) -> None:
+    """Idempotent: add current_subagent_* columns to sessions if missing.
+
+    Uses PRAGMA table_info to check before ALTER TABLE — SQLite does not support
+    'ADD COLUMN IF NOT EXISTS', so this guard prevents 'duplicate column' errors
+    on repeated server restarts.
+    """
+    async with conn.execute("PRAGMA table_info(sessions)") as cur:
+        rows = await cur.fetchall()
+    existing = {row["name"] for row in rows}
+
+    for col, typedef in (
+        ("current_subagent_type",     "TEXT"),
+        ("current_subagent_activity", "TEXT"),
+        ("current_subagent_at",       "TEXT"),
+    ):
+        if col not in existing:
+            await conn.execute(f"ALTER TABLE sessions ADD COLUMN {col} {typedef}")
+            logger.info("DB migration: added column sessions.%s", col)
+
+    await conn.commit()
+
+
 async def init(db_path: Path) -> aiosqlite.Connection:
-    """Open DB, enable WAL, create tables. Returns the open connection."""
+    """Open DB, enable WAL, create tables, run migrations. Returns open connection."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = await aiosqlite.connect(str(db_path))
     conn.row_factory = aiosqlite.Row
     await conn.executescript(_SCHEMA_SQL)
     await conn.commit()
+    await _migrate_subagent_columns(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 
@@ -184,7 +208,12 @@ async def insert_token_usage(
 # ── Queries ───────────────────────────────────────────────────────────────────
 
 def _row_to_session(row: aiosqlite.Row) -> dict[str, Any]:
-    """Shape a sessions-table row for API/WS responses: token_total as TokenCounts object."""
+    """Shape a sessions-table row for API/WS responses: token_total as TokenCounts object.
+
+    Also builds current_subagent dict from the 3 subagent columns (may be None).
+    """
+    from .models import get_subagent_display_name
+
     d = dict(row)
     token_total = {
         "input":          d.pop("token_input", 0) or 0,
@@ -193,13 +222,29 @@ def _row_to_session(row: aiosqlite.Row) -> dict[str, Any]:
         "cache_read":     d.pop("token_cache_read", 0) or 0,
     }
     d["token_total"] = token_total
+
+    # Build current_subagent object (Track B)
+    sub_type     = d.pop("current_subagent_type",     None)
+    sub_activity = d.pop("current_subagent_activity", None)
+    sub_at       = d.pop("current_subagent_at",       None)
+    if sub_type:
+        d["current_subagent"] = {
+            "type":         sub_type,
+            "display_name": get_subagent_display_name(sub_type),
+            "activity":     sub_activity,
+            "at":           sub_at,
+        }
+    else:
+        d["current_subagent"] = None
+
     return d
 
 
 async def get_active_sessions(conn: aiosqlite.Connection) -> list[dict[str, Any]]:
     async with conn.execute(
         """SELECT session_id, project, agent_type, state, started_at, last_event_at,
-                  token_input, token_output, token_cache_creation, token_cache_read
+                  token_input, token_output, token_cache_creation, token_cache_read,
+                  current_subagent_type, current_subagent_activity, current_subagent_at
            FROM sessions WHERE state != 'Ended'
            ORDER BY last_event_at DESC"""
     ) as cur:
@@ -248,7 +293,8 @@ async def get_session_history(
 
     async with conn.execute(
         f"""SELECT session_id, project, agent_type, state, started_at, last_event_at, ended_at,
-                   token_input, token_output, token_cache_creation, token_cache_read
+                   token_input, token_output, token_cache_creation, token_cache_read,
+                   current_subagent_type, current_subagent_activity, current_subagent_at
             FROM sessions WHERE {where}
             ORDER BY started_at DESC LIMIT ? OFFSET ?""",
         params + [limit, offset],
@@ -275,6 +321,80 @@ async def get_session_detail(
         events = await cur.fetchall()
 
     return dict(row), [dict(e) for e in events]
+
+
+async def update_session_subagent(
+    conn: aiosqlite.Connection,
+    session_id: str,
+    subagent_type: str,
+    subagent_activity: Optional[str],
+    at: str,
+) -> None:
+    """Update current_subagent_* columns for a session (Track B)."""
+    await conn.execute(
+        """UPDATE sessions SET
+             current_subagent_type     = ?,
+             current_subagent_activity = ?,
+             current_subagent_at       = ?
+           WHERE session_id = ?""",
+        (subagent_type, subagent_activity, at, session_id),
+    )
+    await conn.commit()
+
+
+async def get_sessions_by_project(
+    conn: aiosqlite.Connection,
+    from_dt: Optional[str] = None,
+    to_dt: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    """Return all sessions grouped by project slug (Track B — 'Theo Dự án' view).
+
+    Reuses the same filter pattern as get_session_history but returns all states
+    and groups by project. Does NOT duplicate filter/pagination logic.
+    """
+    from collections import defaultdict
+    from .models import decode_project_slug
+
+    conditions: list[str] = []
+    params: list[Any] = []
+    if from_dt:
+        conditions.append("started_at >= ?")
+        params.append(from_dt)
+    if to_dt:
+        conditions.append("started_at <= ?")
+        params.append(to_dt)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    async with conn.execute(
+        f"""SELECT session_id, project, agent_type, state, started_at, last_event_at,
+                   token_input, token_output, token_cache_creation, token_cache_read,
+                   current_subagent_type, current_subagent_activity, current_subagent_at
+            FROM sessions {where}
+            ORDER BY project ASC, last_event_at DESC""",
+        params,
+    ) as cur:
+        rows = await cur.fetchall()
+
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[row["project"]].append(_row_to_session(row))
+
+    result = []
+    for slug, sessions in groups.items():
+        token_total = sum(
+            s["token_total"]["input"] + s["token_total"]["output"]
+            + s["token_total"]["cache_creation"] + s["token_total"]["cache_read"]
+            for s in sessions
+        )
+        result.append({
+            "project_slug":    slug,
+            "project_display": decode_project_slug(slug),
+            "session_count":   len(sessions),
+            "token_total":     token_total,
+            "sessions":        sessions,
+        })
+
+    return result
 
 
 async def get_token_summary(conn: aiosqlite.Connection, range_str: str) -> dict[str, Any]:

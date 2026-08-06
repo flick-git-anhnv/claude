@@ -3,12 +3,21 @@
 export type SessionState = 'Running' | 'Idle' | 'Ended';
 export type WsStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 export type RangeFilter = '7d' | '30d' | '12w' | '6m';
+export type ViewMode = 'by-agent' | 'by-project';
 
 export interface TokenCounts {
   input: number;
   output: number;
   cache_creation: number;
   cache_read: number;
+}
+
+/** Track B: current subagent running inside this session */
+export interface CurrentSubagent {
+  type: string;          // raw slug, e.g. "senior-developer"
+  display_name: string;  // mapped display, e.g. "Senior Developer"
+  activity: string | null;
+  at: string;            // ISO8601 timestamp of the Agent tool call
 }
 
 export interface Session {
@@ -19,6 +28,16 @@ export interface Session {
   started_at: string;       // ISO8601
   last_event_at: string;    // ISO8601
   token_total: TokenCounts;
+  current_subagent?: CurrentSubagent | null;  // Track B
+}
+
+/** Track B: project group for 'Theo Dự án' view */
+export interface ProjectGroup {
+  project_slug: string;
+  project_display: string;
+  session_count: number;
+  token_total: number;
+  sessions: Session[];
 }
 
 export interface HistorySession extends Session {
@@ -77,7 +96,8 @@ export type DeltaEvent =
   | { event: 'agent_state_changed'; session_id: string; state: SessionState }
   | { event: 'token_update'; session_id: string; delta: Partial<TokenCounts>; cumulative: TokenCounts }
   | { event: 'account_changed'; active_id: string; name: string; key_masked: string }
-  | { event: 'watcher_status'; alive: boolean; error?: string };
+  | { event: 'watcher_status'; alive: boolean; error?: string }
+  | { event: 'subagent_changed'; session_id: string; subagent: CurrentSubagent };  // Track B
 
 export interface WsMessage {
   type: 'snapshot' | 'delta' | 'pong';

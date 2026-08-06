@@ -20,6 +20,7 @@ function applyDelta(sessions: Session[], delta: DeltaEvent): Session[] {
         started_at: delta.started_at,
         last_event_at: delta.started_at,
         token_total: { input: 0, output: 0, cache_creation: 0, cache_read: 0 },
+        current_subagent: null,
       }
       return [...sessions, newSession]
     }
@@ -51,6 +52,15 @@ function applyDelta(sessions: Session[], delta: DeltaEvent): Session[] {
       return sessions.map(s =>
         s.session_id === delta.session_id
           ? { ...s, token_total: delta.cumulative }
+          : s
+      )
+    }
+
+    // Track B: subagent role + activity update
+    case 'subagent_changed': {
+      return sessions.map(s =>
+        s.session_id === delta.session_id
+          ? { ...s, current_subagent: delta.subagent }
           : s
       )
     }

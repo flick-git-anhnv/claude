@@ -87,6 +87,99 @@ def test_parse_sample_fixture(sample_jsonl_path):
     assert results[2].tool_name == "Read"
 
 
+# ── Track B: Agent tool_use subagent extraction ──────────────────────────────
+
+def test_parse_agent_tool_use_extracts_subagent():
+    """tool_use with name=='Agent' must populate subagent_type + subagent_activity."""
+    line = json.dumps({
+        "type": "assistant",
+        "timestamp": "2026-08-06T10:00:00.000Z",
+        "message": {
+            "role": "assistant",
+            "model": "claude-sonnet-4-6",
+            "content": [{
+                "type": "tool_use",
+                "id": "tu1",
+                "name": "Agent",
+                "input": {
+                    "subagent_type": "senior-developer",
+                    "description": "Implement the parser changes",
+                },
+            }],
+            "usage": {"input_tokens": 100, "output_tokens": 20,
+                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0},
+        },
+    }) + "\n"
+    result = parse_line(line, _FAKE_PATH)
+    assert result is not None
+    assert result.tool_name == "Agent"
+    assert result.msg_type == "tool_use"
+    assert result.subagent_type == "senior-developer"
+    assert result.subagent_activity == "Implement the parser changes"
+
+
+def test_parse_non_agent_tool_use_does_not_set_subagent():
+    """tool_use with name!='Agent' must leave subagent_type/activity as None."""
+    line = json.dumps({
+        "type": "assistant",
+        "timestamp": "2026-08-06T10:00:01.000Z",
+        "message": {
+            "role": "assistant",
+            "model": "claude-sonnet-4-6",
+            "content": [{
+                "type": "tool_use",
+                "id": "tu2",
+                "name": "Read",
+                "input": {"file_path": "/some/file.py"},
+            }],
+            "usage": {"input_tokens": 50, "output_tokens": 10,
+                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0},
+        },
+    }) + "\n"
+    result = parse_line(line, _FAKE_PATH)
+    assert result is not None
+    assert result.tool_name == "Read"
+    assert result.subagent_type is None
+    assert result.subagent_activity is None
+
+
+def test_parse_agent_tool_use_missing_input_fields():
+    """Agent tool_use without subagent_type/description must not crash; fields stay None."""
+    line = json.dumps({
+        "type": "assistant",
+        "timestamp": "2026-08-06T10:00:02.000Z",
+        "message": {
+            "role": "assistant",
+            "model": "claude-sonnet-4-6",
+            "content": [{"type": "tool_use", "id": "tu3", "name": "Agent", "input": {}}],
+            "usage": {"input_tokens": 10, "output_tokens": 5,
+                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0},
+        },
+    }) + "\n"
+    result = parse_line(line, _FAKE_PATH)
+    assert result is not None
+    assert result.subagent_type is None
+    assert result.subagent_activity is None
+
+
+def test_parse_agent_tool_use_null_input():
+    """Agent tool_use with null input block must not crash."""
+    line = json.dumps({
+        "type": "assistant",
+        "timestamp": "2026-08-06T10:00:03.000Z",
+        "message": {
+            "role": "assistant",
+            "model": "claude-sonnet-4-6",
+            "content": [{"type": "tool_use", "id": "tu4", "name": "Agent", "input": None}],
+            "usage": {"input_tokens": 10, "output_tokens": 5,
+                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0},
+        },
+    }) + "\n"
+    result = parse_line(line, _FAKE_PATH)
+    assert result is not None
+    assert result.subagent_type is None
+
+
 # ── Defensive behaviour ───────────────────────────────────────────────────────
 
 def test_parse_malformed_json_returns_none():

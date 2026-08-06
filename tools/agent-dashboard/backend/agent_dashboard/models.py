@@ -1,11 +1,65 @@
 """Pydantic models for REST API request/response bodies and internal dataclasses."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
+
+
+# ── Subagent display name mapping (Track B) ───────────────────────────────────
+
+SUBAGENT_DISPLAY: dict[str, str] = {
+    "cto":                    "CTO",
+    "product-manager":        "Product Manager",
+    "business-analyst":       "Business Analyst",
+    "engineering-manager":    "Engineering Manager",
+    "tech-lead":              "Tech Lead",
+    "senior-developer":       "Senior Developer",
+    "junior-developer":       "Junior Developer",
+    "qa-lead":                "QA Lead",
+    "qa-engineer":            "QA Engineer",
+    "devops-lead":            "DevOps Lead",
+    "devops-engineer":        "DevOps Engineer",
+    "project-manager":        "Project Manager",
+    "ui-ux-designer":         "UI/UX Designer",
+    "ux-ui-reviewer":         "UX/UI Reviewer",
+    "documentation-writer":   "Documentation Writer",
+    "code-migrator":          "Code Migrator",
+    "github-repo-researcher": "GitHub Repo Researcher",
+    "task-planner":           "Task Planner",
+    "md-optimizer":           "MD Optimizer",
+}
+
+
+def get_subagent_display_name(subagent_type: str) -> str:
+    """Map subagent_type slug → display name. Falls back to title-case."""
+    return SUBAGENT_DISPLAY.get(subagent_type) or subagent_type.replace("-", " ").title()
+
+
+def decode_project_slug(slug: str) -> str:
+    """Best-effort decode of Claude Code project slug → human-readable path.
+
+    Convention (verified on repo c--Users-nguye-Desktop-Claude-Git-claude):
+    - Leading ^[a-z]-- → Windows drive letter upper + ":\\"
+    - '--' separates path components
+    - Single '-' within a component is kept as-is (ambiguous)
+
+    Example:
+        'c--Users-nguye-Desktop-Claude-Git-claude'
+        → 'C:\\\\Users-nguye-Desktop-Claude-Git-claude'
+
+    Limitation: ambiguous single-dash segments cannot be decoded precisely;
+    the original slug is always shown as a tooltip alongside this display value.
+    """
+    if re.match(r"^[a-z]--", slug):
+        drive = slug[0].upper() + ":\\"
+        remainder = slug[3:]
+        parts = remainder.split("--")
+        return drive + "\\".join(parts)
+    return slug  # no Windows drive prefix → return slug unchanged
 
 
 # ── Internal dataclasses (not Pydantic — used in pipeline) ───────────────────
@@ -24,6 +78,8 @@ class ParsedLine:
     cache_creation: int
     cache_read: int
     raw_json: str           # compact, truncated to 2000 chars for audit
+    subagent_type: Optional[str] = None      # Track B: from tool_use Agent input.subagent_type
+    subagent_activity: Optional[str] = None  # Track B: from tool_use Agent input.description
 
 
 @dataclass
@@ -45,14 +101,23 @@ class SessionInfo:
 
 class AccountCreate(BaseModel):
     name: str
-    api_key: str
+    kind: str = "api_key"      # "api_key" | "oauth_session"
+    api_key: Optional[str] = None  # required when kind == "api_key"
 
-    @field_validator("api_key")
+    @field_validator("kind")
     @classmethod
-    def validate_key(cls, v: str) -> str:
-        if not v.startswith("sk-"):
-            raise ValueError("API key must start with 'sk-'")
+    def validate_kind(cls, v: str) -> str:
+        if v not in ("api_key", "oauth_session"):
+            raise ValueError("kind must be 'api_key' or 'oauth_session'")
         return v
+
+    def validate_for_kind(self) -> None:
+        """Call after construction to enforce cross-field rules."""
+        if self.kind == "api_key":
+            if not self.api_key:
+                raise ValueError("api_key is required when kind is 'api_key'")
+            if not self.api_key.startswith("sk-"):
+                raise ValueError("API key must start with 'sk-'")
 
 
 class AccountUpdate(BaseModel):

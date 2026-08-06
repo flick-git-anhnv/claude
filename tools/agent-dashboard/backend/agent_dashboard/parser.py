@@ -66,6 +66,8 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
     # Detect tool_use inside content blocks (assistant messages)
     tool_name: Optional[str] = None
     agent_type: Optional[str] = None
+    subagent_type: Optional[str] = None
+    subagent_activity: Optional[str] = None
     content = message.get("content")
 
     if msg_type == "assistant":
@@ -75,6 +77,11 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
                 if isinstance(block, dict) and block.get("type") == "tool_use":
                     tool_name = block.get("name")
                     msg_type = "tool_use"
+                    # Track B: extract subagent info ONLY for Agent tool calls
+                    if tool_name == "Agent":
+                        tool_input = block.get("input") or {}
+                        subagent_type = tool_input.get("subagent_type") or None
+                        subagent_activity = tool_input.get("description") or None
                     break
 
     # Also handle top-level tool_name field (alternate format)
@@ -98,6 +105,8 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
         cache_creation=cache_creation,
         cache_read=cache_read,
         raw_json=raw_json,
+        subagent_type=subagent_type,
+        subagent_activity=subagent_activity,
     )
 
 

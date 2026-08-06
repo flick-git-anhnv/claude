@@ -23,6 +23,19 @@ async def list_sessions(request: Request):
     return rows
 
 
+@router.get("/by-project")
+async def sessions_by_project(
+    request: Request,
+    from_dt: Optional[str] = Query(None, alias="from"),
+    to_dt: Optional[str] = Query(None, alias="to"),
+):
+    """Sessions grouped by project slug for 'Theo Dự án' view (Track B)."""
+    from .. import db as db_module
+    conn = _get_db(request)
+    groups = await db_module.get_sessions_by_project(conn, from_dt, to_dt)
+    return groups
+
+
 @router.get("/history")
 async def session_history(
     request: Request,

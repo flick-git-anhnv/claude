@@ -71,14 +71,35 @@ export default function AgentCard({ session }: AgentCardProps) {
         </div>
       </div>
 
-      {/* Last activity / task description placeholder */}
+      {/* Activity row — subagent badge + description when available, else fallback */}
       <div className="text-sm text-kz-text mb-3 pl-6">
-        <span className="text-caption text-kz-navy-mid">Hoạt động cuối: </span>
-        {fmtRelative(session.last_event_at)}
-        {session.state === 'Running' && (
-          <span className="ml-2 text-caption text-kz-navy-mid">
-            — session {truncate(session.session_id, 20)}
-          </span>
+        {session.current_subagent ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-badge text-caption font-semibold bg-kz-navy text-white shrink-0"
+              aria-label={`Vai trò: ${session.current_subagent.display_name}`}
+            >
+              {session.current_subagent.display_name}
+            </span>
+            {session.current_subagent.activity && (
+              <span className="text-kz-text truncate" title={session.current_subagent.activity}>
+                {truncate(session.current_subagent.activity, 80)}
+              </span>
+            )}
+            <span className="text-caption text-kz-navy-mid shrink-0">
+              {fmtRelative(session.current_subagent.at)}
+            </span>
+          </div>
+        ) : (
+          <>
+            <span className="text-caption text-kz-navy-mid">Hoạt động cuối: </span>
+            {fmtRelative(session.last_event_at)}
+            {session.state === 'Running' && (
+              <span className="ml-2 text-caption text-kz-navy-mid">
+                — session {truncate(session.session_id, 20)}
+              </span>
+            )}
+          </>
         )}
       </div>
 

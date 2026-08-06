@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import config, db as db_module
 from .accounts import AccountStore
-from .models import make_delta, make_snapshot
+from .models import get_subagent_display_name, make_delta, make_snapshot
 from .parser import parse_line
 from .state_manager import SessionStateManager
 from .tail_reader import TailReader
@@ -213,6 +213,25 @@ async def _process_file(conn: Any, file_path: str) -> None:
                     "cache_read": parsed.cache_read,
                 }
             await _ws_manager.broadcast(make_delta("agent_update", delta_payload))
+
+        # Track B: persist + broadcast subagent change (only for Agent tool calls)
+        if parsed.subagent_type:
+            await db_module.update_session_subagent(
+                conn,
+                session_id=parsed.session_id,
+                subagent_type=parsed.subagent_type,
+                subagent_activity=parsed.subagent_activity,
+                at=parsed.timestamp,
+            )
+            await _ws_manager.broadcast(make_delta("subagent_changed", {
+                "session_id": parsed.session_id,
+                "subagent": {
+                    "type":         parsed.subagent_type,
+                    "display_name": get_subagent_display_name(parsed.subagent_type),
+                    "activity":     parsed.subagent_activity,
+                    "at":           parsed.timestamp,
+                },
+            }))
 
         if change and change.new_state != change.old_state:
             await _ws_manager.broadcast(make_delta("agent_state_changed", {
