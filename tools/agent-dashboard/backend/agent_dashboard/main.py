@@ -55,8 +55,26 @@ async def lifespan(app: FastAPI):
     _tail_reader.restore_cursors(cursors)
 
     active_sessions = await db_module.get_active_sessions(conn)
-    _state_mgr.initialize_from_db(active_sessions)
-    logger.info("State machine seeded with %d active sessions", len(active_sessions))
+    startup_changes = _state_mgr.initialize_from_db(active_sessions)
+    logger.info(
+        "State machine seeded with %d sessions; %d stale-state corrections",
+        len(active_sessions),
+        len(startup_changes),
+    )
+
+    # Persist any stale-state corrections to DB immediately — don't wait for
+    # the first ticker tick (STATE_TICKER_INTERVAL_SEC = 30 s).  Without this,
+    # a WebSocket client connecting in the first 30 s after startup would see
+    # hundreds of "Running" sessions that have actually been idle for hours.
+    for change in startup_changes:
+        ended_at = change.changed_at if change.new_state == "Ended" else None
+        await db_module.update_session_state(
+            conn, change.session_id, change.new_state, ended_at
+        )
+    if startup_changes:
+        logger.info(
+            "Startup: persisted %d state corrections to DB", len(startup_changes)
+        )
 
     # 5. Startup scan — queue existing files for backlog processing
     loop = asyncio.get_event_loop()

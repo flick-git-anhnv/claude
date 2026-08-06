@@ -52,17 +52,67 @@ class SessionStateManager:
 
     # ── Initialization ────────────────────────────────────────────────────────
 
-    def initialize_from_db(self, sessions: list[dict]) -> None:
-        """Seed in-memory state from DB rows at startup."""
+    def initialize_from_db(
+        self,
+        sessions: list[dict],
+        idle_threshold: Optional[int] = None,
+        ended_threshold: Optional[int] = None,
+    ) -> List[StateChange]:
+        """Seed in-memory state from DB rows at startup.
+
+        Re-evaluates each session's state based on ``last_event_at`` vs current
+        time instead of blindly restoring the stored state.  This prevents stale
+        "Running" sessions (that have been idle for hours/days) from appearing
+        active after a backend restart.
+
+        Returns a list of StateChange objects for every session whose computed
+        state differs from the stored state — callers should persist these
+        corrections to the DB immediately so both layers are consistent before
+        the first periodic ticker fires.
+        """
+        from . import config  # late import avoids circular at module level
+
+        idle_sec = idle_threshold if idle_threshold is not None else (
+            self._idle_override or config.IDLE_THRESHOLD_SEC
+        )
+        ended_sec = ended_threshold if ended_threshold is not None else (
+            self._ended_override or config.ENDED_THRESHOLD_SEC
+        )
+
+        now = datetime.now(timezone.utc)
+        changes: List[StateChange] = []
+
         for row in sessions:
             sid = row["session_id"]
             last_event_ts = _parse_ts(row.get("last_event_at", ""))
-            state = row.get("state", "Running")
+            stored_state = row.get("state", "Running")
+
+            # Re-evaluate based on elapsed time — never trust the stored state
+            elapsed = (now - last_event_ts).total_seconds()
+            if elapsed > ended_sec:
+                new_state = "Ended"
+            elif elapsed > idle_sec:
+                new_state = "Idle"
+            else:
+                new_state = "Running"
+
             self._sessions[sid] = SessionInfo(
                 session_id=sid,
-                state=state,
+                state=new_state,
                 last_event_at=last_event_ts,
             )
+
+            if new_state != stored_state:
+                changes.append(
+                    StateChange(
+                        session_id=sid,
+                        old_state=stored_state,
+                        new_state=new_state,
+                        changed_at=now.isoformat(),
+                    )
+                )
+
+        return changes
 
     # ── Activity update ───────────────────────────────────────────────────────
 

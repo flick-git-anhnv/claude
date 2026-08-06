@@ -95,16 +95,89 @@ def test_activity_resets_idle_to_running():
     assert sm.get_state("s1") == "Running"
 
 
-def test_initialize_from_db():
-    sm = SessionStateManager()
-    sm.initialize_from_db([
-        {"session_id": "s1", "state": "Idle",
-         "last_event_at": "2026-08-05T09:00:00Z"},
-        {"session_id": "s2", "state": "Running",
-         "last_event_at": "2026-08-05T10:00:00Z"},
-    ])
-    assert sm.get_state("s1") == "Idle"
-    assert sm.get_state("s2") == "Running"
+def test_initialize_from_db_recent_sessions_keep_correct_state():
+    """Sessions with recent activity are evaluated correctly from last_event_at."""
+    sm = SessionStateManager(idle_threshold=300, ended_threshold=1800)
+    now = datetime.now(timezone.utc)
+
+    # 1-minute-old → Running
+    running_ts = (now - timedelta(minutes=1)).isoformat()
+    # 10-minute-old → Idle (> 300 s, < 1800 s)
+    idle_ts = (now - timedelta(minutes=10)).isoformat()
+
+    changes = sm.initialize_from_db(
+        [
+            {"session_id": "s_running", "state": "Running", "last_event_at": running_ts},
+            {"session_id": "s_idle",    "state": "Running", "last_event_at": idle_ts},
+        ],
+        idle_threshold=300,
+        ended_threshold=1800,
+    )
+
+    assert sm.get_state("s_running") == "Running"
+    assert sm.get_state("s_idle")    == "Idle"
+
+    # s_running stored as "Running" → matches → no change emitted
+    # s_idle stored as "Running" but re-evaluated to "Idle" → change emitted
+    change_ids = {c.session_id: c.new_state for c in changes}
+    assert "s_running" not in change_ids
+    assert change_ids["s_idle"] == "Idle"
+
+
+def test_initialize_from_db_stale_running_becomes_ended():
+    """Sessions stored as Running with last_event_at hours ago must be re-evaluated to Ended."""
+    sm = SessionStateManager(idle_threshold=300, ended_threshold=1800)
+    now = datetime.now(timezone.utc)
+
+    stale_ts = (now - timedelta(hours=5)).isoformat()   # 18 000 s >> ended(1800 s)
+
+    changes = sm.initialize_from_db(
+        [{"session_id": "stale", "state": "Running", "last_event_at": stale_ts}],
+        idle_threshold=300,
+        ended_threshold=1800,
+    )
+
+    assert sm.get_state("stale") == "Ended"
+    assert len(changes) == 1
+    assert changes[0].old_state == "Running"
+    assert changes[0].new_state == "Ended"
+
+
+def test_initialize_from_db_returns_no_changes_when_states_already_correct():
+    """No StateChange emitted when stored state already matches re-evaluated state."""
+    sm = SessionStateManager(idle_threshold=300, ended_threshold=1800)
+    now = datetime.now(timezone.utc)
+
+    recent_ts = (now - timedelta(seconds=30)).isoformat()
+
+    changes = sm.initialize_from_db(
+        [{"session_id": "fresh", "state": "Running", "last_event_at": recent_ts}],
+        idle_threshold=300,
+        ended_threshold=1800,
+    )
+
+    assert sm.get_state("fresh") == "Running"
+    assert changes == []
+
+
+def test_initialize_from_db_multiple_stale_sessions_all_corrected():
+    """Multiple stale sessions (hundreds of hours old) all become Ended, not Running."""
+    sm = SessionStateManager(idle_threshold=300, ended_threshold=1800)
+    now = datetime.now(timezone.utc)
+
+    rows = [
+        {"session_id": f"old_{i}", "state": "Running",
+         "last_event_at": (now - timedelta(hours=200 + i)).isoformat()}
+        for i in range(5)
+    ]
+
+    changes = sm.initialize_from_db(rows, idle_threshold=300, ended_threshold=1800)
+
+    for i in range(5):
+        assert sm.get_state(f"old_{i}") == "Ended", f"old_{i} should be Ended"
+
+    assert len(changes) == 5
+    assert all(c.new_state == "Ended" for c in changes)
 
 
 def test_multiple_sessions_evaluate_independently():
