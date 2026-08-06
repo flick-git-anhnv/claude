@@ -52,7 +52,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 3.2 | Code frontend: dashboard UI (agent list, token chart, account switcher), WebSocket client | Junior Developer | ✅ | `steps/STEP-3.2-jd-frontend.md` | 2026-08-05 23:59 |
 | 3.3 | Code review + verify-pr + merge decision (SD + JD) | Tech Lead | ✅ | `steps/STEP-3.3-tl-code-review.md` | 2026-08-06 00:45 |
 | 3.4 | UX/UI Review — chạy app thật, screenshot, đánh giá C1–C7 | UX/UI Reviewer | ✅ | `steps/STEP-3.4-uxr-review.md` | 2026-08-06 08:30 |
-| 3.5 | Fix 2 issue High từ UXR (UI-001 frontend, UI-002 backend) trước khi QA | Senior Developer ∥ Junior Developer | ⬜ | `steps/STEP-3.5-fix-uxr-high.md` | - |
+| 3.5 | Fix 2 issue High từ UXR (UI-001 frontend, UI-002 backend) trước khi QA | Senior Developer ∥ Junior Developer | 🔄 | `steps/STEP-3.5-fix-uxr-high.md` | - |
 
 ### Phase 4: Kiểm thử & Deploy
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
@@ -97,6 +97,7 @@ Không có
 | 2026-08-05 23:59 | Bước 3.2 ✅ — Frontend implement đầy đủ: 44 files, 13 components, 4 pages, mock mode, build verified (tsc 0 errors, vite 858 modules), commit b868513 | Junior Developer |
 | 2026-08-06 00:45 | Bước 3.3 ✅ — TL review PASS, fix 5 lệch schema mock↔backend + refactor mask_key, tích hợp thật port 7770 verify OK, commit b1c148f+affb0c6 | Tech Lead |
 | 2026-08-06 08:30 | Bước 3.4 ✅ — UXR review xong (2 lần bị dừng giữa chừng, resume qua SendMessage + hoàn tất sổ sách thủ công): 6 issue (0 Critical, 2 High, 2 Medium, 2 Low). Thêm Bước 3.5 (fix High) trước khi vào QA | UX/UI Reviewer / Dispatcher |
+| 2026-08-06 08:19 | Bước 3.5 🔄 — Backend UI-002 fix xong (commit ed84b69): initialize_from_db() re-evaluate stale state; 50/50 tests pass. Frontend UI-001 đang chạy song song (JD) | Senior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
