@@ -5,17 +5,28 @@ import {
 import type { TokenBucket } from '../../types'
 import { fmtNum } from '../../utils/format'
 
-interface TokenBarChartProps {
-  data: TokenBucket[]
+export interface SeriesConfig {
+  key: string
+  name: string
+  color: string
 }
 
-// Brand KZTEK colors per series (TDD §11 handoff — đúng thứ tự)
-const SERIES = [
-  { key: 'input',          name: 'Input Tokens',        color: '#251C53' }, // Navy dark
-  { key: 'output',         name: 'Output Tokens',        color: '#F05922' }, // Cam
-  { key: 'cache_creation', name: 'Cache Write',          color: '#4A3F8C' }, // Navy mid
-  { key: 'cache_read',     name: 'Cache Read',           color: '#B8B3D6' }, // Navy light
+// Chart 1: Input / Output — dùng màu brand Navy + Cam
+export const SERIES_INPUT_OUTPUT: SeriesConfig[] = [
+  { key: 'input',  name: 'Input Tokens',  color: '#251C53' }, // Navy dark
+  { key: 'output', name: 'Output Tokens', color: '#F05922' }, // Cam
 ]
+
+// Chart 2: Cache — dùng Navy mid + Cam nhạt để phân biệt rõ
+export const SERIES_CACHE: SeriesConfig[] = [
+  { key: 'cache_creation', name: 'Cache Write', color: '#4A3F8C' }, // Navy mid
+  { key: 'cache_read',     name: 'Cache Read',  color: '#FFAA80' }, // Cam nhạt
+]
+
+interface TokenBarChartProps {
+  data: TokenBucket[]
+  series?: SeriesConfig[]
+}
 
 interface TooltipProps {
   active?: boolean
@@ -44,18 +55,24 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
   )
 }
 
-export default function TokenBarChart({ data }: TokenBarChartProps) {
+function fmtYAxis(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`
+  return String(v)
+}
+
+export default function TokenBarChart({ data, series = SERIES_INPUT_OUTPUT }: TokenBarChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <div className="text-5xl text-kz-navy-light mb-3" aria-hidden="true">📊</div>
+      <div className="flex flex-col items-center justify-center h-48 text-center">
+        <div className="text-4xl text-kz-navy-light mb-3" aria-hidden="true">📊</div>
         <p className="text-sm text-kz-navy-mid">Không có dữ liệu trong khoảng thời gian này</p>
       </div>
     )
   }
 
   return (
-    <div style={{ height: 280 }}>
+    <div style={{ height: 240 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
@@ -73,21 +90,21 @@ export default function TokenBarChart({ data }: TokenBarChartProps) {
             tick={{ fontSize: 11, fill: '#4A3F8C' }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
+            tickFormatter={fmtYAxis}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
             wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
             iconType="square"
           />
-          {SERIES.map(s => (
+          {series.map((s, idx) => (
             <Bar
               key={s.key}
               dataKey={s.key}
               name={s.name}
               fill={s.color}
-              stackId="tokens"
-              radius={s.key === 'input' ? [4, 4, 0, 0] : undefined}
+              stackId="stack"
+              radius={idx === series.length - 1 ? [4, 4, 0, 0] : undefined}
             />
           ))}
         </BarChart>

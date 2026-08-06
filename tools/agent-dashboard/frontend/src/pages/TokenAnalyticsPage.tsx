@@ -3,7 +3,7 @@ import type { RangeFilter, TokenSummaryResponse } from '../types'
 import { useApi } from '../hooks/useApi'
 import { fmtNum } from '../utils/format'
 import FilterBar from '../components/tokens/FilterBar'
-import TokenBarChart from '../components/tokens/TokenBarChart'
+import TokenBarChart, { SERIES_INPUT_OUTPUT, SERIES_CACHE } from '../components/tokens/TokenBarChart'
 import SummaryCard from '../components/tokens/SummaryCard'
 
 const RANGE_LABELS: Record<RangeFilter, string> = {
@@ -51,16 +51,25 @@ export default function TokenAnalyticsPage() {
         </div>
       )}
 
-      {/* Chart */}
-      <div className="border border-kz-gray rounded-card p-4 mb-5">
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <span className="text-caption text-kz-navy-mid animate-pulse">Đang tải dữ liệu...</span>
+      {/* Charts — tách 2 chart riêng để tránh scale bị nén (UI-003) */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64 border border-kz-gray rounded-card mb-5">
+          <span className="text-caption text-kz-navy-mid animate-pulse">Đang tải dữ liệu...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          {/* Chart 1: Input / Output — scale riêng */}
+          <div className="border border-kz-gray rounded-card p-4">
+            <h3 className="text-sm font-semibold text-kz-navy mb-3">Input / Output Tokens</h3>
+            <TokenBarChart data={data?.buckets ?? []} series={SERIES_INPUT_OUTPUT} />
           </div>
-        ) : (
-          <TokenBarChart data={data?.buckets ?? []} />
-        )}
-      </div>
+          {/* Chart 2: Cache Write / Read — scale riêng */}
+          <div className="border border-kz-gray rounded-card p-4">
+            <h3 className="text-sm font-semibold text-kz-navy mb-3">Cache Tokens</h3>
+            <TokenBarChart data={data?.buckets ?? []} series={SERIES_CACHE} />
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       {totals && (
