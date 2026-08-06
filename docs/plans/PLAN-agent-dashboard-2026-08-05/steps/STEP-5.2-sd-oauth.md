@@ -133,7 +133,7 @@ Xác nhận: subprocess exit 0, `claude -p ok --model claude-haiku-4-5` hoạt �
 - `code-graph/CODE-GRAPH.md` — v1.2 thêm oauth_service.py + env vars ✅
 
 ## Commit hash
-`[xem commit sau git commit]`
+`7dcae48`
 
 ## Quyết định quan trọng
 
