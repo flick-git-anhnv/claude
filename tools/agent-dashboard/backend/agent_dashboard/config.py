@@ -39,3 +39,12 @@ STATE_TICKER_INTERVAL_SEC: int = int(os.getenv("STATE_TICKER_INTERVAL_SEC", "30"
 # ── Account reveal rate-limit ─────────────────────────────────────────────────
 REVEAL_RATE_LIMIT_COUNT: int = 5   # max calls
 REVEAL_RATE_LIMIT_WINDOW: int = 60  # per N seconds
+
+# ── OAuth / credentials ───────────────────────────────────────────────────────
+# Claude Code stores OAuth tokens in this file (Windows/macOS/Linux)
+CLAUDE_CREDENTIALS_FILE: pathlib.Path = _home / ".claude" / ".credentials.json"
+
+# Auto-refresh: run every N seconds; skip account if token lifetime ratio < 20% or < 30 min left
+OAUTH_REFRESH_INTERVAL_SEC: int = int(os.getenv("OAUTH_REFRESH_INTERVAL_SEC", "1800"))
+OAUTH_REFRESH_AHEAD_RATIO: float = 0.20   # refresh when <20% of token lifetime remains
+OAUTH_REFRESH_MIN_AHEAD_MS: int = 30 * 60 * 1000  # or <30 min (in milliseconds)

@@ -1,4 +1,4 @@
-import type { Account, Session, SessionHistoryResponse, TokenSummaryResponse, RangeFilter } from '../types'
+import type { Account, OAuthStatus, Session, SessionHistoryResponse, TokenSummaryResponse, RangeFilter } from '../types'
 
 const BASE = '/api'
 
@@ -47,16 +47,34 @@ export function useApi() {
     return apiFetch<Account>(`${BASE}/accounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, api_key: apiKey }),
+      body: JSON.stringify({ name, kind: 'api_key', api_key: apiKey }),
     })
+  }
+
+  /** Import current .credentials.json OAuth session as a new account. */
+  function addOAuthAccount(name: string): Promise<Account> {
+    return apiFetch<Account>(`${BASE}/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, kind: 'oauth_session' }),
+    })
+  }
+
+  /** Re-import the current .credentials.json snapshot into an existing OAuth account. */
+  function importCurrentOAuth(id: string): Promise<{ ok: boolean; imported_at: string }> {
+    return apiFetch(`${BASE}/accounts/${id}/import-current-oauth`, { method: 'POST' })
+  }
+
+  function getOAuthStatus(id: string): Promise<OAuthStatus> {
+    return apiFetch<OAuthStatus>(`${BASE}/accounts/${id}/oauth-status`)
   }
 
   function deleteAccount(id: string): Promise<void> {
     return apiFetch<void>(`${BASE}/accounts/${id}`, { method: 'DELETE' })
   }
 
-  function activateAccount(id: string): Promise<{ active_id: string }> {
-    return apiFetch<{ active_id: string }>(`${BASE}/accounts/${id}/activate`, { method: 'POST' })
+  function activateAccount(id: string): Promise<{ active_id: string; prev_snapshot_updated: boolean }> {
+    return apiFetch(`${BASE}/accounts/${id}/activate`, { method: 'POST' })
   }
 
   function revealApiKey(id: string): Promise<string> {
@@ -69,6 +87,9 @@ export function useApi() {
     getTokensSummary,
     getAccounts,
     addAccount,
+    addOAuthAccount,
+    importCurrentOAuth,
+    getOAuthStatus,
     deleteAccount,
     activateAccount,
     revealApiKey,

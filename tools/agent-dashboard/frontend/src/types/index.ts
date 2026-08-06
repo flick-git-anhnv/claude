@@ -46,10 +46,21 @@ export interface HistorySession extends Session {
 
 // ─── Account types ────────────────────────────────────────────────────────────
 
+export type AccountKind = 'api_key' | 'oauth_session';
+
 export interface Account {
   id: string;
+  kind: AccountKind;
   name: string;
-  key_masked: string;       // "sk-ant-****XXXX"
+  // api_key accounts
+  key_masked?: string;      // "sk-ant-api03-****XXXX"
+  // oauth_session accounts
+  oauth_masked?: string;    // "sk-ant-****XXXX"
+  needs_relogin?: boolean;
+  expires_in_sec?: number;
+  refresh_expires_in_sec?: number;
+  last_refreshed_at?: string | null;
+  // common
   is_active: boolean;
   created_at: string;
 }
@@ -57,7 +68,16 @@ export interface Account {
 export interface ActiveAccount {
   id: string;
   name: string;
-  key_masked: string;
+  kind: AccountKind;
+  key_masked?: string;
+  oauth_masked?: string;
+}
+
+export interface OAuthStatus {
+  expires_in_sec: number;
+  refresh_expires_in_sec: number;
+  needs_relogin: boolean;
+  last_refreshed_at: string | null;
 }
 
 // ─── Token analytics types ────────────────────────────────────────────────────

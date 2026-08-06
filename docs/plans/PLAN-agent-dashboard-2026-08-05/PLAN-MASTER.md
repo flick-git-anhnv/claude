@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 16:00
+updated: 2026-08-06 09:53
 status: active
 workflow: WF-FEATURE
 priority: P2
@@ -67,7 +67,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 5.1 | TDD ADDENDUM Sprint 2 (§15–21 trong TDD v1.1) — data model OAuth, auto-refresh strategy, parser mở rộng, 2 view mode, task breakdown 12 task | Tech Lead | ✅ | `steps/STEP-5.1-tl-tdd-addendum.md` | 2026-08-06 16:00 |
-| 5.2 | Track A: OAuth Account Support (migration v1→v2, activate flow swap credentials, auto-refresh scheduler, UI 2-tab, security banner) — S2-T01..T06 | Senior Developer | ⬜ | `steps/STEP-5.2-sd-oauth.md` | - |
+| 5.2 | Track A: OAuth Account Support (migration v1→v2, activate flow swap credentials, auto-refresh scheduler, UI 2-tab, security banner) — S2-T01..T06 | Senior Developer | ✅ | `steps/STEP-5.2-sd-oauth.md` | 2026-08-06 09:53 |
 | 5.3 | Track B: Parser mở rộng subagent_type/description, DB 3 column mới, mapping VN, API by-project, UI 2 view mode "Theo Agent"/"Theo Dự án" — S2-T07..T12 | Junior Developer | ✅ | `steps/STEP-5.3-jd-agent-view.md` | 2026-08-06 17:30 |
 | 5.4 | security-audit-stride cho Track A (đụng credential nhạy cảm, ghi file `.credentials.json`) — BLOCK merge nếu Fail nhóm rủi ro cao | Tech Lead | ⬜ | `steps/STEP-5.4-tl-security-audit.md` | - |
 | 5.5 | Code review cuối cả 2 track + verify-pr + merge decision | Tech Lead | ⬜ | `steps/STEP-5.5-tl-review-sprint2.md` | - |
@@ -120,6 +120,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 16:00 | Bước 5.1 ✅ — TDD ADDENDUM v1.1 Sprint 2 viết xong (§15–21): Track A OAuth (data model v2, swap-and-invoke refresh, 12 task), Track B agent name+2 view mode; status plan → active để mở Sprint 2 | Tech Lead |
 | 2026-08-06 17:30 | Bước 5.3 ✅ — Track B hoàn thành: parser subagent, DB 3 cột mới (idempotent), SUBAGENT_DISPLAY 19 agents, /by-project endpoint, WS subagent_changed, AgentCard badge, toggle 2 view mode + accordion; 85/85 tests, tsc+vite 0 errors; commit 5c23e75 | Junior Developer |
 | 2026-08-06 15:10 | Bước 4.4 ✅ — DOL smoke test PASS (health/frontend/sessions/accounts 4/4); isolation OK; DEPLOY doc reviewed; **WF-FEATURE HOÀN THÀNH** — status → completed | DevOps Lead |
+| 2026-08-06 09:53 | Bước 5.2 ✅ — Track A OAuth: migration v2, oauth_service.py (activate+scheduler+subprocess), routes, main scheduler wired, frontend 2-tab+badge+banner, 33 tests (118 total pass), claude -p verified exit 0; CODE-GRAPH v1.2 cập nhật | Senior Developer |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

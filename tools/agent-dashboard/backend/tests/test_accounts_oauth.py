@@ -1,0 +1,459 @@
+"""Unit tests for OAuth account support (Track A Sprint 2).
+
+Coverage:
+- Migration v1→v2: idempotent, creates backup, adds kind discriminator
+- mask_oauth_token: never exposes full token
+- add_oauth_account: stores snapshot, validates required fields
+- list_accounts: OAuth-specific fields returned; raw tokens never leaked
+- update_oauth_snapshot: replaces oauth block, bumps last_refreshed_at
+- set_needs_relogin: sets flag, persists
+- get_oauth_status: returns remaining-seconds counters
+- activate: pure AccountStore.activate() still works unchanged
+- backup/restore logic in oauth_service (file I/O mocked)
+- refresh scheduler: skips active, skips needs_relogin, marks needs_relogin on subprocess fail
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import time
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from agent_dashboard.accounts import (
+    AccountStore,
+    mask_oauth_token,
+    REQUIRED_OAUTH_FIELDS,
+)
+from agent_dashboard.oauth_service import (
+    activate_oauth_account,
+    read_credentials,
+    refresh_inactive_accounts,
+    validate_oauth_block,
+    write_credentials,
+)
+
+
+# ── Fixtures ──────────────────────────────────────────────────────────────────
+
+def _make_oauth_block(expires_at: int = 9_999_999_999_000) -> dict:
+    """Return a minimal valid claudeAiOauth block."""
+    return {
+        "accessToken": "sk-ant-oauth-ACCESSTOKEN-abcdef",
+        "refreshToken": "sk-ant-oauth-REFRESHTOKEN-abcdef",
+        "expiresAt": expires_at,
+        "refreshTokenExpiresAt": expires_at + 30 * 24 * 3600 * 1000,
+        "scopes": ["user:inference"],
+        "subscriptionType": "pro",
+        "rateLimitTier": "standard",
+    }
+
+
+def _make_credentials_file(tmp_path: Path, oauth_block: dict | None = None) -> Path:
+    creds_path = tmp_path / ".credentials.json"
+    data: dict = {}
+    if oauth_block is not None:
+        data["claudeAiOauth"] = oauth_block
+    creds_path.write_text(json.dumps(data), encoding="utf-8")
+    return creds_path
+
+
+@pytest.fixture
+def store(tmp_path) -> AccountStore:
+    return AccountStore(tmp_path / "accounts.enc")
+
+
+@pytest.fixture
+def v1_store_path(tmp_path) -> Path:
+    """Create a v1-format accounts.enc file on disk."""
+    from agent_dashboard.accounts import _encrypt
+    v1_data = {
+        "version": 1,
+        "active_id": None,
+        "accounts": [
+            {"id": "acc-aaa", "name": "Old Account", "api_key": "sk-ant-old-key-0001", "created_at": "2024-01-01T00:00:00Z"},
+        ],
+    }
+    path = tmp_path / "accounts.enc"
+    path.write_text(_encrypt(json.dumps(v1_data)), encoding="ascii")
+    return path
+
+
+# ── Token masking ─────────────────────────────────────────────────────────────
+
+def test_mask_oauth_token_last4():
+    tok = "sk-ant-oauth-abcdefghijklmn1234"
+    assert mask_oauth_token(tok).endswith("1234")
+    assert "abcdefghijklmn" not in mask_oauth_token(tok)
+
+
+def test_mask_oauth_token_short():
+    assert "****" in mask_oauth_token("sk")
+
+
+# ── Migration v1 → v2 ─────────────────────────────────────────────────────────
+
+def test_migration_adds_kind_api_key(v1_store_path):
+    """Loading a v1 store upgrades all accounts to kind='api_key'."""
+    store = AccountStore(v1_store_path)
+    acc = store.get_account("acc-aaa")
+    assert acc is not None
+    assert acc["kind"] == "api_key"
+
+
+def test_migration_version_bumped(v1_store_path):
+    store = AccountStore(v1_store_path)
+    assert store._data["version"] == 2
+
+
+def test_migration_creates_backup(v1_store_path):
+    bak = v1_store_path.with_suffix(".v1.bak")
+    assert not bak.exists()
+    AccountStore(v1_store_path)
+    assert bak.exists()
+
+
+def test_migration_idempotent(v1_store_path):
+    """Running migration twice produces the same result, no duplicate backups needed."""
+    store1 = AccountStore(v1_store_path)
+    # Reload: should not re-migrate (version == 2 now)
+    store2 = AccountStore(v1_store_path)
+    accounts = store2.list_accounts()
+    assert len(accounts) == 1
+    assert accounts[0]["kind"] == "api_key"
+
+
+def test_migration_preserves_accounts(v1_store_path):
+    store = AccountStore(v1_store_path)
+    acc = store.get_account("acc-aaa")
+    assert acc["name"] == "Old Account"
+    assert acc["api_key"] == "sk-ant-old-key-0001"
+
+
+# ── add_oauth_account ─────────────────────────────────────────────────────────
+
+def test_add_oauth_account_stores_snapshot(store):
+    oauth = _make_oauth_block()
+    acc_id = store.add_oauth_account("KZTEK OAuth", oauth, "org-uuid-123")
+    acc = store.get_account(acc_id)
+    assert acc is not None
+    assert acc["kind"] == "oauth_session"
+    assert acc["oauth"]["accessToken"] == oauth["accessToken"]
+    assert acc["organizationUuid"] == "org-uuid-123"
+    assert acc["needs_relogin"] is False
+
+
+def test_add_oauth_account_missing_required_fields(store):
+    bad_oauth = {"accessToken": "sk-ant-x"}  # missing 3 fields
+    with pytest.raises(ValueError, match="OAUTH_SNAPSHOT_INVALID"):
+        store.add_oauth_account("Bad", bad_oauth, None)
+
+
+def test_add_oauth_account_no_org_uuid(store):
+    acc_id = store.add_oauth_account("No Org", _make_oauth_block(), None)
+    acc = store.get_account(acc_id)
+    assert acc["organizationUuid"] is None
+
+
+# ── list_accounts — raw tokens never leaked ───────────────────────────────────
+
+def test_list_accounts_no_raw_access_token(store):
+    store.add_oauth_account("Sec Test", _make_oauth_block(), None)
+    for entry in store.list_accounts():
+        if entry["kind"] == "oauth_session":
+            assert "accessToken" not in entry
+            assert "refreshToken" not in entry
+            assert "oauth" not in entry
+
+
+def test_list_accounts_oauth_masked_field(store):
+    acc_id = store.add_oauth_account("Masked", _make_oauth_block(), None)
+    entries = store.list_accounts()
+    entry = next(e for e in entries if e["id"] == acc_id)
+    assert "oauth_masked" in entry
+    # Must not contain the raw token middle section
+    assert "ACCESSTOKEN-abcdef" not in entry["oauth_masked"]
+
+
+def test_list_accounts_api_key_unaffected(store):
+    """Existing api_key accounts still return key_masked, unaffected by OAuth."""
+    store.add_account("Legacy", "sk-ant-legacy-key-0001")
+    entries = store.list_accounts()
+    assert entries[0]["kind"] == "api_key"
+    assert "key_masked" in entries[0]
+
+
+def test_list_accounts_expires_in_sec_positive(store):
+    far_future_ms = int(time.time() * 1000) + 3_600_000  # 1 hour from now
+    oauth = _make_oauth_block(expires_at=far_future_ms)
+    store.add_oauth_account("Future", oauth, None)
+    entry = store.list_accounts()[0]
+    assert entry["expires_in_sec"] > 0
+
+
+def test_list_accounts_expires_in_sec_zero_when_past(store):
+    past_ms = int(time.time() * 1000) - 60_000  # 1 min ago
+    oauth = _make_oauth_block(expires_at=past_ms)
+    store.add_oauth_account("Expired", oauth, None)
+    entry = store.list_accounts()[0]
+    assert entry["expires_in_sec"] == 0
+
+
+# ── update_oauth_snapshot ─────────────────────────────────────────────────────
+
+def test_update_oauth_snapshot_replaces_tokens(store):
+    acc_id = store.add_oauth_account("Refresh", _make_oauth_block(), None)
+    new_oauth = _make_oauth_block(expires_at=9_999_888_000_000)
+    new_oauth["accessToken"] = "sk-ant-NEW-ACCESS-TOKEN-9999"
+    ok = store.update_oauth_snapshot(acc_id, new_oauth, "org-new")
+    assert ok is True
+    acc = store.get_account(acc_id)
+    assert acc["oauth"]["accessToken"] == "sk-ant-NEW-ACCESS-TOKEN-9999"
+    assert acc["organizationUuid"] == "org-new"
+    assert acc["last_refreshed_at"] is not None
+
+
+def test_update_oauth_snapshot_wrong_kind_returns_false(store):
+    acc_id = store.add_account("API", "sk-ant-api-key-0001")
+    ok = store.update_oauth_snapshot(acc_id, _make_oauth_block(), None)
+    assert ok is False
+
+
+def test_update_oauth_snapshot_persists(tmp_path):
+    path = tmp_path / "accounts.enc"
+    s1 = AccountStore(path)
+    acc_id = s1.add_oauth_account("Persist", _make_oauth_block(), None)
+    new_oauth = _make_oauth_block()
+    new_oauth["accessToken"] = "sk-ant-PERSISTED-9999"
+    s1.update_oauth_snapshot(acc_id, new_oauth, None)
+
+    s2 = AccountStore(path)  # reload from disk
+    acc = s2.get_account(acc_id)
+    assert acc["oauth"]["accessToken"] == "sk-ant-PERSISTED-9999"
+
+
+# ── set_needs_relogin ─────────────────────────────────────────────────────────
+
+def test_set_needs_relogin(store):
+    acc_id = store.add_oauth_account("Expire", _make_oauth_block(), None)
+    assert store.get_account(acc_id)["needs_relogin"] is False
+    store.set_needs_relogin(acc_id)
+    assert store.get_account(acc_id)["needs_relogin"] is True
+
+
+def test_set_needs_relogin_api_key_returns_false(store):
+    acc_id = store.add_account("API", "sk-ant-test-0001")
+    ok = store.set_needs_relogin(acc_id)
+    assert ok is False
+
+
+# ── get_oauth_status ─────────────────────────────────────────────────────────
+
+def test_get_oauth_status_returns_fields(store):
+    acc_id = store.add_oauth_account("Status", _make_oauth_block(), None)
+    status = store.get_oauth_status(acc_id)
+    assert status is not None
+    assert "expires_in_sec" in status
+    assert "refresh_expires_in_sec" in status
+    assert "needs_relogin" in status
+    assert "last_refreshed_at" in status
+
+
+def test_get_oauth_status_none_for_api_key(store):
+    acc_id = store.add_account("API", "sk-ant-test-0002")
+    assert store.get_oauth_status(acc_id) is None
+
+
+# ── validate_oauth_block ──────────────────────────────────────────────────────
+
+def test_validate_oauth_block_ok():
+    validate_oauth_block(_make_oauth_block())  # should not raise
+
+
+def test_validate_oauth_block_missing_fields():
+    with pytest.raises(ValueError, match="OAUTH_SNAPSHOT_INVALID"):
+        validate_oauth_block({"accessToken": "x"})
+
+
+# ── oauth_service: activate_oauth_account ────────────────────────────────────
+
+def test_activate_oauth_writes_credentials(tmp_path):
+    """activate_oauth_account writes the new account's oauth block to .credentials.json."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    oauth = _make_oauth_block()
+    acc_id = store.add_oauth_account("New", oauth, "org-123")
+
+    creds_path = _make_credentials_file(tmp_path, _make_oauth_block(expires_at=111))
+
+    result = asyncio.get_event_loop().run_until_complete(
+        activate_oauth_account(acc_id, store, creds_path)
+    )
+
+    assert result["active_id"] == acc_id
+    written = json.loads(creds_path.read_text())
+    assert written["claudeAiOauth"]["accessToken"] == oauth["accessToken"]
+    assert store._data["active_id"] == acc_id
+
+
+def test_activate_oauth_resnapshots_previously_active(tmp_path):
+    """Previous active OAuth account gets its snapshot updated from the current credentials file."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    old_oauth = _make_oauth_block(expires_at=111_000)
+    new_oauth = _make_oauth_block(expires_at=222_000)
+
+    old_id = store.add_oauth_account("Old Active", old_oauth, None)
+    new_id = store.add_oauth_account("New", new_oauth, None)
+
+    # Set old as currently active
+    store._data["active_id"] = old_id
+    store._save()
+
+    # Simulate that .credentials.json has a REFRESHED token for old_id
+    refreshed_old_oauth = dict(old_oauth)
+    refreshed_old_oauth["expiresAt"] = 999_000  # refreshed while active
+    creds_path = _make_credentials_file(tmp_path, refreshed_old_oauth)
+
+    asyncio.get_event_loop().run_until_complete(
+        activate_oauth_account(new_id, store, creds_path)
+    )
+
+    # Old account snapshot should have been updated with the refreshed token
+    old_acc = store.get_account(old_id)
+    assert old_acc["oauth"]["expiresAt"] == 999_000
+
+
+def test_activate_oauth_restores_on_write_failure(tmp_path):
+    """If writing new credentials fails, the original .credentials.json is restored."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    # Account uses a DIFFERENT accessToken so the mock can distinguish the calls
+    new_oauth = _make_oauth_block()
+    new_oauth["accessToken"] = "sk-ant-DIFFERENT-NEW-TOKEN-9999"
+    acc_id = store.add_oauth_account("Fail", new_oauth, None)
+
+    original_oauth = _make_oauth_block(expires_at=777_000)
+    # original_oauth["accessToken"] == "sk-ant-oauth-ACCESSTOKEN-abcdef"
+    creds_path = _make_credentials_file(tmp_path, original_oauth)
+
+    # Raise only when the NEW token is being written (not the restore)
+    def bad_write(path, data):
+        if data.get("claudeAiOauth", {}).get("accessToken") == "sk-ant-DIFFERENT-NEW-TOKEN-9999":
+            raise IOError("Simulated write failure")
+        # Allow backup write (bak_path) and restore write through
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    with patch("agent_dashboard.oauth_service.write_credentials", side_effect=bad_write):
+        with pytest.raises((RuntimeError, IOError)):
+            asyncio.get_event_loop().run_until_complete(
+                activate_oauth_account(acc_id, store, creds_path)
+            )
+
+    # Original should be restored
+    restored = json.loads(creds_path.read_text())
+    assert restored["claudeAiOauth"]["expiresAt"] == 777_000
+
+
+def test_activate_oauth_file_not_found(tmp_path):
+    store = AccountStore(tmp_path / "accounts.enc")
+    acc_id = store.add_oauth_account("X", _make_oauth_block(), None)
+    missing_path = tmp_path / "nonexistent.json"
+
+    with pytest.raises(FileNotFoundError):
+        asyncio.get_event_loop().run_until_complete(
+            activate_oauth_account(acc_id, store, missing_path)
+        )
+
+
+def test_activate_oauth_creates_file_backup(tmp_path):
+    """A timestamped file backup is created during activate."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    acc_id = store.add_oauth_account("Backup Test", _make_oauth_block(), None)
+    creds_path = _make_credentials_file(tmp_path, _make_oauth_block())
+
+    asyncio.get_event_loop().run_until_complete(
+        activate_oauth_account(acc_id, store, creds_path)
+    )
+
+    backups = list(tmp_path.glob(".credentials.backup.*.json"))
+    assert len(backups) == 1
+
+
+# ── oauth_service: refresh_inactive_accounts ─────────────────────────────────
+
+def test_refresh_skips_active_account(tmp_path):
+    """The active account is never swapped during auto-refresh."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    near_expiry_ms = int(time.time() * 1000) + 60_000  # expiring in 1 min
+    acc_id = store.add_oauth_account("Active", _make_oauth_block(expires_at=near_expiry_ms), None)
+    store.activate(acc_id)
+
+    creds_path = _make_credentials_file(tmp_path, _make_oauth_block())
+    lock = asyncio.Lock()
+
+    with patch("agent_dashboard.oauth_service._do_swap_and_invoke") as mock_swap:
+        asyncio.get_event_loop().run_until_complete(
+            refresh_inactive_accounts(store, creds_path, lock)
+        )
+        mock_swap.assert_not_called()
+
+
+def test_refresh_skips_needs_relogin(tmp_path):
+    """Accounts with needs_relogin=True are not refreshed."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    near_expiry_ms = int(time.time() * 1000) + 60_000
+    acc_id = store.add_oauth_account("Needs Relogin", _make_oauth_block(expires_at=near_expiry_ms), None)
+    store.set_needs_relogin(acc_id)
+
+    creds_path = _make_credentials_file(tmp_path, _make_oauth_block())
+    lock = asyncio.Lock()
+
+    with patch("agent_dashboard.oauth_service._do_swap_and_invoke") as mock_swap:
+        asyncio.get_event_loop().run_until_complete(
+            refresh_inactive_accounts(store, creds_path, lock)
+        )
+        mock_swap.assert_not_called()
+
+
+def test_refresh_marks_needs_relogin_when_rt_expired(tmp_path):
+    """If refreshTokenExpiresAt is in the past, mark needs_relogin without subprocess."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    past_ms = int(time.time() * 1000) - 1_000  # 1 second ago
+    expired_oauth = _make_oauth_block()
+    expired_oauth["refreshTokenExpiresAt"] = past_ms
+    expired_oauth["expiresAt"] = past_ms  # also expired
+    acc_id = store.add_oauth_account("Expired RT", expired_oauth, None)
+
+    creds_path = _make_credentials_file(tmp_path, _make_oauth_block())
+    lock = asyncio.Lock()
+
+    with patch("agent_dashboard.oauth_service._do_swap_and_invoke") as mock_swap:
+        asyncio.get_event_loop().run_until_complete(
+            refresh_inactive_accounts(store, creds_path, lock)
+        )
+        mock_swap.assert_not_called()
+
+    assert store.get_account(acc_id)["needs_relogin"] is True
+
+
+def test_refresh_invokes_swap_when_near_expiry(tmp_path):
+    """Account near expiry (< 30 min) triggers _do_swap_and_invoke."""
+    store = AccountStore(tmp_path / "accounts.enc")
+    near_expiry_ms = int(time.time() * 1000) + 5 * 60 * 1000  # 5 minutes left
+    far_rt_ms = int(time.time() * 1000) + 30 * 24 * 3600 * 1000
+    oauth = _make_oauth_block(expires_at=near_expiry_ms)
+    oauth["refreshTokenExpiresAt"] = far_rt_ms
+    acc_id = store.add_oauth_account("Near Expiry", oauth, None)
+    # NOT active
+
+    creds_path = _make_credentials_file(tmp_path, _make_oauth_block())
+    lock = asyncio.Lock()
+
+    with patch(
+        "agent_dashboard.oauth_service._do_swap_and_invoke",
+        new_callable=AsyncMock,
+    ) as mock_swap:
+        asyncio.get_event_loop().run_until_complete(
+            refresh_inactive_accounts(store, creds_path, lock)
+        )
+        mock_swap.assert_called_once_with(acc_id, store, creds_path, lock)

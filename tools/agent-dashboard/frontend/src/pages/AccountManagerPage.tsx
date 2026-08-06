@@ -9,7 +9,7 @@ import ConfirmDialog from '../components/accounts/ConfirmDialog'
 import BannerAlert from '../components/common/BannerAlert'
 
 export default function AccountManagerPage() {
-  const { getAccounts, addAccount, deleteAccount, activateAccount, revealApiKey } = useApi()
+  const { getAccounts, addAccount, addOAuthAccount, deleteAccount, activateAccount, revealApiKey } = useApi()
   const { showToast } = useToast()
   const { dispatch } = useWs()
 
@@ -30,10 +30,16 @@ export default function AccountManagerPage() {
 
   useEffect(() => { load() }, [])
 
-  async function handleSave(name: string, apiKey: string) {
+  async function handleSaveApiKey(name: string, apiKey: string) {
     const created = await addAccount(name, apiKey)
     setAccounts(prev => [...prev, created])
     showToast(`Đã thêm tài khoản "${name}"`)
+  }
+
+  async function handleSaveOAuth(name: string) {
+    const created = await addOAuthAccount(name)
+    setAccounts(prev => [...prev, created])
+    showToast(`Đã import OAuth session "${name}"`)
   }
 
   async function handleActivate(id: string) {
@@ -42,14 +48,13 @@ export default function AccountManagerPage() {
     setAccounts(updated)
     const activated = updated.find(a => a.id === id)
     if (activated) {
-      // Notify WS context so header updates immediately
       dispatch({
         type: 'DELTA',
         payload: {
           event: 'account_changed',
           active_id: activated.id,
           name: activated.name,
-          key_masked: activated.key_masked,
+          key_masked: activated.key_masked ?? activated.oauth_masked ?? '',
         },
       })
       showToast(`Đã đặt "${activated.name}" làm tài khoản active`)
@@ -61,7 +66,6 @@ export default function AccountManagerPage() {
       const key = await revealApiKey(id)
       await navigator.clipboard.writeText(key)
       showToast('Đã copy API key — tự nhập vào Claude Code')
-      // Clear clipboard after 30s (security)
       setTimeout(() => {
         navigator.clipboard.writeText('').catch(() => {})
       }, 30000)
@@ -89,7 +93,7 @@ export default function AccountManagerPage() {
     <div>
       {/* Page header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-h2 text-kz-navy">Quản lý tài khoản API</h2>
+        <h2 className="text-h2 text-kz-navy">Quản lý tài khoản</h2>
         <button
           onClick={() => setShowAddPanel(true)}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-kz-orange hover:bg-orange-600 rounded-btn transition-colors"
@@ -99,6 +103,14 @@ export default function AccountManagerPage() {
           <span>Thêm tài khoản</span>
         </button>
       </div>
+
+      {/* Security banner — always visible when any OAuth account exists */}
+      {accounts.some(a => a.kind === 'oauth_session') && (
+        <BannerAlert
+          type="warning"
+          message="⚠️ Dashboard lưu nhiều refresh-token OAuth cùng lúc trên máy này bằng mã hoá đơn giản (XOR+base64). Đủ chống người ngó qua vai, KHÔNG phải OS keychain. Không dùng nếu máy chia sẻ."
+        />
+      )}
 
       {/* No active account banner */}
       {!activeAccount && accounts.length > 0 && (
@@ -119,7 +131,6 @@ export default function AccountManagerPage() {
           <span className="text-caption text-kz-navy-mid animate-pulse">Đang tải...</span>
         </div>
       ) : accounts.length === 0 ? (
-        /* Empty state */
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="text-5xl text-kz-navy-light mb-4" aria-hidden="true">👤</div>
           <h3 className="text-h2 text-kz-navy mb-2">Chưa có tài khoản nào</h3>
@@ -134,7 +145,6 @@ export default function AccountManagerPage() {
           </button>
         </div>
       ) : (
-        /* Account list */
         <div className="flex flex-col gap-3">
           {accounts.map(account => (
             <AccountCard
@@ -154,7 +164,8 @@ export default function AccountManagerPage() {
       {/* Add panel */}
       {showAddPanel && (
         <AddAccountPanel
-          onSave={handleSave}
+          onSaveApiKey={handleSaveApiKey}
+          onSaveOAuth={handleSaveOAuth}
           onClose={() => setShowAddPanel(false)}
         />
       )}

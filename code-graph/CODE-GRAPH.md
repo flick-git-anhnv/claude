@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** junior-developer | **Version:** 1.1
+**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** senior-developer | **Version:** 1.2
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -73,7 +73,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
 | Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 13 components, 4 pages, WebSocket client | `utils/format.ts` (normalizeIso, fmtRelative, fmtDateShort), `api/interceptor.ts`, `state/wsReducer.ts` |
-| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt | `main.py`, `state_manager.py`, `db.py`, `watcher.py`, `routes/` |
+| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py`, `state_manager.py`, `db.py`, `watcher.py`, `routes/`, `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate swap, auto-refresh scheduler, subprocess invoke) |
 
 ---
 
@@ -185,6 +185,8 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | `vitest` | ^4.1 | `tools/agent-dashboard/frontend/` — unit test runner (format.test.ts) |
 | `FastAPI` / `uvicorn` | 0.110+ / 0.27+ | `tools/agent-dashboard/backend/` — HTTP + WebSocket server |
 | `aiosqlite` | 0.20+ | `tools/agent-dashboard/backend/` — SQLite async storage |
+| `asyncio` (stdlib) | 3.11+ | `tools/agent-dashboard/backend/oauth_service.py` — Lock, background scheduler, run_in_executor for subprocess |
+| `subprocess` (stdlib) | 3.11+ | `tools/agent-dashboard/backend/oauth_service.py` — `claude -p ok --model claude-haiku-4-5` swap-and-invoke |
 
 ---
 
@@ -194,7 +196,9 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 
 | Key | Default | Bắt buộc | Mô tả |
 |-----|---------|---------|-------|
-| (Chưa có) | — | — | Điền khi có project sản phẩm thực tế |
+| `OAUTH_REFRESH_INTERVAL_SEC` | `1800` | Không | Khoảng cách (giây) giữa mỗi lần scheduler auto-refresh OAuth (agent-dashboard backend) |
+| `OAUTH_REFRESH_AHEAD_RATIO` | `0.20` | Không | Tỉ lệ thời gian còn lại để kích hoạt refresh sớm (20% = refresh khi còn 20% thời gian hết hạn) |
+| `OAUTH_REFRESH_MIN_AHEAD_MS` | `1800000` (30 phút) | Không | Ngưỡng tối thiểu (ms) còn lại trước khi hết hạn để kích hoạt refresh |
 
 ---
 

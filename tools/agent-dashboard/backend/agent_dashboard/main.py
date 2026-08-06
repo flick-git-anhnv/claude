@@ -30,6 +30,7 @@ _tail_reader = TailReader()
 _state_mgr = SessionStateManager()
 _ws_manager = ConnectionManager()
 _file_event_queue: asyncio.Queue[tuple[str, str]] = asyncio.Queue()
+_oauth_refresh_lock = asyncio.Lock()
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
@@ -47,8 +48,9 @@ async def lifespan(app: FastAPI):
     store = AccountStore(config.ACCOUNTS_FILE)
     app.state.account_store = store
 
-    # 3. Expose managers on app state for routes
+    # 3. Expose managers + credentials path on app state for routes
     app.state.ws_manager = _ws_manager
+    app.state.credentials_path = config.CLAUDE_CREDENTIALS_FILE
 
     # 4. Restore file cursors + seed state machine from DB
     cursors = await db_module.load_cursors(conn)
@@ -86,6 +88,20 @@ async def lifespan(app: FastAPI):
     # 7. Start asyncio background tasks
     pipeline_task = asyncio.create_task(_pipeline_processor(conn), name="pipeline")
     ticker_task = asyncio.create_task(_state_ticker(conn), name="state_ticker")
+    oauth_task = asyncio.create_task(
+        _oauth_refresh_scheduler(store), name="oauth_refresh"
+    )
+
+    # Log emergency backup warning if present from previous crash
+    from .oauth_service import check_emergency_backup
+    emerg = check_emergency_backup(config.CLAUDE_CREDENTIALS_FILE)
+    if emerg:
+        logger.warning(
+            "STARTUP WARNING: Emergency credentials backup found at %s "
+            "(newer than .credentials.json). A previous auto-refresh may have crashed. "
+            "Inspect and manually restore if Claude login is broken.",
+            emerg,
+        )
 
     logger.info("Agent Dashboard started on port %d", config.DASHBOARD_PORT)
 
@@ -94,6 +110,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     pipeline_task.cancel()
     ticker_task.cancel()
+    oauth_task.cancel()
     _watcher.stop()
     await conn.close()
     logger.info("Agent Dashboard stopped")
@@ -280,6 +297,26 @@ async def _state_ticker(conn: Any) -> None:
             break
         except Exception as exc:
             logger.exception("State ticker error: %s", exc)
+
+
+# ── OAuth refresh scheduler ──────────────────────────────────────────────────
+
+async def _oauth_refresh_scheduler(store: Any) -> None:
+    """Run auto-refresh cycle for inactive OAuth accounts every OAUTH_REFRESH_INTERVAL_SEC."""
+    from .oauth_service import refresh_inactive_accounts
+
+    while True:
+        try:
+            await asyncio.sleep(config.OAUTH_REFRESH_INTERVAL_SEC)
+            await refresh_inactive_accounts(
+                store,
+                config.CLAUDE_CREDENTIALS_FILE,
+                _oauth_refresh_lock,
+            )
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.exception("OAuth refresh scheduler error: %s", exc)
 
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
