@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 15:55
+updated: 2026-08-06 19:53
 status: active
 workflow: WF-FEATURE
 priority: P2
@@ -82,7 +82,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 6.3 | Track C Backend: fix BUG-003, thêm snapshot usage lượt gần nhất + cache Models API (FR-002), endpoint chain-grouping (FR-001) | Senior Developer | ✅ | `steps/STEP-6.3-sd-backend.md` | 2026-08-06 15:09 |
 | 6.4 | Track D Frontend: tên session thân thiện (FR-003), hiển thị %context (FR-002), UI pipeline view theo design 6.2 (FR-001) | Junior Developer | ✅ | `steps/STEP-6.4-jd-frontend.md` | 2026-08-06 15:08 |
 | 6.5 | Code review cuối + verify-pr + merge decision | Tech Lead | ✅ | `steps/STEP-6.5-tl-review-sprint3.md` | 2026-08-06 15:55 |
-| 6.6 | UX/UI Review — pipeline view mới (thay đổi UI đáng kể) | UX/UI Reviewer | ⬜ | `steps/STEP-6.6-uxr-review.md` | - |
+| 6.6 | UX/UI Review — pipeline view mới (thay đổi UI đáng kể) | UX/UI Reviewer | ✅ | `steps/STEP-6.6-uxr-review.md` | 2026-08-06 19:53 |
 
 > **Ghi chú Phase 6:** 6.1 → 6.2 (chờ chain-identification chốt) → 6.3 ∥ 6.4 (song song) → 6.5 → 6.6.
 
@@ -147,6 +147,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 11:45 | Bước 6.2 ✅ — Wireframe Pipeline View: SessionCard v2 (title FR-003 + ContextBadge FR-002), PipelineCard (FR-001) với done/active stations scroll ngang, auto-scroll to active, fade gradient, chain dài tối đa 20+ bước; DESIGN-agent-dashboard.md section Sprint 3 appended; DOCX xuất OK (PDF RPC fail non-blocking) | UI/UX Designer |
 | 2026-08-06 15:09 | Bước 6.3 ✅ — Track C Backend: BUG-003 fix (parser early-return + migration cleanup + double-guard), FR-003 (ai-title is_meta + first_user_text + update_title helpers + WS session_title_changed), FR-002 (MODEL_CONTEXT_WINDOW + resolve_max_context + snapshot last_* 4 cột + context_pct tính backend), FR-001 (GET /api/sessions/{id}/chain + get_session_chain); 170 tests pass (119→+51); commit de4fbe8 | Senior Developer |
 | 2026-08-06 15:08 | Bước 6.4 ✅ — Track D Frontend: ContextBadge/StepStation/PipelineCard/SessionCard v2 (4 file mới), types Sprint 3, mock chain sess-001/003, interceptor chain endpoint, wsReducer Sprint 3 events; tsc 0 errors, vite build 861 modules; commit 6673d3a | Junior Developer |
+| 2026-08-06 19:53 | Bước 6.6 ✅ — UXR Sprint 3: 0 Critical/High, 2 Medium (dangling connector wrap, fallback title), 1 Low (spec deviation scroll→wrap). Sprint 3 PASS sẵn sàng dùng. Report+DOCX tại `docs/ux-review/`. | UX/UI Reviewer |
 | 2026-08-06 15:55 | Bước 6.5 ✅ APPROVED — TL review Sprint 3: 170/170 pytest, tsc+vite 0 errors. Phát hiện & fix 2 lệch schema: (1) `ChainStep.subagent_type/display/description` từ string → `string\|null` + StepStation null-safe; (2) **BUG lớn**: `events.payload_json` truncate 2000 chars làm hỏng chain endpoint trên session thật — thêm 2 cột `subagent_type/subagent_description` vào events table, pipe qua insert_event, get_session_chain đọc trực tiếp. Backfill 1013 events + 333 titles từ JSONL. Tích hợp thật PASS 4/4: BUG-003 (0 empty started_at) + FR-002 (ctx_pct 50.1%/78.8%, max_context 200K/1M theo model) + FR-003 (72/100 recent sessions có title) + FR-001 (32 steps, 14 subagent types thật trên session 973154ca). Merge APPROVED → chuyển Bước 6.6 UXR. | Tech Lead |
 
 ---
