@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** junior-developer | **Version:** 1.4
+**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** senior-developer | **Version:** 1.5
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -73,7 +73,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
 | Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 17 components, 4 pages, WebSocket client | `utils/format.ts`, `api/interceptor.ts`, `state/wsReducer.ts`, `types/index.ts` (ChainStep, ChainResponse, Sprint 3 Session fields), `components/sessions/ContextBadge.tsx` (FR-002), `components/sessions/StepStation.tsx` (FR-001), `components/sessions/PipelineCard.tsx` (FR-001), `components/sessions/SessionCard.tsx` (v2 — FR-001/002/003), `hooks/useApi.ts` (+getSessionChain) |
-| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py` (exposes `app.state.oauth_refresh_lock`), `state_manager.py`, `db.py`, `watcher.py`, `routes/accounts.py` (CRUD + activate, `_get_refresh_lock()` helper — H-1 fix), `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate_oauth_account requires `refresh_lock: asyncio.Lock`, auto-refresh scheduler, subprocess invoke) |
+| Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py` (exposes `app.state.oauth_refresh_lock`; Sprint 3: handles is_meta lines, snapshot last_* params, session_title_changed WS delta), `state_manager.py`, `db.py` (Sprint 3: `_migrate_sprint3_columns`, `update_title`, `update_title_if_null`, `get_session_chain`, `_compute_step_status`; snapshot `last_input_tokens/last_cache_creation/last_cache_read/last_usage_at` columns), `parser.py` (Sprint 3: ai-title → `is_meta=True`; early-return for no-timestamp BUG-003; `first_user_text` extraction), `config.py` (Sprint 3: `MODEL_CONTEXT_WINDOW` dict + `resolve_max_context(model)`), `models.py` (Sprint 3: `ParsedLine` + `ai_title`, `first_user_text`, `is_meta` fields), `watcher.py`, `routes/accounts.py` (CRUD + activate, `_get_refresh_lock()` helper — H-1 fix), `routes/sessions.py` (Sprint 3: `GET /api/sessions/{id}/chain`), `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate_oauth_account requires `refresh_lock: asyncio.Lock`, auto-refresh scheduler, subprocess invoke) |
 
 ---
 
@@ -199,6 +199,7 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | `OAUTH_REFRESH_INTERVAL_SEC` | `1800` | Không | Khoảng cách (giây) giữa mỗi lần scheduler auto-refresh OAuth (agent-dashboard backend) |
 | `OAUTH_REFRESH_AHEAD_RATIO` | `0.20` | Không | Tỉ lệ thời gian còn lại để kích hoạt refresh sớm (20% = refresh khi còn 20% thời gian hết hạn) |
 | `OAUTH_REFRESH_MIN_AHEAD_MS` | `1800000` (30 phút) | Không | Ngưỡng tối thiểu (ms) còn lại trước khi hết hạn để kích hoạt refresh |
+| `MODEL_CONTEXT_WINDOW` | dict (static) | Không | Giá trị tĩnh context window theo model (Sprint 3): Sonnet5/Opus5/Fable5=1M; Haiku4.5/Sonnet4.6/Opus4.7=200K; fallback 200K |
 
 ---
 
@@ -223,6 +224,12 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-08-06 | `tools/agent-dashboard/frontend/src/api/mockData.ts` | Update | Sprint 3: thêm title/context_pct/last_input_total/max_context vào MOCK_SESSIONS; thêm getMockChain() | junior-developer |
 | 2026-08-06 | `tools/agent-dashboard/frontend/src/api/interceptor.ts` | Update | Sprint 3: thêm handler GET /api/sessions/:id/chain | junior-developer |
 | 2026-08-06 | `tools/agent-dashboard/frontend/src/hooks/useApi.ts` | Update | Sprint 3: thêm getSessionChain(sessionId) | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/parser.py` | Update | Sprint 3: BUG-003 early-return None khi thiếu timestamp; ai-title → ParsedLine(is_meta=True, ai_title); first_user_text fallback title | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/config.py` | Update | Sprint 3: MODEL_CONTEXT_WINDOW dict + resolve_max_context(model) — exact match, fallback 200K | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/models.py` | Update | Sprint 3: ParsedLine + 3 fields: ai_title, first_user_text, is_meta | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/db.py` | Update | Sprint 3: _migrate_sprint3_columns (5 cột mới + BUG-003 cleanup); update_title/update_title_if_null; upsert_session snapshot last_* (ghi đè); get_session_chain; _compute_step_status; SELECT queries + _row_to_session tính context_pct | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/routes/sessions.py` | Update | Sprint 3: endpoint GET /api/sessions/{id}/chain — 404 nếu session không tồn tại | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/main.py` | Update | Sprint 3: _process_file handle is_meta, snapshot last_* khi input_tokens>0, WS session_title_changed, WS token_update +context_pct | senior-developer |
 
 ---
 
