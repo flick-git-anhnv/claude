@@ -59,6 +59,10 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
     # Subagent detection is based solely on the immediate parent directory name —
     # works even when CLAUDE_PROJECTS_DIR resolution fails (relative paths in tests).
     is_subagent: bool = p.parent.name == "subagents"
+    # Sprint 4: extract parent session ID for subagent transcripts.
+    # Path structure: <projects>/<project>/<session-uuid>/subagents/agent-*.jsonl
+    # → parent_session_id = folder directly above "subagents/"
+    parent_session_id: Optional[str] = p.parent.parent.name if is_subagent else None
     try:
         rel = p.resolve().relative_to(config.CLAUDE_PROJECTS_DIR.resolve())
         project = rel.parts[0] if rel.parts else p.parent.name
@@ -66,6 +70,10 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
         project = p.parent.name
 
     msg_type: str = data.get("type", "unknown")
+
+    # Sprint 4: attribution_agent from "attributionAgent" JSONL field (subagent transcripts only).
+    # Present on assistant messages; e.g. "senior-developer", "tech-lead".
+    attribution_agent: Optional[str] = (data.get("attributionAgent") or None) if is_subagent else None
 
     # ── Sprint 3: handle ai-title meta lines (FR-003 / BUG-003) ──────────────
     # ai-title lines have no timestamp; they carry a session title update, not
@@ -163,6 +171,8 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
         subagent_activity=subagent_activity,
         first_user_text=first_user_text,
         is_subagent=is_subagent,
+        parent_session_id=parent_session_id,
+        attribution_agent=attribution_agent,
     )
 
 

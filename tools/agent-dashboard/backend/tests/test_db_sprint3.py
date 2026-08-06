@@ -22,7 +22,9 @@ async def conn():
     await c.commit()
     await db_module._migrate_subagent_columns(c)
     await db_module._migrate_sprint3_columns(c)
+    await db_module._migrate_events_subagent_columns(c)
     await db_module._migrate_subagent_flag_column(c)
+    await db_module._migrate_sprint4_columns(c)
     yield c
     await c.close()
 
@@ -325,34 +327,38 @@ async def chain_session(conn):
 
 
 @pytest.mark.asyncio
-async def test_get_session_chain_returns_correct_steps(conn, chain_session):
+async def test_get_session_chain_returns_correct_roster(conn, chain_session):
+    """Sprint 4: get_session_chain returns roster (1 entry per unique role)."""
     result = await db_module.get_session_chain(conn, chain_session)
     assert result is not None
     assert result["session_id"] == chain_session
     assert result["session_state"] == "Running"
-    assert len(result["steps"]) == 2  # only Agent events
+    # 2 distinct roles → 2 roster entries
+    roster = result["roster"]
+    assert len(roster) == 2
 
 
 @pytest.mark.asyncio
-async def test_get_session_chain_step_fields(conn, chain_session):
+async def test_get_session_chain_roster_fields(conn, chain_session):
+    """Roster entries have required fields; roles ordered by first appearance."""
     result = await db_module.get_session_chain(conn, chain_session)
-    steps = result["steps"]
-    # First step
-    assert steps[0]["step_index"] == 0
-    assert steps[0]["subagent_type"] == "product-manager"
-    assert steps[0]["subagent_display"] == "Product Manager"
-    assert steps[0]["description"] == "Viết PRD"
-    assert steps[0]["status"] == "done"  # not last step
-    # Second step (last)
-    assert steps[1]["step_index"] == 1
-    assert steps[1]["subagent_type"] == "business-analyst"
-    assert steps[1]["subagent_display"] == "Business Analyst"
-    assert steps[1]["status"] == "active"  # last + Running session
+    roster = result["roster"]
+    # First role called = product-manager
+    assert roster[0]["role"] == "product-manager"
+    assert roster[0]["display_name"] == "Product Manager"
+    assert roster[0]["call_count"] == 1
+    assert len(roster[0]["history"]) == 1
+    assert roster[0]["history"][0]["description"] == "Viết PRD"
+    # Second role = business-analyst; no child session seeded → status='done'
+    # (Sprint 4: 'active' requires a Running child session, not just session Running)
+    assert roster[1]["role"] == "business-analyst"
+    assert roster[1]["display_name"] == "Business Analyst"
+    assert roster[1]["status"] == "done"   # no child session → done
 
 
 @pytest.mark.asyncio
 async def test_get_session_chain_all_done_when_ended(conn):
-    """When session is Ended, all steps must be 'done', not 'active'."""
+    """When session is Ended, all roster entries must be status='done'."""
     await conn.execute(
         """INSERT INTO sessions
              (session_id, project, file_path, started_at, last_event_at, state, ended_at)
@@ -372,12 +378,12 @@ async def test_get_session_chain_all_done_when_ended(conn):
 
     result = await db_module.get_session_chain(conn, "ended-sess")
     assert result is not None
-    assert result["steps"][0]["status"] == "done"
+    assert result["roster"][0]["status"] == "done"
 
 
 @pytest.mark.asyncio
-async def test_get_session_chain_empty_steps_for_no_agent_calls(conn):
-    """Session with no Agent events → steps=[]."""
+async def test_get_session_chain_empty_roster_for_no_agent_calls(conn):
+    """Session with no Agent events → roster=[]."""
     await conn.execute(
         """INSERT INTO sessions
              (session_id, project, file_path, started_at, last_event_at, state)
@@ -392,7 +398,7 @@ async def test_get_session_chain_empty_steps_for_no_agent_calls(conn):
 
     result = await db_module.get_session_chain(conn, "no-agent")
     assert result is not None
-    assert result["steps"] == []
+    assert result["roster"] == []
 
 
 @pytest.mark.asyncio

@@ -126,9 +126,10 @@ async def _startup_scan(known_cursors: dict[str, int]) -> None:
         if Path(fp).exists():
             await _file_event_queue.put(("modified", fp))
 
-    # Discover new files not yet in cursors
+    # Discover new files not yet in cursors — rglob includes subagent transcripts
+    # (<project>/<session-uuid>/subagents/agent-*.jsonl) that glob("*/*.jsonl") misses.
     if config.CLAUDE_PROJECTS_DIR.exists():
-        for jsonl in config.CLAUDE_PROJECTS_DIR.glob("*/*.jsonl"):
+        for jsonl in config.CLAUDE_PROJECTS_DIR.rglob("*.jsonl"):
             fp = str(jsonl)
             if fp not in known_cursors:
                 await _file_event_queue.put(("created", fp))
@@ -202,6 +203,9 @@ async def _process_file(conn: Any, file_path: str) -> None:
             cache_creation=parsed.cache_creation,
             cache_read=parsed.cache_read,
             is_subagent=parsed.is_subagent,
+            # Sprint 4: subagent transcript linking
+            parent_session_id=parsed.parent_session_id,
+            attribution_agent=parsed.attribution_agent,
             **snap_kwargs,
         )
 

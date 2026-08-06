@@ -85,6 +85,9 @@ class ParsedLine:
     first_user_text: Optional[str] = None    # FR-003: fallback from first user text block
     is_meta: bool = False                    # True for ai-title lines (no timestamp, no session create)
     is_subagent: bool = False                # True when file lives under <session>/subagents/ — hide from main list
+    # Sprint 4 fields — subagent transcript linking
+    parent_session_id: Optional[str] = None  # UUID of parent session (folder above "subagents/")
+    attribution_agent: Optional[str] = None  # from JSONL field "attributionAgent" (e.g. "senior-developer")
 
 
 @dataclass

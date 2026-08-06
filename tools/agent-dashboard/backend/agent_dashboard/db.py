@@ -159,6 +159,109 @@ async def _migrate_events_subagent_columns(conn: aiosqlite.Connection) -> None:
     await conn.commit()
 
 
+async def _migrate_sprint4_columns(conn: aiosqlite.Connection) -> None:
+    """Idempotent: add parent_session_id + attribution_agent columns to sessions (Sprint 4).
+
+    parent_session_id — UUID of the parent session (folder above "subagents/" in file path).
+    attribution_agent — from JSONL field "attributionAgent", e.g. "senior-developer".
+
+    Also creates an index on parent_session_id for fast chain JOIN queries.
+
+    Retroactive backfill:
+    - parent_session_id: derived from file_path (pure path manipulation, no I/O needed).
+    - attribution_agent: requires reading the JSONL file; reads first 10 lines to find field.
+    """
+    import json as _json
+
+    async with conn.execute("PRAGMA table_info(sessions)") as cur:
+        rows = await cur.fetchall()
+    existing = {row["name"] for row in rows}
+
+    for col, typedef in (
+        ("parent_session_id", "TEXT"),
+        ("attribution_agent", "TEXT"),
+    ):
+        if col not in existing:
+            await conn.execute(f"ALTER TABLE sessions ADD COLUMN {col} {typedef}")
+            logger.info("DB migration: added column sessions.%s", col)
+
+    await conn.commit()
+
+    # Index for fast JOIN in get_session_chain — CREATE INDEX IF NOT EXISTS is idempotent.
+    await conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sessions_parent_id ON sessions(parent_session_id)"
+    )
+    await conn.commit()
+
+    # Backfill parent_session_id from file_path for existing subagent rows.
+    # Path: <project>/<session-uuid>/subagents/agent-*.jsonl → parent = folder above "subagents"
+    async with conn.execute(
+        "SELECT session_id, file_path FROM sessions WHERE is_subagent = 1 AND parent_session_id IS NULL"
+    ) as cur:
+        rows = await cur.fetchall()
+
+    parent_fixed = 0
+    for row in rows:
+        p = Path(row["file_path"])
+        if p.parent.name == "subagents":
+            parent_id = p.parent.parent.name
+            await conn.execute(
+                "UPDATE sessions SET parent_session_id = ? WHERE session_id = ?",
+                (parent_id, row["session_id"]),
+            )
+            parent_fixed += 1
+    if parent_fixed:
+        await conn.commit()
+        logger.info("DB migration Sprint 4: backfilled parent_session_id for %d sessions", parent_fixed)
+
+    # Backfill attribution_agent by reading JSONL files for existing subagent rows.
+    async with conn.execute(
+        "SELECT session_id, file_path FROM sessions WHERE is_subagent = 1 AND attribution_agent IS NULL"
+    ) as cur:
+        rows = await cur.fetchall()
+
+    attr_fixed = 0
+    for row in rows:
+        attr = _read_attribution_from_file(row["file_path"])
+        if attr:
+            await conn.execute(
+                "UPDATE sessions SET attribution_agent = ? WHERE session_id = ?",
+                (attr, row["session_id"]),
+            )
+            attr_fixed += 1
+    if attr_fixed:
+        await conn.commit()
+        logger.info("DB migration Sprint 4: backfilled attribution_agent for %d sessions", attr_fixed)
+
+
+def _read_attribution_from_file(file_path: str) -> Optional[str]:
+    """Read the first few lines of a JSONL file to extract 'attributionAgent' field.
+
+    Only reads up to 10 lines — attributionAgent appears on the first assistant message,
+    typically within the first 2–3 lines of a subagent transcript.
+    Returns None if field not found or file cannot be read.
+    """
+    import json as _json
+    try:
+        with open(file_path, encoding="utf-8", errors="replace") as fh:
+            for i, line in enumerate(fh):
+                if i >= 10:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = _json.loads(line)
+                    attr = data.get("attributionAgent")
+                    if attr:
+                        return str(attr)
+                except (ValueError, AttributeError):
+                    pass
+    except (OSError, IOError):
+        pass
+    return None
+
+
 async def _migrate_subagent_flag_column(conn: aiosqlite.Connection) -> None:
     """Idempotent: add is_subagent column to sessions if missing.
 
@@ -247,6 +350,7 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await _migrate_events_subagent_columns(conn)
     await _migrate_fix_subagent_project_attribution(conn)
     await _migrate_subagent_flag_column(conn)
+    await _migrate_sprint4_columns(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 
@@ -289,6 +393,9 @@ async def upsert_session(
     last_usage_at: Optional[str] = None,
     # Subagent flag — hide from main list but keep for Sprint 4 token join
     is_subagent: bool = False,
+    # Sprint 4 — subagent transcript linking
+    parent_session_id: Optional[str] = None,
+    attribution_agent: Optional[str] = None,
 ) -> bool:
     """Insert new session or update existing. Returns True if brand-new session.
 
@@ -305,9 +412,11 @@ async def upsert_session(
     # Insert only if not already present
     cur = await conn.execute(
         """INSERT OR IGNORE INTO sessions
-             (session_id, project, file_path, agent_type, started_at, last_event_at, state, is_subagent)
-           VALUES (?, ?, ?, ?, ?, ?, 'Running', ?)""",
-        (session_id, project, file_path, agent_type, timestamp, timestamp, 1 if is_subagent else 0),
+             (session_id, project, file_path, agent_type, started_at, last_event_at, state,
+              is_subagent, parent_session_id, attribution_agent)
+           VALUES (?, ?, ?, ?, ?, ?, 'Running', ?, ?, ?)""",
+        (session_id, project, file_path, agent_type, timestamp, timestamp,
+         1 if is_subagent else 0, parent_session_id, attribution_agent),
     )
     is_new = cur.rowcount > 0
 
@@ -654,17 +763,41 @@ async def get_session_chain(
     conn: aiosqlite.Connection,
     session_id: str,
 ) -> Optional[dict[str, Any]]:
-    """Return pipeline chain for a session (FR-001).
+    """Return pipeline chain for a session as a **roster** (Sprint 4 / FR-001 redesign).
 
-    Chain = ordered list of Agent tool_use calls recorded in the events table.
-    Status logic (TDD §26.4):
-      - Last step + session Running → "active"
-      - Everything else → "done"
-      - Session Idle/Ended → all steps "done"
+    Roster = one entry per unique subagent role, ordered by first appearance.
+    Each entry accumulates token totals across all calls and keeps a per-call history.
 
+    Response shape:
+    {
+      "session_id": "...",
+      "session_state": "Running|Idle|Ended",
+      "roster": [
+        {
+          "role": "senior-developer",
+          "display_name": "Senior Developer",
+          "status": "active|done",
+          "call_count": N,
+          "latest_description": "...",
+          "latest_model": "claude-sonnet-4-6" | null,
+          "first_called_at": "...",
+          "last_called_at": "...",
+          "total_tokens": {"input": N, "output": N, "cache_creation": N, "cache_read": N},
+          "history": [
+            {"call_index": 1, "started_at": "...", "description": "...",
+             "model": "...", "status": "done", "tokens": {...} | null}
+          ]
+        }
+      ]
+    }
+
+    Token data is joined from child sessions via parent_session_id / attribution_agent.
+    status = "active" when the latest child session for this role is still Running;
+             "done" otherwise (including when no child session found).
     Returns None if the session does not exist.
     """
     import json as _json
+    from collections import defaultdict, OrderedDict
     from .models import get_subagent_display_name
 
     # Verify session exists + get its state
@@ -676,9 +809,7 @@ async def get_session_chain(
         return None
     session_state: str = row["state"]
 
-    # Fetch Agent tool_use events ordered chronologically.
-    # subagent_type/description are first-class columns (populated at ingest);
-    # payload_json is a fallback for legacy rows written before the migration.
+    # ── Step 1: Fetch all Agent tool_use events ordered chronologically ──────
     async with conn.execute(
         """SELECT ts, payload_json, subagent_type, subagent_description
              FROM events
@@ -688,10 +819,9 @@ async def get_session_chain(
     ) as cur:
         event_rows = await cur.fetchall()
 
-    steps = []
-    for i, ev in enumerate(event_rows):
-        # Prefer stored columns (post-Sprint3-fix); fall back to parsing raw JSON
-        # for legacy rows written when only payload_json was persisted.
+    # ── Step 2: Build per-call list (resolve subagent_type from stored col / fallback JSON) ──
+    raw_calls: list[dict[str, Any]] = []
+    for ev in event_rows:
         subagent_type: Optional[str] = ev["subagent_type"] if "subagent_type" in ev.keys() else None
         description: Optional[str] = ev["subagent_description"] if "subagent_description" in ev.keys() else None
         if not subagent_type:
@@ -712,29 +842,134 @@ async def get_session_chain(
                             break
             except (ValueError, AttributeError):
                 pass
-
-        steps.append({
-            "step_index":        i,
-            "subagent_type":     subagent_type,
-            "subagent_display":  get_subagent_display_name(subagent_type) if subagent_type else None,
-            "description":       description,
-            "started_at":        ev["ts"],
-            "status":            _compute_step_status(i, len(event_rows), session_state),
+        raw_calls.append({
+            "subagent_type": subagent_type,
+            "description":   description,
+            "started_at":    ev["ts"],
         })
+
+    # ── Step 3: Load child sessions grouped by attribution_agent ─────────────
+    # IMPORTANT: do NOT filter by is_subagent=0 here — child sessions ARE subagents.
+    async with conn.execute(
+        """SELECT session_id, attribution_agent, agent_type, state, started_at,
+                  token_input, token_output, token_cache_creation, token_cache_read
+             FROM sessions
+            WHERE parent_session_id = ?
+            ORDER BY attribution_agent ASC, started_at ASC""",
+        (session_id,),
+    ) as cur:
+        child_rows = await cur.fetchall()
+
+    # {attribution_agent -> [child dicts sorted by started_at]}
+    children_by_role: dict[str, list[dict]] = defaultdict(list)
+    for r in child_rows:
+        children_by_role[r["attribution_agent"]].append(dict(r))
+
+    # ── Step 4: Match each call to its child session (Nth call of role X → Nth child of role X) ──
+    occurrence_counter: dict[str, int] = defaultdict(int)
+    matched_calls: list[dict[str, Any]] = []
+    for call in raw_calls:
+        role = call["subagent_type"]
+        if role:
+            idx = occurrence_counter[role]
+            occurrence_counter[role] += 1
+            matches = children_by_role.get(role, [])
+            child = matches[idx] if idx < len(matches) else None
+        else:
+            child = None
+
+        tokens_step: Optional[dict] = None
+        model: Optional[str] = None
+        child_state: Optional[str] = None
+        if child:
+            tokens_step = {
+                "input":          child["token_input"] or 0,
+                "output":         child["token_output"] or 0,
+                "cache_creation": child["token_cache_creation"] or 0,
+                "cache_read":     child["token_cache_read"] or 0,
+            }
+            model = child["agent_type"]
+            child_state = child["state"]
+
+        matched_calls.append({
+            "subagent_type": role,
+            "description":   call["description"],
+            "started_at":    call["started_at"],
+            "tokens":        tokens_step,
+            "model":         model,
+            "child_state":   child_state,
+        })
+
+    # ── Step 5: Build roster — one entry per unique role, ordered by first appearance ──
+    # Use OrderedDict to preserve insertion order (Python 3.7+ guarantees it, but explicit is clearer)
+    roster_map: dict[str, dict[str, Any]] = OrderedDict()
+    for i, call in enumerate(matched_calls):
+        role = call["subagent_type"] or "__unknown__"
+        if role not in roster_map:
+            roster_map[role] = {
+                "role":               role if role != "__unknown__" else None,
+                "display_name":       get_subagent_display_name(role) if role != "__unknown__" else None,
+                "call_count":         0,
+                "latest_description": None,
+                "latest_model":       None,
+                "first_called_at":    call["started_at"],
+                "last_called_at":     call["started_at"],
+                "total_tokens":       {"input": 0, "output": 0, "cache_creation": 0, "cache_read": 0},
+                "history":            [],
+            }
+        entry = roster_map[role]
+        entry["call_count"] += 1
+        entry["last_called_at"] = call["started_at"]
+        entry["latest_description"] = call["description"]
+        if call["model"]:
+            entry["latest_model"] = call["model"]
+
+        # Accumulate tokens
+        if call["tokens"]:
+            for k in ("input", "output", "cache_creation", "cache_read"):
+                entry["total_tokens"][k] += call["tokens"][k]
+
+        # Per-call history item
+        history_item: dict[str, Any] = {
+            "call_index":  entry["call_count"],
+            "started_at":  call["started_at"],
+            "description": call["description"],
+            "model":       call["model"],
+            "tokens":      call["tokens"],
+        }
+        entry["history"].append(history_item)
+
+    # ── Step 6: Compute status for each roster entry ─────────────────────────
+    # "active" = session state is Running AND the latest child session for this role is Running.
+    # We check child_state of the LAST call in the history for this role.
+    roster: list[dict[str, Any]] = []
+    for role_key, entry in roster_map.items():
+        last_call = entry["history"][-1]
+        # Find the child_state for the last call (re-derive from matched_calls by last entry)
+        last_matched = next(
+            (c for c in reversed(matched_calls) if (c["subagent_type"] or "__unknown__") == role_key),
+            None,
+        )
+        last_child_state = last_matched["child_state"] if last_matched else None
+        is_active = session_state == "Running" and last_child_state == "Running"
+        entry["status"] = "active" if is_active else "done"
+
+        # Annotate each history item's status
+        for hist_item in entry["history"]:
+            pass  # status per-call is implicitly "done" for all except possibly the last one
+        # Last history item is "active" if role is active
+        if entry["history"]:
+            entry["history"][-1]["status"] = "active" if is_active else "done"
+            for h in entry["history"][:-1]:
+                h["status"] = "done"
+
+        roster.append(entry)
 
     return {
         "session_id":    session_id,
         "session_state": session_state,
-        "steps":         steps,
+        "roster":        roster,
     }
-
-
-def _compute_step_status(step_index: int, total_steps: int, session_state: str) -> str:
-    """TDD §26.4: last step + Running → 'active'; everything else → 'done'."""
-    is_last = step_index == total_steps - 1
-    if is_last and session_state == "Running":
-        return "active"
-    return "done"
 
 
 async def get_token_summary(conn: aiosqlite.Connection, range_str: str) -> dict[str, Any]:
