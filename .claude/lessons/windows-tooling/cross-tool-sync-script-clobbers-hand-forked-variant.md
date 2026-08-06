@@ -57,6 +57,24 @@ coi nó cùng nhóm với `README.md` (nội dung bespoke riêng từng bên, kh
    thừa cần xoá", có thể là "file đã hand-fork, sync tool không biết map nó với
    gì ở nguồn".
 
+## Lần gặp lại (2026-08-06)
+
+Ngay sau khi loại `windows-tools/` và commit, chạy `sync-to-gemini.py --apply` lần
+tiếp theo (đồng bộ đợt merge Agent Dashboard) **vẫn ghi đè mất** bản fix đúng của
+`.gemini/templates/settings-global.json` (schema Antigravity thật, commit `15bac7f`)
+bằng bản gốc `.claude/templates/settings-global.json` (schema Claude Code
+`permissions.allow`/`hooks.PreToolUse`) — vì file này KHÔNG phải `.md` nên bị copy
+verbatim, không qua transform, và không nằm trong danh sách loại trừ ban đầu (chỉ
+mới loại `windows-tools/`, quên rằng `templates/settings-global.json` cũng đã
+hand-fork tương tự). Fix: thêm `"settings-global.json"` vào `EXCLUDE_FILE_NAMES`.
+
+→ **Bài học tổng quát:** loại trừ 1 file/thư mục hand-fork không đủ — phải rà lại
+TOÀN BỘ các file non-`.md` trong phạm vi sync (không chỉ nơi vừa phát hiện lỗi) để
+tìm các cặp đã hand-fork tương tự, vì chúng có xu hướng xuất hiện thành cụm (mọi
+file "hướng dẫn/cấu hình cho người dùng cuối" — README, settings mẫu, GUI tool —
+đều có khả năng bị viết lại riêng cho từng bên, khác với agents/lessons/code
+thường mirror 1:1 được).
+
 ## Áp dụng lại (How to reuse)
 
 - Khi viết bất kỳ script đồng bộ nào giữa 2 hệ thống (Claude ↔ Gemini, hay

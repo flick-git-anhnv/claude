@@ -83,7 +83,10 @@ SYNC_UNITS: list[tuple[str, str]] = [
 ]
 
 EXCLUDE_DIR_NAMES = {"__pycache__", ".git", "windows-tools"}  # windows-tools: GUI tool đã hand-fork riêng cho từng bên (ClaudeConfigAudit.ps1 vs GeminiConfigAudit.ps1), KHÔNG mirror
-EXCLUDE_FILE_NAMES = {"link-global.ps1"}  # chỉ dùng cho junction phía Claude
+EXCLUDE_FILE_NAMES = {
+    "link-global.ps1",  # chỉ dùng cho junction phía Claude
+    "settings-global.json",  # hand-fork riêng cho từng bên (Claude Code permissions.allow schema vs Antigravity chat.tools.autoApprove schema) — KHÔNG mirror, xem lesson windows-tooling/cross-tool-sync-script-clobbers-hand-forked-variant.md
+}
 SKIP_SUFFIXES = {".docx", ".pdf"}
 
 
