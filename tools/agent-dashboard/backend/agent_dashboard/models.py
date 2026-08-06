@@ -88,6 +88,8 @@ class ParsedLine:
     # Sprint 4 fields — subagent transcript linking
     parent_session_id: Optional[str] = None  # UUID of parent session (folder above "subagents/")
     attribution_agent: Optional[str] = None  # from JSONL field "attributionAgent" (e.g. "senior-developer")
+    # Sprint 4b — Agent tool_use ID (for result matching)
+    tool_use_id: Optional[str] = None        # block["id"] from Agent tool_use content block
 
 
 @dataclass

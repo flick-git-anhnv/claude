@@ -25,6 +25,7 @@ async def conn():
     await db_module._migrate_events_subagent_columns(c)
     await db_module._migrate_subagent_flag_column(c)
     await db_module._migrate_sprint4_columns(c)
+    await db_module._migrate_result_columns(c)
     yield c
     await c.close()
 

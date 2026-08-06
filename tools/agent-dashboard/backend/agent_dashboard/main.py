@@ -232,6 +232,9 @@ async def _process_file(conn: Any, file_path: str) -> None:
             # at 2000 chars often corrupts Agent tool_use lines with large prompts.
             subagent_type=parsed.subagent_type if parsed.tool_name == "Agent" else None,
             subagent_description=parsed.subagent_activity if parsed.tool_name == "Agent" else None,
+            # Sprint 4b: store tool_use_id at ingest so result lookup can use it
+            # without re-parsing the JSONL file.
+            tool_use_id=parsed.tool_use_id if parsed.tool_name == "Agent" else None,
         )
 
         has_tokens = any([

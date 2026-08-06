@@ -130,6 +130,7 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
     agent_type: Optional[str] = None
     subagent_type: Optional[str] = None
     subagent_activity: Optional[str] = None
+    tool_use_id: Optional[str] = None
     content = message.get("content")
 
     if msg_type == "assistant":
@@ -144,6 +145,7 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
                         tool_input = block.get("input") or {}
                         subagent_type = tool_input.get("subagent_type") or None
                         subagent_activity = tool_input.get("description") or None
+                        tool_use_id = block.get("id") or None
                     break
 
     # Also handle top-level tool_name field (alternate format)
@@ -173,6 +175,7 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
         is_subagent=is_subagent,
         parent_session_id=parent_session_id,
         attribution_agent=attribution_agent,
+        tool_use_id=tool_use_id,
     )
 
 
@@ -181,3 +184,129 @@ def _int(val: object) -> int:
         return int(val)
     except (TypeError, ValueError):
         return 0
+
+
+def _extract_agent_result(session_lines: list, tool_use_id: str) -> Optional[dict]:
+    """Search session_lines for the result of an Agent tool call identified by tool_use_id.
+
+    Handles two cases:
+
+    Case SYNC (run_in_background=False):
+        A ``user`` message contains a ``tool_result`` content block whose
+        ``tool_use_id`` matches.  The block's text content is the result.
+
+    Case ASYNC (run_in_background=True):
+        The first ``tool_result`` block contains the placeholder string
+        "Async agent launched".  The real result is delivered later via a
+        ``queue-operation`` line (``operation="enqueue"``) whose ``content``
+        field is an XML ``<task-notification>`` fragment.  The fragment links
+        back to the original call via ``<tool-use-id>`` and carries the agent
+        output inside ``<result>…</result>``.
+
+    Returns:
+        {
+          "result_summary": str (≤400 chars) | None,
+          "result_full":    str              | None,
+          "duration_ms":    None  (not present in current log format),
+        }
+        or None when no result is found.
+    """
+    import re as _re
+
+    _ASYNC_PLACEHOLDER = "Async agent launched"
+    _RESULT_RE = _re.compile(r"<result>(.*?)</result>", _re.DOTALL)
+    tool_use_id_escaped = _re.escape(tool_use_id)
+    _TOOL_ID_RE = _re.compile(
+        r"<tool-use-id>\s*" + tool_use_id_escaped + r"\s*</tool-use-id>",
+        _re.IGNORECASE,
+    )
+
+    # Phase 1: find the tool_result block for this tool_use_id
+    result_text: Optional[str] = None
+    is_async = False
+
+    for raw in session_lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+
+        if data.get("type") != "user":
+            continue
+
+        message = data.get("message") or {}
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") != "tool_result":
+                continue
+            if block.get("tool_use_id") != tool_use_id:
+                continue
+
+            # Extract text from the block's content (string or list of text blocks)
+            inner = block.get("content", "")
+            if isinstance(inner, list):
+                texts = [
+                    item.get("text", "")
+                    for item in inner
+                    if isinstance(item, dict) and item.get("type") == "text"
+                ]
+                text = " ".join(t for t in texts if t)
+            else:
+                text = str(inner) if inner else ""
+
+            if _ASYNC_PLACEHOLDER in text:
+                is_async = True
+            else:
+                result_text = text
+            break  # found the block for this tool_use_id
+
+        if result_text is not None or is_async:
+            break
+
+    if not is_async and result_text is None:
+        # No tool_result found for this tool_use_id
+        return None
+
+    if not is_async:
+        # Sync result
+        summary = result_text[:400] if result_text else None
+        return {"result_summary": summary, "result_full": result_text or None, "duration_ms": None}
+
+    # Phase 2: async — search for queue-operation with matching task-notification XML
+    for raw in session_lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+
+        if data.get("type") != "queue-operation":
+            continue
+        if data.get("operation") != "enqueue":
+            continue
+
+        xml_content: str = data.get("content") or ""
+        if not xml_content:
+            continue
+        if not _TOOL_ID_RE.search(xml_content):
+            continue
+
+        # Found the matching task-notification
+        m = _RESULT_RE.search(xml_content)
+        if m:
+            text = m.group(1).strip()
+            summary = text[:400] if text else None
+            return {"result_summary": summary, "result_full": text or None, "duration_ms": None}
+
+    # Async agent was launched but no task-notification found yet (still running)
+    return None

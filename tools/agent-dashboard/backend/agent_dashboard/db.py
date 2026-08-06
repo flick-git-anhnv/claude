@@ -159,6 +159,30 @@ async def _migrate_events_subagent_columns(conn: aiosqlite.Connection) -> None:
     await conn.commit()
 
 
+async def _migrate_result_columns(conn: aiosqlite.Connection) -> None:
+    """Idempotent: add tool_use_id, result_summary, result_full to events (Sprint 4b).
+
+    tool_use_id    — block["id"] of the Agent tool_use content block; used to
+                     match the event to its result (tool_result or queue-operation).
+    result_summary — first ≤400 chars of the agent's output text.
+    result_full    — complete output text.
+    """
+    async with conn.execute("PRAGMA table_info(events)") as cur:
+        rows = await cur.fetchall()
+    existing = {row["name"] for row in rows}
+
+    for col, typedef in (
+        ("tool_use_id",    "TEXT"),
+        ("result_summary", "TEXT"),
+        ("result_full",    "TEXT"),
+    ):
+        if col not in existing:
+            await conn.execute(f"ALTER TABLE events ADD COLUMN {col} {typedef}")
+            logger.info("DB migration: added column events.%s", col)
+
+    await conn.commit()
+
+
 async def _migrate_sprint4_columns(conn: aiosqlite.Connection) -> None:
     """Idempotent: add parent_session_id + attribution_agent columns to sessions (Sprint 4).
 
@@ -351,6 +375,7 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await _migrate_fix_subagent_project_attribution(conn)
     await _migrate_subagent_flag_column(conn)
     await _migrate_sprint4_columns(conn)
+    await _migrate_result_columns(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 
@@ -514,12 +539,29 @@ async def insert_event(
     payload_json: str,
     subagent_type: Optional[str] = None,
     subagent_description: Optional[str] = None,
-) -> None:
-    await conn.execute(
+    tool_use_id: Optional[str] = None,
+) -> int:
+    """Insert one event row. Returns the new row's ROWID (used for lazy backfill)."""
+    cur = await conn.execute(
         "INSERT INTO events (session_id, ts, type, tool_name, payload_json, "
-        "subagent_type, subagent_description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "subagent_type, subagent_description, tool_use_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (session_id, ts, msg_type, tool_name, payload_json,
-         subagent_type, subagent_description),
+         subagent_type, subagent_description, tool_use_id),
+    )
+    await conn.commit()
+    return cur.lastrowid
+
+
+async def update_event_result(
+    conn: aiosqlite.Connection,
+    event_id: int,
+    result_summary: Optional[str],
+    result_full: Optional[str],
+) -> None:
+    """Store result fields on an existing Agent event row (identified by PK)."""
+    await conn.execute(
+        "UPDATE events SET result_summary = ?, result_full = ? WHERE id = ?",
+        (result_summary, result_full, event_id),
     )
     await conn.commit()
 
@@ -759,6 +801,117 @@ async def get_sessions_by_project(
     return result
 
 
+async def _backfill_chain_results(
+    conn: aiosqlite.Connection,
+    session_id: str,
+    event_rows: list,
+) -> None:
+    """One-shot lazy backfill: read the session JSONL and populate tool_use_id +
+    result_summary/full on Agent events that are still missing those fields.
+
+    Strategy:
+    1. Get file_path from sessions table.
+    2. Read all lines from the JSONL file.
+    3. Build {ts: [tool_use_id, ...]} for every Agent tool_use line in the file.
+    4. For each event_row with result_summary=NULL:
+       a. If tool_use_id is NULL: resolve it from the ts-based mapping.
+       b. Call _extract_agent_result(lines, tool_use_id).
+       c. Persist both tool_use_id and result fields to the events row.
+    """
+    import json as _json
+    from collections import defaultdict
+    from .parser import _extract_agent_result
+
+    # 1. Get file_path
+    async with conn.execute(
+        "SELECT file_path FROM sessions WHERE session_id = ?", (session_id,)
+    ) as cur:
+        row = await cur.fetchone()
+    if not row:
+        return
+    file_path: str = row["file_path"]
+
+    # 2. Read JSONL lines (best-effort; skip on IO error)
+    try:
+        from pathlib import Path
+        session_lines: list[str] = Path(file_path).read_text(
+            encoding="utf-8", errors="replace"
+        ).splitlines()
+    except (OSError, IOError) as exc:
+        logger.warning("_backfill_chain_results: cannot read %s — %s", file_path, exc)
+        return
+
+    # 3. Build ts → [tool_use_id, ...] from Agent tool_use lines in the file
+    ts_to_ids: dict[str, list[str]] = defaultdict(list)
+    for raw in session_lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            data = _json.loads(raw)
+        except _json.JSONDecodeError:
+            continue
+        if data.get("type") != "assistant":
+            continue
+        for block in (data.get("message") or {}).get("content") or []:
+            if (
+                isinstance(block, dict)
+                and block.get("type") == "tool_use"
+                and block.get("name") == "Agent"
+                and block.get("id")
+            ):
+                ts = data.get("timestamp") or ""
+                ts_to_ids[ts].append(block["id"])
+
+    # Occurrence counters per ts (to handle rare duplicate-ts events in order)
+    ts_occurrence: dict[str, int] = defaultdict(int)
+
+    # 4. Process each missing event row
+    for ev in event_rows:
+        if ev["result_summary"] is not None:
+            continue  # already filled
+
+        event_id: int = ev["id"]
+        ts: str = ev["ts"]
+
+        # Resolve tool_use_id: prefer DB value; fall back to ts-based mapping
+        tool_use_id: Optional[str] = ev["tool_use_id"]
+        if not tool_use_id:
+            candidates = ts_to_ids.get(ts, [])
+            occ = ts_occurrence[ts]
+            if occ < len(candidates):
+                tool_use_id = candidates[occ]
+            ts_occurrence[ts] += 1
+
+        if not tool_use_id:
+            logger.debug(
+                "_backfill_chain_results: no tool_use_id for event %d (ts=%s)", event_id, ts
+            )
+            continue
+
+        result = _extract_agent_result(session_lines, tool_use_id)
+        r_summary = result["result_summary"] if result else None
+        r_full = result["result_full"] if result else None
+
+        # Persist — always write tool_use_id (even if result is None) so we
+        # don't re-scan the same event on the next /chain call.
+        await conn.execute(
+            """UPDATE events
+                  SET tool_use_id    = ?,
+                      result_summary = ?,
+                      result_full    = ?
+                WHERE id = ?""",
+            (tool_use_id, r_summary, r_full, event_id),
+        )
+
+    await conn.commit()
+    logger.debug(
+        "_backfill_chain_results: backfill done for session %s (%d Agent events)",
+        session_id,
+        len(event_rows),
+    )
+
+
 async def get_session_chain(
     conn: aiosqlite.Connection,
     session_id: str,
@@ -811,13 +964,33 @@ async def get_session_chain(
 
     # ── Step 1: Fetch all Agent tool_use events ordered chronologically ──────
     async with conn.execute(
-        """SELECT ts, payload_json, subagent_type, subagent_description
+        """SELECT id, ts, payload_json, subagent_type, subagent_description,
+                  tool_use_id, result_summary, result_full
              FROM events
             WHERE session_id = ? AND tool_name = 'Agent'
             ORDER BY ts ASC""",
         (session_id,),
     ) as cur:
         event_rows = await cur.fetchall()
+
+    # ── Step 1b: Lazy backfill result fields from JSONL if any event is missing them ──
+    # This handles both old events (tool_use_id=NULL, ingested before Sprint 4b)
+    # and new events where the result arrived after ingest.
+    need_backfill = any(
+        row["result_summary"] is None for row in event_rows
+    )
+    if need_backfill and event_rows:
+        await _backfill_chain_results(conn, session_id, event_rows)
+        # Re-fetch so we have the persisted result_summary/full values
+        async with conn.execute(
+            """SELECT id, ts, payload_json, subagent_type, subagent_description,
+                      tool_use_id, result_summary, result_full
+                 FROM events
+                WHERE session_id = ? AND tool_name = 'Agent'
+                ORDER BY ts ASC""",
+            (session_id,),
+        ) as cur:
+            event_rows = await cur.fetchall()
 
     # ── Step 2: Build per-call list (resolve subagent_type from stored col / fallback JSON) ──
     raw_calls: list[dict[str, Any]] = []
@@ -842,10 +1015,14 @@ async def get_session_chain(
                             break
             except (ValueError, AttributeError):
                 pass
+        result_summary: Optional[str] = ev["result_summary"] if "result_summary" in ev.keys() else None
+        result_full: Optional[str] = ev["result_full"] if "result_full" in ev.keys() else None
         raw_calls.append({
-            "subagent_type": subagent_type,
-            "description":   description,
-            "started_at":    ev["ts"],
+            "subagent_type":  subagent_type,
+            "description":    description,
+            "started_at":     ev["ts"],
+            "result_summary": result_summary,
+            "result_full":    result_full,
         })
 
     # ── Step 3: Load child sessions grouped by attribution_agent ─────────────
@@ -892,12 +1069,14 @@ async def get_session_chain(
             child_state = child["state"]
 
         matched_calls.append({
-            "subagent_type": role,
-            "description":   call["description"],
-            "started_at":    call["started_at"],
-            "tokens":        tokens_step,
-            "model":         model,
-            "child_state":   child_state,
+            "subagent_type":  role,
+            "description":    call["description"],
+            "started_at":     call["started_at"],
+            "tokens":         tokens_step,
+            "model":          model,
+            "child_state":    child_state,
+            "result_summary": call.get("result_summary"),
+            "result_full":    call.get("result_full"),
         })
 
     # ── Step 5: Build roster — one entry per unique role, ordered by first appearance ──
@@ -931,11 +1110,14 @@ async def get_session_chain(
 
         # Per-call history item
         history_item: dict[str, Any] = {
-            "call_index":  entry["call_count"],
-            "started_at":  call["started_at"],
-            "description": call["description"],
-            "model":       call["model"],
-            "tokens":      call["tokens"],
+            "call_index":     entry["call_count"],
+            "started_at":     call["started_at"],
+            "description":    call["description"],
+            "model":          call["model"],
+            "tokens":         call["tokens"],
+            "result_summary": call.get("result_summary"),
+            "result_full":    call.get("result_full"),
+            "duration_ms":    None,
         }
         entry["history"].append(history_item)
 
