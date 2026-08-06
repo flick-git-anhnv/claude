@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 10:30
+updated: 2026-08-06 11:15
 status: in-progress
 workflow: WF-FEATURE
 priority: P2
@@ -53,7 +53,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 3.3 | Code review + verify-pr + merge decision (SD + JD) | Tech Lead | ✅ | `steps/STEP-3.3-tl-code-review.md` | 2026-08-06 00:45 |
 | 3.4 | UX/UI Review — chạy app thật, screenshot, đánh giá C1–C7 | UX/UI Reviewer | ✅ | `steps/STEP-3.4-uxr-review.md` | 2026-08-06 08:30 |
 | 3.5 | Fix 2 issue High từ UXR (UI-001 frontend, UI-002 backend) trước khi QA | Senior Developer ∥ Junior Developer | ✅ | `steps/STEP-3.5-fix-uxr-high.md` | 2026-08-06 10:30 |
-| 3.6 | TL verify 2 fix + quyết định merge cuối trước QA | Tech Lead | 🔄 | `steps/STEP-3.6-tl-verify-fix.md` | - |
+| 3.6 | TL verify 2 fix + quyết định merge cuối trước QA | Tech Lead | ✅ | `steps/STEP-3.6-tl-verify-fix.md` | 2026-08-06 11:15 |
 
 ### Phase 4: Kiểm thử & Deploy
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
@@ -76,7 +76,8 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 - [ ] `docs/devops/DEPLOY-agent-dashboard.md` — Deploy checklist
 
 ## Blockers
-- ~~Bước 3.6 🛑 REQUEST CHANGES~~ — RESOLVED (commit `2c0196d`): `_parse_ts('')` giờ trả epoch, Running → 3 sessions. Chờ TL re-verify Bước 3.6.
+- (Không có blocker đang mở)
+- ~~Bước 3.6 🛑 REQUEST CHANGES~~ — RESOLVED lần verify #2 (2026-08-06 11:15): `_parse_ts('')`→epoch, 52/52 tests, Running 244→3. Merge APPROVED → Bước 4.1 QAE.
 
 ## Quyết định / Ghi chú tổng
 - CTO step (1.5) ⏭️ Skipped: P2, tool nội bộ, không đụng production auth/payment/DB schema — không đủ điều kiện WF-FEATURE Bước 5.
@@ -101,6 +102,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 08:19 | Bước 3.5 🔄 — Backend UI-002 fix xong (commit ed84b69): initialize_from_db() re-evaluate stale state; 50/50 tests pass. Frontend UI-001 đang chạy song song (JD) | Senior Developer |
 | 2026-08-06 08:40 | Bước 3.5 🔄 JD phần UI-001 xong — normalizeIso()+fmtDateShort() fix NaN bug Python microseconds; vitest setup, 20 tests pass; tsc+build 0 lỗi; lesson ghi vào react-web/; CODE-GRAPH cập nhật | Junior Developer |
 | 2026-08-06 08:35 | Bước 3.6 🛑 REQUEST CHANGES — UI-001 APPROVED, UI-002 fix chưa xử lý edge case `last_event_at=''` (242/245 sessions Running sai sau restart). SD cần sửa `_parse_ts('')` → epoch + thêm test + optional cleanup migration. Chưa chuyển QA. | Tech Lead |
+| 2026-08-06 11:15 | Bước 3.6 ✅ verify #2 PASS — `_parse_ts('')`→epoch OK, 52/52 tests, Running 244→3 sau restart uvicorn 7770, 347 Ended trong history. APPROVED merge → Bước 4.1 QAE. | Tech Lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
