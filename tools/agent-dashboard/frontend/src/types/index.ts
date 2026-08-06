@@ -50,7 +50,7 @@ export type AccountKind = 'api_key' | 'oauth_session';
 
 export interface Account {
   id: string;
-  kind: AccountKind;
+  kind?: AccountKind;  // optional for backward-compat with mocks + legacy delta payloads (Sprint 2 hotfix)
   name: string;
   // api_key accounts
   key_masked?: string;      // "sk-ant-api03-****XXXX"
@@ -68,7 +68,7 @@ export interface Account {
 export interface ActiveAccount {
   id: string;
   name: string;
-  kind: AccountKind;
+  kind?: AccountKind;  // optional: WS delta account_changed hiện chưa gửi kind (Sprint 3 sẽ chuẩn hóa)
   key_masked?: string;
   oauth_masked?: string;
 }

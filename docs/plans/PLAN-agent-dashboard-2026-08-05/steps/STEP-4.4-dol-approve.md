@@ -63,7 +63,7 @@ Căn cứ:
 - next_inputs: Dashboard sẵn sàng dùng. Khởi động bằng `tools\agent-dashboard\start.bat` hoặc `python -m agent_dashboard` từ backend dir.
 
 ## Commit
-- Hash: (cập nhật sau git commit)
+- Hash: 46d1dc6
 - Đã push: có
 
 ---

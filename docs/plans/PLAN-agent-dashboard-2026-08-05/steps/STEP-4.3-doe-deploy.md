@@ -50,7 +50,7 @@ Viết checklist deploy local và đảm bảo app khởi động được từ 
 - next_inputs: `tools/agent-dashboard/start.bat` (chạy để start), `http://127.0.0.1:7770` (URL kiểm tra), `http://127.0.0.1:7770/api/health` (health check), `docs/devops/DEPLOY-agent-dashboard.md` (full context), build commit ff0bd2e.
 
 ## Commit
-- Hash: [điền sau commit]
+- Hash: 10f68af
 - Đã push: không
 
 ---

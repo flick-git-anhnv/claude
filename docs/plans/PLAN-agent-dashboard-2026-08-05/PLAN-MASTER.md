@@ -1,8 +1,8 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 10:02
-status: active
+updated: 2026-08-06 10:30
+status: completed
 workflow: WF-FEATURE
 priority: P2
 ---
@@ -70,7 +70,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 5.2 | Track A: OAuth Account Support (migration v1→v2, activate flow swap credentials, auto-refresh scheduler, UI 2-tab, security banner) — S2-T01..T06 | Senior Developer | ✅ | `steps/STEP-5.2-sd-oauth.md` | 2026-08-06 09:53 |
 | 5.3 | Track B: Parser mở rộng subagent_type/description, DB 3 column mới, mapping VN, API by-project, UI 2 view mode "Theo Agent"/"Theo Dự án" — S2-T07..T12 | Junior Developer | ✅ | `steps/STEP-5.3-jd-agent-view.md` | 2026-08-06 17:30 |
 | 5.4 | security-audit-stride cho Track A (đụng credential nhạy cảm, ghi file `.credentials.json`) — BLOCK merge nếu Fail nhóm rủi ro cao | Tech Lead | ✅ | `steps/STEP-5.4-tl-security-audit.md` | 2026-08-06 10:02 |
-| 5.5 | Code review cuối cả 2 track + verify-pr + merge decision | Tech Lead | ⬜ | `steps/STEP-5.5-tl-review-sprint2.md` | - |
+| 5.5 | Code review cuối cả 2 track + verify-pr + merge decision | Tech Lead | ✅ | `steps/STEP-5.5-tl-review-sprint2.md` | 2026-08-06 10:30 |
 
 > **Ghi chú Phase 5:** 5.2 ∥ 5.3 (song song). 5.4 chỉ chạy sau 5.2 (Track A). 5.5 chờ cả 5.2, 5.3, 5.4 xong. UXR/QA/Deploy sẽ mở Phase 6 sau khi 5.5 pass.
 
@@ -87,7 +87,13 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 - [ ] `docs/devops/DEPLOY-agent-dashboard.md` — Deploy checklist
 
 ## Blockers
-- (Không có blocker đang mở)
+- (Không có blocker đang mở cho Sprint 2 — Sprint đã đóng)
+
+## Backlog Sprint 3 (mở từ Bước 5.5)
+- **BUG-003 (P2):** Session hiển thị "Bắt đầu: Invalid Date" — `started_at: ""` trả về từ `/api/sessions/by-project` + WS `agent_started`. Root cause: `parser.py:55` fallback `""` + state_manager snapshot cho legacy sessions. Fix pattern giống UI-001 (frontend safe-guard) HOẶC chuẩn hóa backend không trả `""`. Reproduce: `curl /api/sessions/by-project | jq '.[0].sessions[0].started_at'` → `""`.
+- **FR-001 (feature request):** Redesign `AgentStatusPanel` thành pipeline view — chain PM→BA→…→SD/JD→TL→QA→Deploy xếp hàng, agent đang hoạt động highlight sáng (tên + việc + token), agent khác trong chain mờ. Cần UX design lại + xác định cách nhận diện "chain" (session_id gốc? parent-task marker trong JSONL?). Câu hỏi mở cho PM/UX ở kick-off Sprint 3.
+- **DEBT-001 (Sprint 3):** Thắt lại `kind: AccountKind` thành required trong `Account`/`ActiveAccount` sau khi backend gửi `kind` trong WS delta `account_changed` + snapshot. Hiện đang optional (hotfix 5.5).
+- **H-1 (đã fix Sprint 2, ghi để tra cứu):** OAuth race activate↔refresh — fix `b1866cc` bằng `refresh_lock` shared trong `activate_oauth_account`.
 - ~~Bước 3.6 🛑 REQUEST CHANGES~~ — RESOLVED lần verify #2 (2026-08-06 11:15): `_parse_ts('')`→epoch, 52/52 tests, Running 244→3. Merge APPROVED → Bước 4.1 QAE.
 
 ## Quyết định / Ghi chú tổng
@@ -121,6 +127,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 17:30 | Bước 5.3 ✅ — Track B hoàn thành: parser subagent, DB 3 cột mới (idempotent), SUBAGENT_DISPLAY 19 agents, /by-project endpoint, WS subagent_changed, AgentCard badge, toggle 2 view mode + accordion; 85/85 tests, tsc+vite 0 errors; commit 5c23e75 | Junior Developer |
 | 2026-08-06 15:10 | Bước 4.4 ✅ — DOL smoke test PASS (health/frontend/sessions/accounts 4/4); isolation OK; DEPLOY doc reviewed; **WF-FEATURE HOÀN THÀNH** — status → completed | DevOps Lead |
 | 2026-08-06 09:53 | Bước 5.2 ✅ — Track A OAuth: migration v2, oauth_service.py (activate+scheduler+subprocess), routes, main scheduler wired, frontend 2-tab+badge+banner, 33 tests (118 total pass), claude -p verified exit 0; CODE-GRAPH v1.2 cập nhật | Senior Developer |
+| 2026-08-06 10:30 | Bước 5.5 ✅ — TL review Sprint 2 PASS: 119/119 backend tests, tsc+vite build 0 lỗi (sau hotfix nới `kind?: AccountKind`), tích hợp thật 3/3 endpoint OK. Phát hiện BUG-003 (Invalid Date started_at, P2) + FR-001 (pipeline view) → Backlog Sprint 3. **Sprint 2 APPROVED merge, status plan → completed.** | Tech Lead |
 | 2026-08-06 10:02 | Bước 5.4 ✅ — Security audit PASS có điều kiện: 1 High (H-1 race activate↔refresh, không share `refresh_lock`, mở BUG P1 Sprint 3), 3 Medium (auth endpoint, backup cleanup, XOR obfuscation), 2 Low (log không lộ token ✅, migration v1→v2 safe ✅); verified mid-swap restore bằng chạy thử thật. Không BLOCK merge Sprint 2 → sẵn sàng Bước 5.5. | Tech Lead |
 
 ---
