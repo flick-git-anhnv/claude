@@ -5,10 +5,9 @@ export type WsStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnect
 export type RangeFilter = '7d' | '30d' | '12w' | '6m';
 export type ViewMode = 'by-agent' | 'by-project';
 
-// Sprint 3 — Chain types (FR-001)
+// Sprint 3 — Chain types (FR-001) — kept for backward-compat, superseded by Sprint 4 Roster
 export interface ChainStep {
   step_index: number;
-  // Backend can return null when Agent tool_use has no subagent_type/description
   subagent_type: string | null;
   subagent_display: string | null;
   description: string | null;
@@ -16,10 +15,51 @@ export interface ChainStep {
   status: 'done' | 'active';
 }
 
+/** @deprecated — Sprint 4: use RosterResponse instead */
 export interface ChainResponse {
   session_id: string;
   session_state: SessionState;
-  steps: ChainStep[];
+  steps?: ChainStep[];   // legacy field — may be absent in Sprint 4 responses
+  roster?: RosterEntry[]; // Sprint 4 field
+}
+
+// Sprint 4 — Roster types (FR-001 update)
+export interface RosterTokens {
+  input: number;
+  output: number;
+  cache_creation: number;
+  cache_read: number;
+}
+
+export interface RosterHistoryEntry {
+  call_index: number;
+  started_at: string;          // ISO8601
+  description: string | null;
+  model: string | null;
+  tokens: RosterTokens | null; // null for early sessions where attribution_agent was not captured
+  status: 'done' | 'active';
+  result_summary?: string | null;  // optional — backend deferred to follow-up commit
+  result_full?: string | null;     // optional — backend deferred
+  duration_ms?: number | null;     // optional — backend deferred
+}
+
+export interface RosterEntry {
+  role: string;
+  display_name: string;
+  call_count: number;
+  latest_description: string | null;
+  latest_model: string | null;
+  first_called_at: string;    // ISO8601
+  last_called_at: string;     // ISO8601
+  total_tokens: RosterTokens;
+  history: RosterHistoryEntry[];
+  status: 'done' | 'active';
+}
+
+export interface RosterResponse {
+  session_id: string;
+  session_state: SessionState;
+  roster: RosterEntry[];
 }
 
 export interface TokenCounts {

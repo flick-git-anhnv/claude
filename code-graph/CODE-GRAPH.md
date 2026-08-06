@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** senior-developer | **Version:** 1.5
+**Cập nhật lần cuối:** 2026-08-06 | **Bởi:** junior-developer | **Version:** 1.6
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -72,7 +72,7 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 | Templates | `.claude/templates/` | Khung mẫu cho plan, eval, code-graph | `PLAN-template.md`, `EVAL-template.md`, `CODE-GRAPH-template.md` |
 | KztekComponent | `KztekComponent/` | Thư viện UI C# WinForms — dùng tối đa cho mọi project C# KZTEK | Xem bảng Controls bên dưới |
 | Scripts | `scripts/` | Automation scripts hỗ trợ agent | `md_to_docx_kztek.py`, `link-global.ps1`, `review-package.sh` |
-| Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 17 components, 4 pages, WebSocket client | `utils/format.ts`, `api/interceptor.ts`, `state/wsReducer.ts`, `types/index.ts` (ChainStep, ChainResponse, Sprint 3 Session fields), `components/sessions/ContextBadge.tsx` (FR-002), `components/sessions/StepStation.tsx` (FR-001), `components/sessions/PipelineCard.tsx` (FR-001), `components/sessions/SessionCard.tsx` (v2 — FR-001/002/003), `hooks/useApi.ts` (+getSessionChain) |
+| Agent Dashboard Frontend | `tools/agent-dashboard/frontend/src/` | Dashboard web local — 18 components, 4 pages, WebSocket client | `utils/format.ts` (+`fmtTokensCompact` Sprint 4), `api/interceptor.ts`, `state/wsReducer.ts`, `types/index.ts` (Sprint 4: thêm `RosterTokens`, `RosterHistoryEntry`, `RosterEntry`, `RosterResponse`; `ChainResponse` deprecated), `components/sessions/ContextBadge.tsx` (FR-002), `components/sessions/AgentRosterItem.tsx` (FR-001 Sprint 4 — NEW, thay StepStation), `components/sessions/StepStation.tsx` (FR-001 Sprint 3 — deprecated), `components/sessions/PipelineCard.tsx` (FR-001 Sprint 4 redesign — roster[], history panel), `components/sessions/SessionCard.tsx` (v2 — FR-001/002/003), `hooks/useApi.ts` (+getSessionChain) |
 | Agent Dashboard Backend | `tools/agent-dashboard/backend/` | FastAPI: file-watcher, WebSocket, SQLite ingestion, account mgmt, OAuth session management | `main.py` (exposes `app.state.oauth_refresh_lock`; Sprint 3: handles is_meta lines, snapshot last_* params, session_title_changed WS delta), `state_manager.py`, `db.py` (Sprint 3: `_migrate_sprint3_columns`, `update_title`, `update_title_if_null`, `get_session_chain`, `_compute_step_status`; snapshot `last_input_tokens/last_cache_creation/last_cache_read/last_usage_at` columns), `parser.py` (Sprint 3: ai-title → `is_meta=True`; early-return for no-timestamp BUG-003; `first_user_text` extraction), `config.py` (Sprint 3: `MODEL_CONTEXT_WINDOW` dict + `resolve_max_context(model)`), `models.py` (Sprint 3: `ParsedLine` + `ai_title`, `first_user_text`, `is_meta` fields), `watcher.py`, `routes/accounts.py` (CRUD + activate, `_get_refresh_lock()` helper — H-1 fix), `routes/sessions.py` (Sprint 3: `GET /api/sessions/{id}/chain`), `accounts.py` (v2 — kind discriminator, OAuth snapshot), `oauth_service.py` (activate_oauth_account requires `refresh_lock: asyncio.Lock`, auto-refresh scheduler, subprocess invoke) |
 
 ---
@@ -230,6 +230,10 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/db.py` | Update | Sprint 3: _migrate_sprint3_columns (5 cột mới + BUG-003 cleanup); update_title/update_title_if_null; upsert_session snapshot last_* (ghi đè); get_session_chain; _compute_step_status; SELECT queries + _row_to_session tính context_pct | senior-developer |
 | 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/routes/sessions.py` | Update | Sprint 3: endpoint GET /api/sessions/{id}/chain — 404 nếu session không tồn tại | senior-developer |
 | 2026-08-06 | `tools/agent-dashboard/backend/agent_dashboard/main.py` | Update | Sprint 3: _process_file handle is_meta, snapshot last_* khi input_tokens>0, WS session_title_changed, WS token_update +context_pct | senior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/utils/format.ts` | Update | Sprint 4: thêm `fmtTokensCompact(n)` — format token compact ("1.5K", "1.2M", null nếu n≤0) | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/types/index.ts` | Update | Sprint 4: thêm `RosterTokens`, `RosterHistoryEntry`, `RosterEntry`, `RosterResponse`; deprecate `ChainResponse.steps` → `roster[]` | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/sessions/AgentRosterItem.tsx` | Add | NEW Sprint 4: ô roster 1 vai trò — active (196px cam pulse) / done (148px mờ hover-expand), token compact, "(xN)" badge, nút "Xem lịch sử" | junior-developer |
+| 2026-08-06 | `tools/agent-dashboard/frontend/src/components/sessions/PipelineCard.tsx` | Update | Sprint 4 redesign: dùng roster[] thay steps[], AgentRosterItem thay StepStation, history panel inline bên dưới grid | junior-developer |
 
 ---
 

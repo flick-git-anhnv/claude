@@ -1,27 +1,47 @@
 /**
- * PipelineCard — FR-001 Sprint 3
- * Lưới wrap các "trạm" (StepStation) thể hiện chain của 1 session cha.
- * - Fetch /api/sessions/{id}/chain khi mount và khi lastSubagentAt thay đổi
- *   (lastSubagentAt = current_subagent?.at → bắt signal WS subagent_changed)
- * - flex-wrap: nhiều hàng — hiển thị TOÀN BỘ pipeline, không scroll ngang
- * - Active station (cam #F05922) nổi bật tự nhiên dù ở vị trí bất kỳ trong lưới
- * - Fail silently khi API lỗi hoặc steps rỗng
+ * PipelineCard — Sprint 4 (roster redesign)
+ * Lưới wrap các ô AgentRosterItem (1 ô/vai trò, gộp N lần gọi).
+ * - Fetch /api/sessions/{id}/chain, đọc roster[]
+ * - flex-wrap nhiều hàng — hiển thị TOÀN BỘ roster
+ * - Click "Xem lịch sử" → history panel bên dưới grid
+ * - tokens null → ẩn gracefully (không hiện "0")
+ * - result_summary optional (backend deferred) → ẩn nếu chưa có
  */
 import { useEffect, useState } from 'react'
-import type { ChainResponse, SessionState } from '../../types'
-import StepStation from './StepStation'
+import type { RosterResponse, RosterEntry, RosterHistoryEntry } from '../../types'
+import AgentRosterItem from './AgentRosterItem'
+import { fmtTokensCompact, fmtDateTime } from '../../utils/format'
 
 interface PipelineCardProps {
   sessionId: string
-  sessionState: SessionState
-  /** Thay đổi khi WS subagent_changed fires → trigger re-fetch chain */
+  sessionState: import('../../types').SessionState
+  /** Thay đổi khi WS subagent_changed fires → trigger re-fetch */
   lastSubagentAt?: string | null
 }
 
 type FetchState = 'loading' | 'ready' | 'empty' | 'error'
 
-/** Connector ──▶ giữa 2 station */
-function StepConnector() {
+/** Skeleton loading: 3 pill mờ */
+function PipelineSkeleton() {
+  return (
+    <div className="flex items-center gap-2 py-1" aria-hidden="true">
+      {[148, 20, 148, 20, 196].map((w, i) => (
+        <span
+          key={i}
+          className="inline-block rounded animate-pulse"
+          style={{
+            width: w,
+            height: w === 20 ? 12 : 88,
+            backgroundColor: '#E5E7EB',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** Connector ──▶ giữa 2 ô roster */
+function RosterConnector() {
   return (
     <span
       className="inline-flex items-center justify-center shrink-0"
@@ -33,46 +53,198 @@ function StepConnector() {
   )
 }
 
-/** Skeleton loading: 3 pill mờ */
-function PipelineSkeleton() {
+/** Panel lịch sử gọi của 1 vai trò */
+function HistoryPanel({
+  entry,
+  onClose,
+}: {
+  entry: RosterEntry
+  onClose: () => void
+}) {
+  const [expandedResult, setExpandedResult] = useState<number | null>(null)
+
   return (
-    <div className="flex items-center gap-2 py-1" aria-hidden="true">
-      {[96, 20, 96, 20, 164].map((w, i) => (
-        <span
-          key={i}
-          className="inline-block rounded animate-pulse"
+    <div
+      style={{
+        marginTop: 10,
+        padding: '10px 12px',
+        background: '#F0EFF9',
+        borderRadius: 6,
+        border: '1px solid #B8B3D6',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#251C53' }}>
+          Lịch sử: {entry.display_name}{' '}
+          <span style={{ fontWeight: 400, color: '#6B7280' }}>
+            ({entry.call_count} lần gọi)
+          </span>
+        </span>
+        <button
+          onClick={onClose}
+          aria-label="Đóng lịch sử"
           style={{
-            width: w,
-            height: w === 20 ? 12 : 80,
-            backgroundColor: '#E5E7EB',
+            fontSize: 14,
+            color: '#9CA3AF',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            lineHeight: 1,
+            padding: '0 2px',
           }}
-        />
-      ))}
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Danh sách history entries */}
+      <div className="flex flex-col" style={{ gap: 6 }}>
+        {entry.history.map((h: RosterHistoryEntry) => {
+          const tokenLabel = h.tokens
+            ? fmtTokensCompact(h.tokens.input + h.tokens.output)
+            : null
+          const isExpanded = expandedResult === h.call_index
+
+          return (
+            <div
+              key={h.call_index}
+              style={{
+                padding: '6px 8px',
+                background: '#FFFFFF',
+                borderRadius: 4,
+                border: '1px solid #CBCBCB',
+              }}
+            >
+              {/* Row: index · model · tokens · status */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: '#FFFFFF',
+                    background: '#B8B3D6',
+                    padding: '1px 5px',
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  #{h.call_index}
+                </span>
+                {h.model && (
+                  <span style={{ fontSize: 10, color: '#4A3F8C', fontWeight: 600 }}>
+                    {h.model.replace(/^claude-/, '')}
+                  </span>
+                )}
+                {tokenLabel && (
+                  <span style={{ fontSize: 10, color: '#6B7280' }}>
+                    {tokenLabel} tokens
+                  </span>
+                )}
+                {h.started_at && (
+                  <span style={{ fontSize: 10, color: '#9CA3AF' }}>
+                    {fmtDateTime(h.started_at)}
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: h.status === 'active' ? '#F05922' : '#22C55E',
+                    marginLeft: 'auto',
+                    flexShrink: 0,
+                  }}
+                >
+                  {h.status === 'active' ? '● đang chạy' : '✓ hoàn thành'}
+                </span>
+              </div>
+
+              {/* Description */}
+              {h.description && (
+                <p
+                  style={{
+                    fontSize: 11,
+                    color: '#374151',
+                    marginTop: 4,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {h.description}
+                </p>
+              )}
+
+              {/* result_summary (optional — ẩn nếu null/undefined) */}
+              {h.result_summary && (
+                <div style={{ marginTop: 4 }}>
+                  <p
+                    className={isExpanded ? undefined : 'line-clamp-3'}
+                    style={{
+                      fontSize: 10,
+                      color: '#6B7280',
+                      lineHeight: 1.5,
+                      background: '#F9FAFB',
+                      padding: '4px 6px',
+                      borderRadius: 3,
+                      borderLeft: '2px solid #B8B3D6',
+                    }}
+                  >
+                    {h.result_summary}
+                  </p>
+                  {h.result_full && (
+                    <button
+                      onClick={() =>
+                        setExpandedResult(isExpanded ? null : h.call_index)
+                      }
+                      style={{
+                        fontSize: 10,
+                        color: '#4A3F8C',
+                        background: 'none',
+                        border: 'none',
+                        padding: '2px 0 0 0',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        textDecorationStyle: 'dotted',
+                      }}
+                    >
+                      {isExpanded ? 'Thu gọn ▲' : 'Xem thêm ▼'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
-export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }: PipelineCardProps) {
-  const [chainData, setChainData] = useState<ChainResponse | null>(null)
+export default function PipelineCard({
+  sessionId,
+  sessionState,
+  lastSubagentAt,
+}: PipelineCardProps) {
+  const [rosterData, setRosterData] = useState<RosterResponse | null>(null)
   const [fetchState, setFetchState] = useState<FetchState>('loading')
+  const [selectedHistory, setSelectedHistory] = useState<RosterEntry | null>(null)
 
-  // Fetch chain khi mount hoặc khi lastSubagentAt thay đổi (mới có subagent)
+  // Fetch chain khi mount hoặc khi lastSubagentAt thay đổi
   useEffect(() => {
     let cancelled = false
     setFetchState('loading')
+    setSelectedHistory(null)
 
     fetch(`/api/sessions/${sessionId}/chain`)
       .then(r => {
         if (!r.ok) throw new Error(`chain fetch ${r.status}`)
-        return r.json() as Promise<ChainResponse>
+        return r.json() as Promise<RosterResponse>
       })
       .then(data => {
         if (cancelled) return
-        if (!data.steps || data.steps.length === 0) {
+        if (!data.roster || data.roster.length === 0) {
           setFetchState('empty')
-          setChainData(null)
+          setRosterData(null)
         } else {
-          setChainData(data)
+          setRosterData(data)
           setFetchState('ready')
         }
       })
@@ -80,18 +252,20 @@ export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }
         if (!cancelled) setFetchState('error')
       })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [sessionId, lastSubagentAt])
 
   // Fail silently: empty / error → không render gì
   if (fetchState === 'empty' || fetchState === 'error') return null
 
-  const steps = chainData?.steps ?? []
+  const roster = rosterData?.roster ?? []
   const isEnded = sessionState !== 'Running'
-  const stepCount = steps.length
+  const roleCount = roster.length
   const headerLabel = isEnded
-    ? `Pipeline [${stepCount} bước — kết thúc]`
-    : `Pipeline [${stepCount} bước]`
+    ? `[${roleCount} vai trò — kết thúc]`
+    : `[${roleCount} vai trò]`
 
   return (
     <div
@@ -123,7 +297,6 @@ export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }
         </span>
         {fetchState === 'ready' && (
           <span
-            className="rounded"
             style={{
               fontSize: 11,
               background: '#B8B3D6',
@@ -132,28 +305,40 @@ export default function PipelineCard({ sessionId, sessionState, lastSubagentAt }
               borderRadius: 10,
             }}
           >
-            {headerLabel.replace('Pipeline ', '')}
+            {headerLabel}
           </span>
         )}
       </div>
 
-      {/* Pipeline wrap container — hiển thị toàn bộ, không scroll ngang */}
+      {/* Roster grid — flex-wrap nhiều hàng */}
       {fetchState === 'loading' ? (
         <PipelineSkeleton />
       ) : (
         <div
-          className="flex flex-wrap items-center"
+          className="flex flex-wrap items-start"
           style={{ opacity: isEnded ? 0.6 : 1, gap: '6px 0', paddingBottom: 4 }}
-          aria-label={`Pipeline chain: ${stepCount} bước`}
+          aria-label={`Pipeline roster: ${roleCount} vai trò`}
           role="list"
         >
-          {steps.map((step, idx) => (
-            <span key={step.step_index} className="inline-flex items-center">
-              <StepStation step={step} position={idx + 1} />
-              {idx < steps.length - 1 && <StepConnector />}
+          {roster.map((entry, idx) => (
+            <span key={entry.role} className="inline-flex items-center">
+              <AgentRosterItem
+                entry={entry}
+                position={idx + 1}
+                onShowHistory={setSelectedHistory}
+              />
+              {idx < roster.length - 1 && <RosterConnector />}
             </span>
           ))}
         </div>
+      )}
+
+      {/* History panel — hiện bên dưới grid khi user chọn */}
+      {selectedHistory && (
+        <HistoryPanel
+          entry={selectedHistory}
+          onClose={() => setSelectedHistory(null)}
+        />
       )}
     </div>
   )

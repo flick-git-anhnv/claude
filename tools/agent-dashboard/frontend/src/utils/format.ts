@@ -102,3 +102,17 @@ export function maskKey(key: string): string {
   if (key.length <= 8) return '****'
   return key.slice(0, 8) + '****' + key.slice(-4)
 }
+
+/**
+ * Format token count to compact human-readable string.
+ * 0        → null (caller should hide the element)
+ * 1–999    → "999"
+ * 1 000+   → "1.5K"
+ * 1 000 000+ → "1.2M"
+ */
+export function fmtTokensCompact(n: number): string | null {
+  if (n <= 0) return null
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return n.toString()
+}
