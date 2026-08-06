@@ -22,6 +22,7 @@ async def conn():
     await c.commit()
     await db_module._migrate_subagent_columns(c)
     await db_module._migrate_sprint3_columns(c)
+    await db_module._migrate_subagent_flag_column(c)
     yield c
     await c.close()
 

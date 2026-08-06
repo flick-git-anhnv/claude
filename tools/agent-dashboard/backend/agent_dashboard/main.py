@@ -201,6 +201,7 @@ async def _process_file(conn: Any, file_path: str) -> None:
             output_tokens=parsed.output_tokens,
             cache_creation=parsed.cache_creation,
             cache_read=parsed.cache_read,
+            is_subagent=parsed.is_subagent,
             **snap_kwargs,
         )
 

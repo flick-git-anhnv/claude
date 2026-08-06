@@ -56,6 +56,9 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
     # Using p.parent.name would give "subagents" as project. Instead, resolve
     # to the FIRST path segment under CLAUDE_PROJECTS_DIR so subagent transcripts
     # are attributed to the top-level project of their parent session.
+    # Subagent detection is based solely on the immediate parent directory name —
+    # works even when CLAUDE_PROJECTS_DIR resolution fails (relative paths in tests).
+    is_subagent: bool = p.parent.name == "subagents"
     try:
         rel = p.resolve().relative_to(config.CLAUDE_PROJECTS_DIR.resolve())
         project = rel.parts[0] if rel.parts else p.parent.name
@@ -159,6 +162,7 @@ def parse_line(line: str, file_path: str) -> Optional[ParsedLine]:
         subagent_type=subagent_type,
         subagent_activity=subagent_activity,
         first_user_text=first_user_text,
+        is_subagent=is_subagent,
     )
 
 

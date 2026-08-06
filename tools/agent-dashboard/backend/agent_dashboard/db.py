@@ -159,6 +159,43 @@ async def _migrate_events_subagent_columns(conn: aiosqlite.Connection) -> None:
     await conn.commit()
 
 
+async def _migrate_subagent_flag_column(conn: aiosqlite.Connection) -> None:
+    """Idempotent: add is_subagent column to sessions if missing.
+
+    is_subagent = 1 for transcripts that live under <session>/subagents/.
+    These sessions are STORED (Sprint 4 needs them for token join) but HIDDEN
+    from all list endpoints (active, by-project, history).
+    """
+    async with conn.execute("PRAGMA table_info(sessions)") as cur:
+        rows = await cur.fetchall()
+    existing = {row["name"] for row in rows}
+
+    if "is_subagent" not in existing:
+        await conn.execute(
+            "ALTER TABLE sessions ADD COLUMN is_subagent INTEGER NOT NULL DEFAULT 0"
+        )
+        logger.info("DB migration: added column sessions.is_subagent")
+
+    await conn.commit()
+
+    # One-shot retroactive fix: mark existing sessions whose file_path contains
+    # a "subagents" directory component.  Covers both Unix (/subagents/) and
+    # Windows (\subagents\) path separators.  Idempotent — re-running does
+    # nothing when all matching rows already have is_subagent=1.
+    cur = await conn.execute(
+        """UPDATE sessions
+              SET is_subagent = 1
+            WHERE is_subagent = 0
+              AND (file_path LIKE '%/subagents/%' OR file_path LIKE '%\\subagents\\%')"""
+    )
+    if cur.rowcount:
+        logger.info(
+            "DB migration: retroactively marked %d subagent sessions (is_subagent=1)",
+            cur.rowcount,
+        )
+    await conn.commit()
+
+
 async def _migrate_fix_subagent_project_attribution(conn: aiosqlite.Connection) -> None:
     """One-shot: re-attribute sessions where project='subagents' (bug) to the
     top-level project slug derived from file_path.
@@ -209,6 +246,7 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await _migrate_sprint3_columns(conn)
     await _migrate_events_subagent_columns(conn)
     await _migrate_fix_subagent_project_attribution(conn)
+    await _migrate_subagent_flag_column(conn)
     logger.info("DB initialised at %s", db_path)
     return conn
 
@@ -249,6 +287,8 @@ async def upsert_session(
     last_cache_creation_tokens: Optional[int] = None,
     last_cache_read_tokens: Optional[int] = None,
     last_usage_at: Optional[str] = None,
+    # Subagent flag — hide from main list but keep for Sprint 4 token join
+    is_subagent: bool = False,
 ) -> bool:
     """Insert new session or update existing. Returns True if brand-new session.
 
@@ -265,9 +305,9 @@ async def upsert_session(
     # Insert only if not already present
     cur = await conn.execute(
         """INSERT OR IGNORE INTO sessions
-             (session_id, project, file_path, agent_type, started_at, last_event_at, state)
-           VALUES (?, ?, ?, ?, ?, ?, 'Running')""",
-        (session_id, project, file_path, agent_type, timestamp, timestamp),
+             (session_id, project, file_path, agent_type, started_at, last_event_at, state, is_subagent)
+           VALUES (?, ?, ?, ?, ?, ?, 'Running', ?)""",
+        (session_id, project, file_path, agent_type, timestamp, timestamp, 1 if is_subagent else 0),
     )
     is_new = cur.rowcount > 0
 
@@ -456,7 +496,7 @@ async def get_active_sessions(conn: aiosqlite.Connection) -> list[dict[str, Any]
                   token_input, token_output, token_cache_creation, token_cache_read,
                   current_subagent_type, current_subagent_activity, current_subagent_at,
                   title, last_input_tokens, last_cache_creation, last_cache_read, last_usage_at
-           FROM sessions WHERE state != 'Ended'
+           FROM sessions WHERE state != 'Ended' AND is_subagent = 0
            ORDER BY last_event_at DESC"""
     ) as cur:
         rows = await cur.fetchall()
@@ -488,7 +528,7 @@ async def get_session_history(
     limit: int,
     offset: int,
 ) -> tuple[list[dict[str, Any]], int]:
-    conditions = ["state = 'Ended'"]
+    conditions = ["state = 'Ended'", "is_subagent = 0"]
     params: list[Any] = []
     if from_dt:
         conditions.append("started_at >= ?")
@@ -567,7 +607,7 @@ async def get_sessions_by_project(
     from collections import defaultdict
     from .models import decode_project_slug
 
-    conditions: list[str] = []
+    conditions: list[str] = ["is_subagent = 0"]
     params: list[Any] = []
     if from_dt:
         conditions.append("started_at >= ?")
@@ -575,7 +615,7 @@ async def get_sessions_by_project(
     if to_dt:
         conditions.append("started_at <= ?")
         params.append(to_dt)
-    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    where = "WHERE " + " AND ".join(conditions)
 
     async with conn.execute(
         f"""SELECT session_id, project, agent_type, state, started_at, last_event_at,

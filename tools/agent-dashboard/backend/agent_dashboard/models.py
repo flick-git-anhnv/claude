@@ -84,6 +84,7 @@ class ParsedLine:
     ai_title: Optional[str] = None           # FR-003: from type="ai-title" aiTitle field
     first_user_text: Optional[str] = None    # FR-003: fallback from first user text block
     is_meta: bool = False                    # True for ai-title lines (no timestamp, no session create)
+    is_subagent: bool = False                # True when file lives under <session>/subagents/ — hide from main list
 
 
 @dataclass
