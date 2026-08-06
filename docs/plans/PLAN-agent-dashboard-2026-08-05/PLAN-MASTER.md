@@ -1,8 +1,8 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-06 21:35
-status: completed
+updated: 2026-08-06 22:50
+status: active
 workflow: WF-FEATURE
 priority: P2
 ---
@@ -97,6 +97,19 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 
 > **Ghi chú Phase 7:** 7.0 độc lập, chạy song song mọi bước khác. 7.1 → 7.2 (frontend cần token_step API) → 7.3.
 
+### Phase 8: Sprint 5 — Usage Display + BUG-004 + FR-004 Dispatcher Node + FR-005 Toggle Pipeline + BUG-005
+| # | Bước | Agent | Status | Step file | Hoàn thành lúc |
+|---|------|-------|--------|-----------|-----------------|
+| 8.1 | TDD ADDENDUM Sprint 5: khảo sát CLI usage + root cause BUG-004 (state_manager, field available khi RUNNING) + thiết kế FR-004 (Dispatcher node) + thiết kế FR-005 (aggregate API + toggle state) | Tech Lead | ✅ | `steps/STEP-8.1-tl-tdd-sprint5.md` | 2026-08-06 22:50 |
+| 8.2 | Wireframe FR-004 (node "Claude Dispatcher" — màu/icon/vị trí) + FR-005 (toggle 2 chế độ + aggregate view layout) — trước khi code | UI/UX Designer | ⬜ | `steps/STEP-8.2-ux-wireframe-sprint5.md` | - |
+| 8.3 | Backend: usage_service + BUG-004 fix (state_manager) + FR-004 inject Dispatcher node vào /chain + FR-005 aggregate endpoint | Senior Developer | ⬜ | `steps/STEP-8.3-sd-backend-sprint5.md` | - |
+| 8.4 | Frontend: UsageBar (AppHeader+AccountCard) + BUG-004 live card fix + FR-004 Dispatcher node UI + FR-005 toggle 2 chế độ + BUG-005 fix nút "Xem lịch sử" | Junior Developer | ⬜ | `steps/STEP-8.4-jd-frontend-sprint5.md` | - |
+| 8.5 | Code review Sprint 5: pytest + tsc + tích hợp thật — verify cả 4 hạng mục (A/B/C/D) | Tech Lead | ⬜ | `steps/STEP-8.5-tl-review-sprint5.md` | - |
+| 8.6 | UX/UI Review: Usage bars (AppHeader+AccountCard) + Dispatcher node style + Toggle 2 chế độ — đánh giá C1-C7 | UX/UI Reviewer | ⬜ | `steps/STEP-8.6-uxr-review-sprint5.md` | - |
+| 8.7 | QA Smoke Test Sprint 5: 18 TC (8 usage + 3 BUG-004 + 3 FR-004 + 4 FR-005) + regression Sprint 1-4 | QA Engineer | ⬜ | `steps/STEP-8.7-qae-smoke-sprint5.md` | - |
+
+> **Ghi chú Phase 8:** 8.1 → 8.2 (wireframe, deps TDD) → 8.3 ∥ KHÔNG song song 8.4 (JD cần schema + wireframe từ 8.2+8.3) → 8.4 (deps 8.2+8.3) → 8.5 (review cả 8.3+8.4) → 8.6 (UXR, bắt buộc vì đổi UI ở nhiều nơi) → 8.7 (QA smoke).
+
 ## Artifacts dự kiến (tổng)
 - [ ] `docs/prd/PRD-agent-dashboard.md` — Product Requirements Document
 - [ ] `docs/prd/PRD-agent-dashboard.docx` + `.pdf`
@@ -111,6 +124,9 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 
 ## Blockers
 - (Không có blocker đang mở cho Sprint 2 — Sprint đã đóng)
+
+## Ghi chú bổ sung Phase 8 (phát sinh 2026-08-06 22:35, trong lúc TL đang chạy 8.1)
+- **BUG-005 (P3, đã gộp vào 8.4):** Nút "Xem lịch sử" trên card agent trong Pipeline/Roster view chỉ hiện khi agent được gọi >1 lần (badge "x2"/"x3"...). Khi agent chỉ được gọi đúng 1 lần, nút "Xem lịch sử" KHÔNG hiện — user không xem lại được chi tiết lượt gọi đó. Kỳ vọng: nút vẫn hiện dù chỉ có 1 lần gọi, để mở xem chi tiết (input/output/token/result_summary) của lượt đó. Cần JD kiểm tra điều kiện render nút trong component roster item (nghi vấn: điều kiện `history.length > 1` thay vì `history.length >= 1`).
 
 ## Backlog Sprint 3 (mở từ Bước 5.5)
 - **BUG-003 (P2):** Session hiển thị "Bắt đầu: Invalid Date" — `started_at: ""` trả về từ `/api/sessions/by-project` + WS `agent_started`. Root cause: `parser.py:55` fallback `""` + state_manager snapshot cho legacy sessions. Fix pattern giống UI-001 (frontend safe-guard) HOẶC chuẩn hóa backend không trả `""`. Reproduce: `curl /api/sessions/by-project | jq '.[0].sessions[0].started_at'` → `""`.
@@ -161,6 +177,9 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-06 19:53 | Bước 6.6 ✅ — UXR Sprint 3: 0 Critical/High, 2 Medium (dangling connector wrap, fallback title), 1 Low (spec deviation scroll→wrap). Sprint 3 PASS sẵn sàng dùng. Report+DOCX tại `docs/ux-review/`. | UX/UI Reviewer |
 | 2026-08-06 20:47 | Bước 7.1 ✅ — Backend Sprint 4: parser parent_session_id+attribution_agent, DB migration Sprint 4 (idempotent, backfill), get_session_chain → roster (14 vai trò, tech-lead 11 calls/9 matched, senior-dev 9 calls/7 matched), 201 tests pass. Commit 0ae3bed. result_summary defer → follow-up. | Senior Developer |
 | 2026-08-06 21:15 | Bước 7.2 ✅ — Frontend Sprint 4: AgentRosterItem.tsx (NEW), PipelineCard redesign roster[], fmtTokensCompact, RosterResponse types, history panel inline. tsc 0 errors, vite 861 modules. Commit 53b2a18. | Junior Developer |
+| 2026-08-06 22:00 | Phase 8 (Sprint 5) tạo mới — Usage Display feature: 6 bước (8.1–8.6), status plan → active | task-planner |
+| 2026-08-06 22:30 | Phase 8 mở rộng: gộp BUG-004 + FR-004 + FR-005 vào Sprint 5 — 7 bước (8.1–8.7), thêm bước UX Designer (8.2 mới), đánh số lại SD/JD/TL/UXR/QAE thành 8.3–8.7, xóa mục Backlog Sprint 6 (đã gộp vào Sprint 5) | task-planner |
+| 2026-08-06 22:50 | Bước 8.1 ✅ — TDD ADDENDUM Sprint 5 (§29–36, +490 dòng) viết xong: Phần A endpoint `GET api.anthropic.com/api/oauth/usage` (verified từ binary claude.exe), Phần B root cause BUG-004 (child agent_type=NULL + tokens=0 window 1-5s) + fix WS `chain_updated` + UX fallback, Phần C Dispatcher node prepend vào `/chain` (is_dispatcher flag), Phần D endpoint mới `/api/pipeline/aggregate` + localStorage toggle. 12 task chia SD 3nd (S5-T01..T06) + JD 3nd (S5-T07..T12). DOCX xuất OK (PDF RPC fail non-blocking). | Tech Lead |
 | 2026-08-06 21:35 | Bước 7.3 ✅ APPROVED — TL review Sprint 4: 220/220 pytest, tsc+vite build 0 errors, schema `/chain` khớp 100% backend↔frontend (roster + history{result_summary?,result_full?,duration_ms?}). Tích hợp thật port 7770 PASS 5/5: (a) UI-003 chart tách Input/Output rõ (output=12.96M visible), (b) roster 14 roles duplicates=[], (c) token+model đúng per role, (d) 36/45 history có result_summary (9 async chưa có tool_result — hành vi đúng), (e) không có session con `agent-xxx` trong list chính. **Sprint 4 APPROVED merge, PLAN → completed.** | Tech Lead |
 | 2026-08-06 15:55 | Bước 6.5 ✅ APPROVED — TL review Sprint 3: 170/170 pytest, tsc+vite 0 errors. Phát hiện & fix 2 lệch schema: (1) `ChainStep.subagent_type/display/description` từ string → `string\|null` + StepStation null-safe; (2) **BUG lớn**: `events.payload_json` truncate 2000 chars làm hỏng chain endpoint trên session thật — thêm 2 cột `subagent_type/subagent_description` vào events table, pipe qua insert_event, get_session_chain đọc trực tiếp. Backfill 1013 events + 333 titles từ JSONL. Tích hợp thật PASS 4/4: BUG-003 (0 empty started_at) + FR-002 (ctx_pct 50.1%/78.8%, max_context 200K/1M theo model) + FR-003 (72/100 recent sessions có title) + FR-001 (32 steps, 14 subagent types thật trên session 973154ca). Merge APPROVED → chuyển Bước 6.6 UXR. | Tech Lead |
 
