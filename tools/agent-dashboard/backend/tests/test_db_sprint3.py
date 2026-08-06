@@ -350,11 +350,11 @@ async def test_get_session_chain_roster_fields(conn, chain_session):
     assert roster[0]["call_count"] == 1
     assert len(roster[0]["history"]) == 1
     assert roster[0]["history"][0]["description"] == "Viết PRD"
-    # Second role = business-analyst; no child session seeded → status='done'
-    # (Sprint 4: 'active' requires a Running child session, not just session Running)
+    # Second role = business-analyst; no child session seeded but parent is Running
+    # → fallback to 'active' (watcher may not have scanned the child file yet)
     assert roster[1]["role"] == "business-analyst"
     assert roster[1]["display_name"] == "Business Analyst"
-    assert roster[1]["status"] == "done"   # no child session → done
+    assert roster[1]["status"] == "active"   # fallback: no child yet + Running parent → active
 
 
 @pytest.mark.asyncio

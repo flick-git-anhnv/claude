@@ -1122,18 +1122,39 @@ async def get_session_chain(
         entry["history"].append(history_item)
 
     # ── Step 6: Compute status for each roster entry ─────────────────────────
-    # "active" = session state is Running AND the latest child session for this role is Running.
-    # We check child_state of the LAST call in the history for this role.
+    # "active" when:
+    #   - Parent session is Running or Idle (not Ended), AND
+    #   - Latest child session state is Running or Idle, OR no child yet (fallback)
+    #
+    # Why parent "Idle" counts as active:
+    #   After calling an Agent tool, the parent JSONL stops getting new events until
+    #   the child returns its result.  The state machine marks the parent "Idle" after
+    #   IDLE_THRESHOLD_SEC — even though the child is still executing.  We must not
+    #   treat an Idle parent with a live child as "done".
+    #
+    # Why child "Idle" counts as active:
+    #   An agent waiting for LLM inference doesn't write JSONL events.  After
+    #   IDLE_THRESHOLD_SEC the child's state becomes "Idle".  The agent is still
+    #   running — it's between tool calls or waiting for a response.
+    #
+    # Fallback for missing child (None):
+    #   The child transcript file may not have been scanned yet (watcher lag) or
+    #   the file hasn't been created yet.  If the parent is Running/Idle, assume active.
+    #
+    # Ended parent → always "done" regardless of children.
+    # Ended child (latest call) + Running/Idle parent → "done" (role finished, parent busy with others).
     roster: list[dict[str, Any]] = []
     for role_key, entry in roster_map.items():
-        last_call = entry["history"][-1]
         # Find the child_state for the last call (re-derive from matched_calls by last entry)
         last_matched = next(
             (c for c in reversed(matched_calls) if (c["subagent_type"] or "__unknown__") == role_key),
             None,
         )
         last_child_state = last_matched["child_state"] if last_matched else None
-        is_active = session_state == "Running" and last_child_state == "Running"
+        # is_active: parent not Ended AND child Running/Idle (or child not found yet)
+        is_active = session_state in ("Running", "Idle") and (
+            last_child_state in ("Running", "Idle") or last_child_state is None
+        )
         entry["status"] = "active" if is_active else "done"
 
         # Annotate each history item's status

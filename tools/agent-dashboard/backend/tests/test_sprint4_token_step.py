@@ -321,6 +321,82 @@ async def test_roster_status_active_when_last_child_running(conn):
 
 
 @pytest.mark.asyncio
+async def test_roster_status_active_when_last_child_idle(conn):
+    """BUG-FIX: latest call has Idle child (agent between LLM rounds) → status='active'.
+
+    An agent waiting for LLM inference doesn't write JSONL events; after
+    IDLE_THRESHOLD_SEC the state machine marks its child session 'Idle'.
+    The roster should still show 'active', not 'done'.
+    """
+    sid = await _seed_parent(conn, "p-idle-child", state="Running")
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "junior-developer", "Code feature")
+    await _add_child_session(conn, "c-jd-idle", sid, "junior-developer", "claude-sonnet-4-6",
+                              "Idle", "2026-08-06T10:05:00Z", 300, 60, 0, 0)
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "active", (
+        "Idle child session should show 'active' — agent is between LLM rounds, not done"
+    )
+    assert entry["history"][-1]["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_roster_status_active_when_parent_idle_child_idle(conn):
+    """BUG-FIX (core case): parent Idle + child Idle → status='active'.
+
+    When a parent session calls an Agent tool, it stops writing JSONL events
+    while waiting for the child to finish.  After IDLE_THRESHOLD_SEC the parent
+    is marked Idle.  The child also goes Idle between LLM rounds.  Both being
+    Idle while the work is ongoing should still show 'active'.
+    """
+    sid = await _seed_parent(conn, "p-idle-parent-idle-child", state="Idle")
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "junior-developer", "Code feature")
+    await _add_child_session(conn, "c-jd-idle2", sid, "junior-developer", "claude-sonnet-4-6",
+                              "Idle", "2026-08-06T10:05:00Z", 300, 60, 0, 0)
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "active", (
+        "Idle parent waiting for Idle child should show 'active'"
+    )
+    assert entry["history"][-1]["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_roster_status_active_fallback_when_no_child_yet(conn):
+    """BUG-FIX: latest call has no child session yet (file not indexed) → status='active' fallback.
+
+    When a parent session is Running and has an Agent call for a role but the
+    child transcript file hasn't been scanned yet (watcher lag or file not yet
+    created), child_state is None.  We should conservatively show 'active'.
+    """
+    sid = await _seed_parent(conn, "p-no-child-yet", state="Running")
+    # Agent event exists in parent but no child session row in DB yet
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "junior-developer", "Code feature")
+    # No _add_child_session call — simulates watcher lag
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "active", (
+        "Missing child session on Running parent should fallback to 'active'"
+    )
+
+
+@pytest.mark.asyncio
+async def test_roster_status_done_when_child_ended_parent_running(conn):
+    """Latest call's child is Ended even though parent is Running → status='done'."""
+    sid = await _seed_parent(conn, "p-child-ended", state="Running")
+    await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "senior-developer", "Code")
+    await _add_child_session(conn, "c-sd-ended", sid, "senior-developer", "claude-sonnet-4-6",
+                              "Ended", "2026-08-06T10:05:00Z", 100, 20, 0, 0)
+
+    result = await db_module.get_session_chain(conn, sid)
+    entry = result["roster"][0]
+    assert entry["status"] == "done"
+
+
+@pytest.mark.asyncio
 async def test_roster_status_done_when_session_ended(conn):
     """Ended session → all roles status='done'."""
     sid = await _seed_parent(conn, "p-ended-status", state="Ended")
