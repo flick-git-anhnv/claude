@@ -59,10 +59,16 @@ async def activate_oauth_account(
     acc_id: str,
     account_store: AccountStore,
     credentials_path: Path,
+    refresh_lock: asyncio.Lock,
 ) -> Dict[str, Any]:
     """Swap .credentials.json to activate acc_id as the current OAuth session.
 
+    MUST be called with the same refresh_lock used by the background refresh
+    scheduler (_do_swap_and_invoke).  This prevents the H-1 race where the
+    scheduler's finally-restore overwrites a just-activated credential file.
+
     Steps:
+      0. Acquire refresh_lock (shared with the auto-refresh scheduler).
       1. Read current credentials into in-memory backup.
       2. Create a timestamped file backup (.credentials.backup.<ts>.json).
       3. If currently active account is also oauth_session, re-snapshot it
@@ -77,82 +83,84 @@ async def activate_oauth_account(
     if not credentials_path.exists():
         raise FileNotFoundError("CREDENTIALS_FILE_NOT_FOUND")
 
-    # Step 1: in-memory backup
-    in_memory_backup = read_credentials(credentials_path)
+    async with refresh_lock:
+        # Step 1: in-memory backup
+        in_memory_backup = read_credentials(credentials_path)
 
-    # Step 2: file backup
-    ts_str = str(int(time.time()))
-    bak_path = credentials_path.parent / f".credentials.backup.{ts_str}.json"
-    try:
-        write_credentials(bak_path, in_memory_backup)
-    except Exception as bak_err:
-        logger.warning("activate_oauth: file backup failed (%s), continuing", bak_err)
-
-    prev_snapshot_updated = False
-    try:
-        # Step 3: re-snapshot currently active OAuth account
-        active_acc_id = account_store._data.get("active_id")
-        if active_acc_id and active_acc_id != acc_id:
-            active_acc = account_store.get_account(active_acc_id)
-            if active_acc and active_acc.get("kind") == "oauth_session":
-                fresh_oauth = in_memory_backup.get("claudeAiOauth")
-                if fresh_oauth:
-                    account_store.update_oauth_snapshot(
-                        active_acc_id,
-                        fresh_oauth,
-                        in_memory_backup.get("organizationUuid"),
-                    )
-                    prev_snapshot_updated = True
-                    logger.info(
-                        "activate_oauth: re-snapshotted previously active account %s", active_acc_id
-                    )
-
-        # Step 4: write new account's oauth block
-        new_acc = account_store.get_account(acc_id)
-        if not new_acc:
-            raise KeyError(acc_id)
-        if new_acc.get("kind") != "oauth_session":
-            raise ValueError(f"Account {acc_id} is not an oauth_session account")
-
-        validate_oauth_block(new_acc.get("oauth", {}))
-
-        new_creds = dict(in_memory_backup)
-        new_creds["claudeAiOauth"] = new_acc["oauth"]
-        org_uuid = new_acc.get("organizationUuid")
-        if org_uuid:
-            new_creds["organizationUuid"] = org_uuid
-        elif "organizationUuid" in new_creds:
-            del new_creds["organizationUuid"]
-
+        # Step 2: file backup
+        ts_str = str(int(time.time()))
+        bak_path = credentials_path.parent / f".credentials.backup.{ts_str}.json"
         try:
-            write_credentials(credentials_path, new_creds)
-        except Exception as write_err:
-            raise RuntimeError(f"CREDENTIALS_WRITE_FAILED: {write_err}") from write_err
+            write_credentials(bak_path, in_memory_backup)
+        except Exception as bak_err:
+            logger.warning("activate_oauth: file backup failed (%s), continuing", bak_err)
 
-        # Record activation in store (pure state, no file I/O)
-        account_store.activate(acc_id)
-
-        return {"active_id": acc_id, "prev_snapshot_updated": prev_snapshot_updated}
-
-    except Exception:
-        # Restore in-memory backup on any failure
+        prev_snapshot_updated = False
         try:
-            write_credentials(credentials_path, in_memory_backup)
-            logger.info("activate_oauth: credentials restored from in-memory backup")
-        except Exception as restore_err:
-            logger.error(
-                "CRITICAL: Failed to restore credentials from backup after activate failure: %s",
-                restore_err,
-            )
-            # Try to restore from file backup as absolute last resort
+            # Step 3: re-snapshot currently active OAuth account
+            active_acc_id = account_store._data.get("active_id")
+            if active_acc_id and active_acc_id != acc_id:
+                active_acc = account_store.get_account(active_acc_id)
+                if active_acc and active_acc.get("kind") == "oauth_session":
+                    fresh_oauth = in_memory_backup.get("claudeAiOauth")
+                    if fresh_oauth:
+                        account_store.update_oauth_snapshot(
+                            active_acc_id,
+                            fresh_oauth,
+                            in_memory_backup.get("organizationUuid"),
+                        )
+                        prev_snapshot_updated = True
+                        logger.info(
+                            "activate_oauth: re-snapshotted previously active account %s",
+                            active_acc_id,
+                        )
+
+            # Step 4: write new account's oauth block
+            new_acc = account_store.get_account(acc_id)
+            if not new_acc:
+                raise KeyError(acc_id)
+            if new_acc.get("kind") != "oauth_session":
+                raise ValueError(f"Account {acc_id} is not an oauth_session account")
+
+            validate_oauth_block(new_acc.get("oauth", {}))
+
+            new_creds = dict(in_memory_backup)
+            new_creds["claudeAiOauth"] = new_acc["oauth"]
+            org_uuid = new_acc.get("organizationUuid")
+            if org_uuid:
+                new_creds["organizationUuid"] = org_uuid
+            elif "organizationUuid" in new_creds:
+                del new_creds["organizationUuid"]
+
             try:
-                if bak_path.exists():
-                    import shutil
-                    shutil.copy2(bak_path, credentials_path)
-                    logger.warning("activate_oauth: restored from file backup %s", bak_path)
-            except Exception:
-                pass
-        raise
+                write_credentials(credentials_path, new_creds)
+            except Exception as write_err:
+                raise RuntimeError(f"CREDENTIALS_WRITE_FAILED: {write_err}") from write_err
+
+            # Record activation in store (pure state, no file I/O)
+            account_store.activate(acc_id)
+
+            return {"active_id": acc_id, "prev_snapshot_updated": prev_snapshot_updated}
+
+        except Exception:
+            # Restore in-memory backup on any failure
+            try:
+                write_credentials(credentials_path, in_memory_backup)
+                logger.info("activate_oauth: credentials restored from in-memory backup")
+            except Exception as restore_err:
+                logger.error(
+                    "CRITICAL: Failed to restore credentials from backup after activate failure: %s",
+                    restore_err,
+                )
+                # Try to restore from file backup as absolute last resort
+                try:
+                    if bak_path.exists():
+                        import shutil
+                        shutil.copy2(bak_path, credentials_path)
+                        logger.warning("activate_oauth: restored from file backup %s", bak_path)
+                except Exception:
+                    pass
+            raise
 
 
 # ── Auto-refresh scheduler ────────────────────────────────────────────────────

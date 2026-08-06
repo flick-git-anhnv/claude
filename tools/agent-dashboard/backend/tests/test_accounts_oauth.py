@@ -288,7 +288,7 @@ def test_activate_oauth_writes_credentials(tmp_path):
     creds_path = _make_credentials_file(tmp_path, _make_oauth_block(expires_at=111))
 
     result = asyncio.get_event_loop().run_until_complete(
-        activate_oauth_account(acc_id, store, creds_path)
+        activate_oauth_account(acc_id, store, creds_path, asyncio.Lock())
     )
 
     assert result["active_id"] == acc_id
@@ -316,7 +316,7 @@ def test_activate_oauth_resnapshots_previously_active(tmp_path):
     creds_path = _make_credentials_file(tmp_path, refreshed_old_oauth)
 
     asyncio.get_event_loop().run_until_complete(
-        activate_oauth_account(new_id, store, creds_path)
+        activate_oauth_account(new_id, store, creds_path, asyncio.Lock())
     )
 
     # Old account snapshot should have been updated with the refreshed token
@@ -346,7 +346,7 @@ def test_activate_oauth_restores_on_write_failure(tmp_path):
     with patch("agent_dashboard.oauth_service.write_credentials", side_effect=bad_write):
         with pytest.raises((RuntimeError, IOError)):
             asyncio.get_event_loop().run_until_complete(
-                activate_oauth_account(acc_id, store, creds_path)
+                activate_oauth_account(acc_id, store, creds_path, asyncio.Lock())
             )
 
     # Original should be restored
@@ -361,7 +361,7 @@ def test_activate_oauth_file_not_found(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         asyncio.get_event_loop().run_until_complete(
-            activate_oauth_account(acc_id, store, missing_path)
+            activate_oauth_account(acc_id, store, missing_path, asyncio.Lock())
         )
 
 
@@ -372,7 +372,7 @@ def test_activate_oauth_creates_file_backup(tmp_path):
     creds_path = _make_credentials_file(tmp_path, _make_oauth_block())
 
     asyncio.get_event_loop().run_until_complete(
-        activate_oauth_account(acc_id, store, creds_path)
+        activate_oauth_account(acc_id, store, creds_path, asyncio.Lock())
     )
 
     backups = list(tmp_path.glob(".credentials.backup.*.json"))
@@ -457,3 +457,76 @@ def test_refresh_invokes_swap_when_near_expiry(tmp_path):
             refresh_inactive_accounts(store, creds_path, lock)
         )
         mock_swap.assert_called_once_with(acc_id, store, creds_path, lock)
+
+
+# ── H-1 regression: activate serialized with scheduler via shared lock ────────
+
+def test_activate_and_scheduler_serialized_by_lock(tmp_path):
+    """H-1 regression: activate_oauth_account acquires refresh_lock, preventing
+    concurrent credential file corruption with the background refresh scheduler.
+
+    Simulates two coroutines running concurrently:
+      - scheduler_simulation: holds refresh_lock for 50 ms (like _do_swap_and_invoke),
+        restores original credentials on exit.
+      - activate_simulation: waits 10 ms, then calls activate_oauth_account which
+        must block until the scheduler releases the lock.
+
+    Verifies:
+      1. Scheduler fully released the lock before activate completed.
+      2. Final .credentials.json contains Account A's token (activate was last writer).
+      3. AccountStore records Account A as active.
+    """
+    store = AccountStore(tmp_path / "accounts.enc")
+
+    oauth_a = _make_oauth_block()
+    oauth_a["accessToken"] = "sk-ant-TOKEN-A-ACTIVATE"
+    acc_a = store.add_oauth_account("Account A", oauth_a, None)
+
+    oauth_b = _make_oauth_block()
+    oauth_b["accessToken"] = "sk-ant-TOKEN-B-ACTIVE"
+    acc_b = store.add_oauth_account("Account B", oauth_b, None)
+
+    # B is currently active — credentials file holds B's token
+    store._data["active_id"] = acc_b
+    store._save()
+    creds_path = _make_credentials_file(tmp_path, oauth_b)
+
+    lock = asyncio.Lock()
+    execution_order: list[str] = []
+
+    async def _run():
+        async def scheduler_simulation():
+            """Mimics _do_swap_and_invoke: acquires lock, does slow I/O, restores."""
+            async with lock:
+                execution_order.append("scheduler_lock_acquired")
+                await asyncio.sleep(0.05)
+                # Scheduler always restores the original credentials in its finally block
+                write_credentials(creds_path, {"claudeAiOauth": oauth_b})
+                execution_order.append("scheduler_lock_released")
+
+        async def activate_simulation():
+            # Slight delay so scheduler acquires the lock first
+            await asyncio.sleep(0.01)
+            execution_order.append("activate_waiting_for_lock")
+            await activate_oauth_account(acc_a, store, creds_path, lock)
+            execution_order.append("activate_completed")
+
+        await asyncio.gather(scheduler_simulation(), activate_simulation())
+
+    asyncio.get_event_loop().run_until_complete(_run())
+
+    # 1. Scheduler must have released the lock before activate finished writing
+    idx_released = execution_order.index("scheduler_lock_released")
+    idx_completed = execution_order.index("activate_completed")
+    assert idx_released < idx_completed, (
+        f"activate completed before scheduler released lock — lock not acquired: {execution_order}"
+    )
+
+    # 2. activate was the last writer → credentials hold A's token
+    final_creds = json.loads(creds_path.read_text())
+    assert final_creds["claudeAiOauth"]["accessToken"] == "sk-ant-TOKEN-A-ACTIVATE", (
+        "Credentials silently overwritten — H-1 race not fixed"
+    )
+
+    # 3. AccountStore reflects A as active
+    assert store._data["active_id"] == acc_a

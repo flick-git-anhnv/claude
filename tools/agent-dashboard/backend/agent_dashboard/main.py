@@ -48,9 +48,10 @@ async def lifespan(app: FastAPI):
     store = AccountStore(config.ACCOUNTS_FILE)
     app.state.account_store = store
 
-    # 3. Expose managers + credentials path on app state for routes
+    # 3. Expose managers, credentials path, and shared lock on app state for routes
     app.state.ws_manager = _ws_manager
     app.state.credentials_path = config.CLAUDE_CREDENTIALS_FILE
+    app.state.oauth_refresh_lock = _oauth_refresh_lock
 
     # 4. Restore file cursors + seed state machine from DB
     cursors = await db_module.load_cursors(conn)

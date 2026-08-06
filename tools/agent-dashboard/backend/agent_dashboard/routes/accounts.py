@@ -1,6 +1,7 @@
 """Account management REST endpoints — CRUD + activate + reveal + OAuth."""
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -17,6 +18,11 @@ def _store(request: Request):
 
 def _credentials_path(request: Request) -> Path:
     return request.app.state.credentials_path
+
+
+def _get_refresh_lock(request: Request) -> asyncio.Lock:
+    """Return the shared OAuth refresh lock from app state (H-1 fix)."""
+    return request.app.state.oauth_refresh_lock
 
 
 # ── List / Create ─────────────────────────────────────────────────────────────
@@ -162,8 +168,9 @@ async def activate_account(request: Request, acc_id: str):
     from ..oauth_service import activate_oauth_account
 
     creds_path = _credentials_path(request)
+    lock = _get_refresh_lock(request)
     try:
-        result = await activate_oauth_account(acc_id, store, creds_path)
+        result = await activate_oauth_account(acc_id, store, creds_path, lock)
     except FileNotFoundError:
         raise HTTPException(
             404,
