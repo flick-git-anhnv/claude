@@ -21,6 +21,7 @@ from .ws import ConnectionManager
 from .routes import sessions as sessions_router
 from .routes import tokens as tokens_router
 from .routes import accounts as accounts_router
+from .routes import pipeline as pipeline_router
 
 logger = logging.getLogger(__name__)
 
@@ -279,6 +280,17 @@ async def _process_file(conn: Any, file_path: str) -> None:
                 }
             await _ws_manager.broadcast(make_delta("agent_update", delta_payload))
 
+        # Sprint 5 — BUG-004: notify parent chain whenever a child transcript
+        # has a new event, even before model/token data arrives (1-5s race window).
+        # Frontend PipelineCard listens for chain_updated and refetches /chain
+        # for the parent session so the active card is shown immediately.
+        if parsed.is_subagent and parsed.parent_session_id:
+            await _ws_manager.broadcast(make_delta("chain_updated", {
+                "session_id":       parsed.parent_session_id,
+                "child_session_id": parsed.session_id,
+                "reason":           "child_event",
+            }))
+
         # Track B: persist + broadcast subagent change (only for Agent tool calls)
         if parsed.subagent_type:
             await db_module.update_session_subagent(
@@ -387,6 +399,7 @@ def create_app() -> FastAPI:
     app.include_router(sessions_router.router)
     app.include_router(tokens_router.router)
     app.include_router(accounts_router.router)
+    app.include_router(pipeline_router.router)
 
     # Health endpoint
     @app.get("/api/health")

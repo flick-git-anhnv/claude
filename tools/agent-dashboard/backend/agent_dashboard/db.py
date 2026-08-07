@@ -953,14 +953,18 @@ async def get_session_chain(
     from collections import defaultdict, OrderedDict
     from .models import get_subagent_display_name
 
-    # Verify session exists + get its state
+    # Verify session exists + get its state and parent fields for Dispatcher node
     async with conn.execute(
-        "SELECT state FROM sessions WHERE session_id = ?", (session_id,)
+        """SELECT state, agent_type, started_at, last_event_at, title,
+                  token_input, token_output, token_cache_creation, token_cache_read
+             FROM sessions WHERE session_id = ?""",
+        (session_id,),
     ) as cur:
         row = await cur.fetchone()
     if not row:
         return None
     session_state: str = row["state"]
+    parent_row = row  # keep reference for Dispatcher node injection below
 
     # ── Step 1: Fetch all Agent tool_use events ordered chronologically ──────
     async with conn.execute(
@@ -1174,10 +1178,130 @@ async def get_session_chain(
 
         roster.append(entry)
 
+    # ── Sprint 5 — FR-004: Prepend Dispatcher node (session gốc) ───────────────
+    # The parent session IS the Dispatcher (main Claude loop). It is always the
+    # first entry so the frontend can render it at the head of the pipeline view.
+    # Token accounting: parent_row tokens are the Dispatcher's OWN LLM turns —
+    # they do NOT include children's tokens (each session has its own DB row).
+    dispatcher_entry: dict[str, Any] = {
+        "role":               "__dispatcher__",
+        "display_name":       "Claude (Dispatcher)",
+        "is_dispatcher":      True,
+        "status":             "active" if session_state == "Running" else "done",
+        "call_count":         1,
+        "latest_description": parent_row["title"] or "Phiên chính",
+        "latest_model":       parent_row["agent_type"],
+        "first_called_at":    parent_row["started_at"],
+        "last_called_at":     parent_row["last_event_at"],
+        "total_tokens": {
+            "input":          parent_row["token_input"] or 0,
+            "output":         parent_row["token_output"] or 0,
+            "cache_creation": parent_row["token_cache_creation"] or 0,
+            "cache_read":     parent_row["token_cache_read"] or 0,
+        },
+        "history": [],  # Dispatcher has no per-call history — it IS the session
+    }
+
     return {
         "session_id":    session_id,
         "session_state": session_state,
-        "roster":        roster,
+        "roster":        [dispatcher_entry] + roster,
+    }
+
+
+async def get_pipeline_aggregate(
+    conn: aiosqlite.Connection,
+    project: Optional[str] = None,
+    window_days: int = 0,
+) -> dict[str, Any]:
+    """Aggregate pipeline stats across all parent sessions (FR-005).
+
+    Groups child sessions by ``attribution_agent``, returning per-role
+    totals (call count, token sums, active-now count).
+
+    Args:
+        conn:        Open aiosqlite connection.
+        project:     Optional project slug filter (exact match, decoded slug).
+        window_days: When > 0, only include sessions with ``last_event_at``
+                     within the last N days. Default 0 = all-time.
+
+    Returns:
+        Dict with keys: ``mode``, ``total_sessions``, ``total_calls``, ``roster``.
+    """
+    from .models import get_subagent_display_name
+
+    # ── Step 1: Collect parent session IDs in scope ──────────────────────────
+    filters: list[str] = ["is_subagent = 0"]
+    params: list[Any] = []
+    if project:
+        filters.append("project = ?")
+        params.append(project)
+    if window_days > 0:
+        filters.append("last_event_at >= datetime('now', ?)")
+        params.append(f"-{window_days} days")
+
+    parents_sql = f"SELECT session_id FROM sessions WHERE {' AND '.join(filters)}"
+    async with conn.execute(parents_sql, params) as cur:
+        parent_ids = [r["session_id"] for r in await cur.fetchall()]
+
+    if not parent_ids:
+        return {"mode": "aggregate", "total_sessions": 0, "total_calls": 0, "roster": []}
+
+    placeholders = ",".join("?" * len(parent_ids))
+
+    # ── Step 2: Aggregate child sessions by attribution_agent ────────────────
+    # Bind parent_ids twice: once for the correlated subquery (latest_model),
+    # once for the main WHERE clause.
+    async with conn.execute(
+        f"""SELECT attribution_agent                            AS role,
+                   COUNT(*)                                    AS call_count,
+                   COUNT(DISTINCT parent_session_id)           AS session_count,
+                   SUM(token_input)                            AS ti,
+                   SUM(token_output)                           AS to_,
+                   SUM(token_cache_creation)                   AS tcc,
+                   SUM(token_cache_read)                       AS tcr,
+                   MIN(started_at)                             AS first_at,
+                   MAX(last_event_at)                          AS last_at,
+                   SUM(CASE state WHEN 'Running' THEN 1 ELSE 0 END) AS active_now,
+                   (SELECT agent_type FROM sessions s2
+                      WHERE s2.attribution_agent = sessions.attribution_agent
+                        AND s2.parent_session_id IN ({placeholders})
+                      ORDER BY last_event_at DESC LIMIT 1)    AS latest_model
+             FROM sessions
+            WHERE parent_session_id IN ({placeholders})
+              AND attribution_agent IS NOT NULL
+            GROUP BY attribution_agent
+            ORDER BY call_count DESC""",
+        parent_ids + parent_ids,   # bind 2× for the correlated subquery
+    ) as cur:
+        rows = await cur.fetchall()
+
+    roster: list[dict[str, Any]] = [
+        {
+            "role":            r["role"],
+            "display_name":    get_subagent_display_name(r["role"]),
+            "call_count":      r["call_count"],
+            "session_count":   r["session_count"],
+            "latest_model":    r["latest_model"],
+            "first_called_at": r["first_at"],
+            "last_called_at":  r["last_at"],
+            "total_tokens": {
+                "input":          r["ti"]  or 0,
+                "output":         r["to_"] or 0,
+                "cache_creation": r["tcc"] or 0,
+                "cache_read":     r["tcr"] or 0,
+            },
+            "status":     "done",
+            "active_now": r["active_now"] or 0,
+        }
+        for r in rows
+    ]
+
+    return {
+        "mode":           "aggregate",
+        "total_sessions": len(parent_ids),
+        "total_calls":    sum(e["call_count"] for e in roster),
+        "roster":         roster,
     }
 
 
