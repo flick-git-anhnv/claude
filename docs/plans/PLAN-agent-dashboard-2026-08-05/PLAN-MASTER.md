@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-07 09:08
+updated: 2026-08-07 09:33
 status: active
 workflow: WF-FEATURE
 priority: P2
@@ -105,7 +105,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 8.3 | Backend: usage_service + BUG-004 fix (state_manager) + FR-004 inject Dispatcher node vào /chain + FR-005 aggregate endpoint | Senior Developer | ✅ | `steps/STEP-8.3-sd-backend-sprint5.md` | 2026-08-07 14:00 |
 | 8.4 | Frontend: UsageBar (AppHeader+AccountCard) + BUG-004 live card fix + FR-004 Dispatcher node UI + FR-005 toggle 2 chế độ + BUG-005 fix nút "Xem lịch sử" | Junior Developer | ✅ | `steps/STEP-8.4-jd-frontend-sprint5.md` | 2026-08-07 14:30 |
 | 8.5 | Code review Sprint 5: pytest + tsc + tích hợp thật — verify cả 4 hạng mục (A/B/C/D) | Tech Lead | ✅ | `steps/STEP-8.5-tl-review-sprint5.md` | 2026-08-07 09:08 |
-| 8.6 | UX/UI Review: Usage bars (AppHeader+AccountCard) + Dispatcher node style + Toggle 2 chế độ — đánh giá C1-C7 | UX/UI Reviewer | ⬜ | `steps/STEP-8.6-uxr-review-sprint5.md` | - |
+| 8.6 | UX/UI Review: Usage bars (AppHeader+AccountCard) + Dispatcher node style + Toggle 2 chế độ — đánh giá C1-C7 | UX/UI Reviewer | ✅ | `steps/STEP-8.6-uxr-review-sprint5.md` | 2026-08-07 09:33 |
 | 8.7 | QA Smoke Test Sprint 5: 18 TC (8 usage + 3 BUG-004 + 3 FR-004 + 4 FR-005) + regression Sprint 1-4 | QA Engineer | ⬜ | `steps/STEP-8.7-qae-smoke-sprint5.md` | - |
 
 > **Ghi chú Phase 8:** 8.1 → 8.2 (wireframe, deps TDD) → 8.3 ∥ KHÔNG song song 8.4 (JD cần schema + wireframe từ 8.2+8.3) → 8.4 (deps 8.2+8.3) → 8.5 (review cả 8.3+8.4) → 8.6 (UXR, bắt buộc vì đổi UI ở nhiều nơi) → 8.7 (QA smoke).
@@ -124,6 +124,9 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 
 ## Blockers
 - (Không có blocker đang mở cho Sprint 2 — Sprint đã đóng)
+
+## Backlog Sprint 6 (mở 2026-08-07, phát sinh trong lúc UXR đang review Sprint 5)
+- **FR-006 (feature request):** Trong view "Tổng hợp" (FR-005, đã code Sprint 5) — thêm toggle thứ 2 để chuyển giữa 2 chế độ nhóm dữ liệu: (a) group-by-agent role (mặc định hiện tại, mỗi row = 1 vai trò agent), (b) group-by-dự án (mỗi row = 1 dự án, tổng token/call_count gộp tất cả agent trong dự án đó). Cần: Tech Lead thiết kế query group-by-project mới trong `get_pipeline_aggregate()` (backend, có thể thêm param `group_by=agent|project`), UI thêm segmented control phụ trong `AggregatePipelineView.tsx`. KHÔNG fold vào Sprint 5 đang chạy dở (UXR review + QA chưa xong) — mở Sprint 6 riêng sau khi Sprint 5 sign-off xong, tránh xáo trộn code đang được review.
 
 ## Ghi chú bổ sung Phase 8 (phát sinh 2026-08-06 22:35, trong lúc TL đang chạy 8.1)
 - **BUG-005 (P3, đã gộp vào 8.4):** Nút "Xem lịch sử" trên card agent trong Pipeline/Roster view chỉ hiện khi agent được gọi >1 lần (badge "x2"/"x3"...). Khi agent chỉ được gọi đúng 1 lần, nút "Xem lịch sử" KHÔNG hiện — user không xem lại được chi tiết lượt gọi đó. Kỳ vọng: nút vẫn hiện dù chỉ có 1 lần gọi, để mở xem chi tiết (input/output/token/result_summary) của lượt đó. Cần JD kiểm tra điều kiện render nút trong component roster item (nghi vấn: điều kiện `history.length > 1` thay vì `history.length >= 1`).
