@@ -106,7 +106,7 @@ Smoke test Sprint 5 — kiểm tra cả 4 hạng mục hoạt động đúng, ve
 - next_inputs: Sprint 5 PASS — plan agent-dashboard-2026-08-05 có thể đóng (status: completed). Backlog Sprint 6: FR-006 group-by-project (PLAN-MASTER "Backlog Sprint 6"). UI-001 Medium cần fix trong Sprint 6: AppHeader UsageBar phải hiển thị "--" + tooltip khi error, không ẩn hoàn toàn.
 
 ## Commit
-- Hash: (điền sau commit)
+- Hash: e16cebf
 - Đã push: không
 
 ---

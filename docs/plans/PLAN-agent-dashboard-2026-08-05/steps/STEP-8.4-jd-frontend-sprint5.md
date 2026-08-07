@@ -141,8 +141,8 @@ vite build     → ✓ built in 6.44s, 0 compile errors
   - Điểm UXR kiểm tra: AppHeader bar visible khi có OAuth active account; AccountCard quota section; Dispatcher node style Navy; Segmented Control toggle; Aggregate table
 
 ## Commit
-- Hash: [điền sau khi commit]
-- Đã push: không
+- Hash: d9c89a5
+- Đã push: không (cần TL review trước)
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

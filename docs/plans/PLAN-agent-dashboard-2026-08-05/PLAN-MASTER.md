@@ -2,7 +2,7 @@
 task: agent-dashboard
 created: 2026-08-05
 updated: 2026-08-07 15:30
-status: active
+status: completed
 workflow: WF-FEATURE
 priority: P2
 ---

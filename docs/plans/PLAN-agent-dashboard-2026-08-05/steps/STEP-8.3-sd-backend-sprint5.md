@@ -124,8 +124,8 @@ Implement toàn bộ phần backend Sprint 5 — 4 hạng mục:
   - Commit hash: sẽ điền sau khi commit xong bước này.
 
 ## Commit
-- Hash: [điền sau git commit]
-- Đã push: không (sẽ push sau khi điền hash)
+- Hash: ad14bdb
+- Đã push: không
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

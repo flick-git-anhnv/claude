@@ -81,7 +81,7 @@ Viết TDD ADDENDUM Sprint 5 bao gồm 4 phần tách biệt:
 - **next_inputs:** TDD §29-36 (`docs/tech-design/TDD-agent-dashboard.md` dòng 1055-1544). Modules ưu tiên cho SD: `backend/agent_dashboard/usage_service.py` (mới), `backend/agent_dashboard/routes/accounts.py` (thêm 2 route), `backend/agent_dashboard/routes/sessions.py` (thêm route aggregate), `backend/agent_dashboard/db.py get_session_chain` (edit prepend dispatcher, thêm `get_pipeline_aggregate`), `backend/agent_dashboard/main.py` (thêm broadcast `chain_updated`). Modules ưu tiên cho JD: `frontend/src/components/UsageBar.tsx` (mới), `frontend/src/components/AggregatePipelineView.tsx` (mới), `frontend/src/hooks/usePipelineMode.ts` (mới), `frontend/src/components/sessions/AgentRosterItem.tsx` (edit `is_dispatcher` branch + active fallback), `frontend/src/components/layout/AppHeader.tsx` (edit), `frontend/src/components/accounts/AccountCard.tsx` (edit), `frontend/src/contexts/WsContext.tsx` (edit — handler `chain_updated`), `frontend/src/api/mockData.ts` (edit).
 
 ## Commit
-- Hash: [điền sau khi commit]
+- Hash: fc9e64d
 - Đã push: chưa (session isolation — user chưa yêu cầu push)
 
 ---
