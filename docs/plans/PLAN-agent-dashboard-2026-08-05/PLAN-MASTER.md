@@ -1,7 +1,7 @@
 ---
 task: agent-dashboard
 created: 2026-08-05
-updated: 2026-08-07 09:33
+updated: 2026-08-07 15:30
 status: active
 workflow: WF-FEATURE
 priority: P2
@@ -106,7 +106,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 8.4 | Frontend: UsageBar (AppHeader+AccountCard) + BUG-004 live card fix + FR-004 Dispatcher node UI + FR-005 toggle 2 chế độ + BUG-005 fix nút "Xem lịch sử" | Junior Developer | ✅ | `steps/STEP-8.4-jd-frontend-sprint5.md` | 2026-08-07 14:30 |
 | 8.5 | Code review Sprint 5: pytest + tsc + tích hợp thật — verify cả 4 hạng mục (A/B/C/D) | Tech Lead | ✅ | `steps/STEP-8.5-tl-review-sprint5.md` | 2026-08-07 09:08 |
 | 8.6 | UX/UI Review: Usage bars (AppHeader+AccountCard) + Dispatcher node style + Toggle 2 chế độ — đánh giá C1-C7 | UX/UI Reviewer | ✅ | `steps/STEP-8.6-uxr-review-sprint5.md` | 2026-08-07 09:33 |
-| 8.7 | QA Smoke Test Sprint 5: 18 TC (8 usage + 3 BUG-004 + 3 FR-004 + 4 FR-005) + regression Sprint 1-4 | QA Engineer | ⬜ | `steps/STEP-8.7-qae-smoke-sprint5.md` | - |
+| 8.7 | QA Smoke Test Sprint 5: 18 TC (8 usage + 3 BUG-004 + 3 FR-004 + 4 FR-005) + regression Sprint 1-4 | QA Engineer | ✅ | `steps/STEP-8.7-qae-smoke-sprint5.md` | 2026-08-07 15:30 |
 
 > **Ghi chú Phase 8:** 8.1 → 8.2 (wireframe, deps TDD) → 8.3 ∥ KHÔNG song song 8.4 (JD cần schema + wireframe từ 8.2+8.3) → 8.4 (deps 8.2+8.3) → 8.5 (review cả 8.3+8.4) → 8.6 (UXR, bắt buộc vì đổi UI ở nhiều nơi) → 8.7 (QA smoke).
 
@@ -188,6 +188,7 @@ Xây dựng dashboard web local, realtime, để quản lý hệ thống Claude 
 | 2026-08-07 09:08 | Bước 8.5 ✅ APPROVED — TL review Sprint 5: 250/250 pytest, tsc/vite 0 errors. Verify tích hợp thật (uvicorn 7772): /usage/active graceful http_429, /chain roster[0]=Dispatcher no duplicate, /aggregate?window=7 → 34 sessions/149 calls/18 roles. Schema Pydantic↔TS khớp 100% (UsageInfo, RosterEntry+is_dispatcher, AggregateEntry/Response, chain_updated). 5/5 hạng mục A/B/C/D/E PASS. 3 note Optional/Nit không block. Chuyển bước 8.6 UXR. | Tech Lead |
 | 2026-08-07 14:30 | Bước 8.4 ✅ — Frontend Sprint 5: 13 file sửa/mới — UsageBar.tsx (A), AppHeader polling 60s + dynamic height (A), AccountCard lazy fetch quota (A), wsReducer chain_updated counter (B), PipelineCard subscribe chainUpdateTriggers (B), AgentRosterItem 3 sub-components + BUG-004 fallback + BUG-005 fix + FR-004 Dispatcher Navy (B/C/E), usePipelineMode.ts (D), AggregatePipelineView.tsx (D), AgentStatusPage Segmented Control (D), mockData roster[]+MOCK_USAGE+MOCK_AGGREGATE, interceptor 3 route mới. tsc 0 errors, vite build 6.44s. | Junior Developer |
 | 2026-08-06 21:35 | Bước 7.3 ✅ APPROVED — TL review Sprint 4: 220/220 pytest, tsc+vite build 0 errors, schema `/chain` khớp 100% backend↔frontend (roster + history{result_summary?,result_full?,duration_ms?}). Tích hợp thật port 7770 PASS 5/5: (a) UI-003 chart tách Input/Output rõ (output=12.96M visible), (b) roster 14 roles duplicates=[], (c) token+model đúng per role, (d) 36/45 history có result_summary (9 async chưa có tool_result — hành vi đúng), (e) không có session con `agent-xxx` trong list chính. **Sprint 4 APPROVED merge, PLAN → completed.** | Tech Lead |
+| 2026-08-07 15:30 | Bước 8.7 ✅ — QA Smoke Test Sprint 5: 16/18 PASS, 1 FAIL (TC-S5-01=UI-001 Medium non-blocking), 1 SKIP (TC-S5-03 rate-limited). 5 regression PASS. Không có P0/P1 mới. Sprint 5 PASS — plan có thể đóng. TC+DOCX+PDF tại `docs/test-cases/`. | QA Engineer |
 | 2026-08-06 15:55 | Bước 6.5 ✅ APPROVED — TL review Sprint 3: 170/170 pytest, tsc+vite 0 errors. Phát hiện & fix 2 lệch schema: (1) `ChainStep.subagent_type/display/description` từ string → `string\|null` + StepStation null-safe; (2) **BUG lớn**: `events.payload_json` truncate 2000 chars làm hỏng chain endpoint trên session thật — thêm 2 cột `subagent_type/subagent_description` vào events table, pipe qua insert_event, get_session_chain đọc trực tiếp. Backfill 1013 events + 333 titles từ JSONL. Tích hợp thật PASS 4/4: BUG-003 (0 empty started_at) + FR-002 (ctx_pct 50.1%/78.8%, max_context 200K/1M theo model) + FR-003 (72/100 recent sessions có title) + FR-001 (32 steps, 14 subagent types thật trên session 973154ca). Merge APPROVED → chuyển Bước 6.6 UXR. | Tech Lead |
 
 ---
