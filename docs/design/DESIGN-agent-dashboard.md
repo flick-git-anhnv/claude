@@ -1028,3 +1028,411 @@ Khi session DONE, PipelineCard vẫn hiển thị nhưng:
 | Khi session IDLE (không có active step)? | Tất cả stations = done (không có active highlight) | Phản ánh đúng TDD §26.4: active chỉ có khi session Running |
 | %Context khi = 0? | Ẩn badge | Không có data hữu ích để hiển thị; tránh "0%" gây nhầm lẫn |
 | Title null fallback? | session_id.slice(0,8) theo v1 | Backward compatible; không hiển thị chữ "null" hay dòng trống |
+
+---
+
+## Sprint 5 — Usage Display + Dispatcher Node + Toggle Pipeline Mode (BUG-004, BUG-005, FR-004, FR-005)
+
+> Phiên bản: 2.1 | Ngày: 2026-08-07 | Designer: UI/UX Designer (KZTEK)
+> Tham chiếu TDD: `docs/tech-design/TDD-agent-dashboard.md` §29–35
+
+---
+
+### Tổng quan thay đổi Sprint 5
+
+| Hạng mục | Thay đổi | Vị trí áp dụng |
+|----------|----------|----------------|
+| Phần A — Usage Bars | 2 progress bar nhỏ: Session 5hr + Weekly 7day | `AppHeader`, `AccountCard` |
+| Phần B — BUG-004 (UX fallback) | Placeholder "đang khởi tạo…" + "— tokens" khi active card chưa có data | `AgentRosterItem` |
+| Phần C — FR-004 Dispatcher Node | Node "Claude (Dispatcher)" luôn đứng đầu roster, style Navy riêng | `AgentRosterItem` (is_dispatcher flag) |
+| Phần D — FR-005 Toggle Pipeline | Segment control "Theo Session" / "Tổng hợp" + `AggregatePipelineView` | `AgentStatusPage`, component mới |
+| BUG-005 | Rule nút "Xem lịch sử": hiện khi `call_count >= 1` (không phải `> 1`) | `AgentRosterItem` |
+
+---
+
+### Phần A — Usage Bars (Session 5hr + Weekly 7day)
+
+#### A1. Màu sắc theo ngưỡng %
+
+| Ngưỡng | Màu fill bar | Màu text % | Ý nghĩa |
+|--------|-------------|-----------|---------|
+| < 80% | `#22C55E` (xanh lá) | `#22C55E` | Bình thường |
+| 80–94% | `#F05922` (Cam) | `#F05922` | Cảnh báo — sắp đạt giới hạn |
+| ≥ 95% | `#F05922` (Cam đậm) | `#F05922` | Nguy hiểm — gần đạt giới hạn |
+| null / error | ẩn bar | `#CBCBCB` | Không có data |
+
+> **Lưu ý brand:** TUYỆT ĐỐI không dùng đỏ tươi cho cảnh báo — đỏ là màu của FUTECH, không phải KZTEK. Cam #F05922 là màu cảnh báo cao nhất trong hệ brand KZTEK.
+
+#### A2. Wireframe AppHeader (sau thêm UsageBar)
+
+Header height tăng từ 56px lên **80px** để chứa 2 dòng usage bars.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐  80px
+│  [KZ]  Agent Dashboard                        ●  Tên Account               │
+│  bg: #251C53, text: white                        sk-ant-****XXXX            │
+│                                                  5h [████████░░] 78%  Reset 1h 20m │
+│                                                  7d [████░░░░░░] 42%  Reset 4d 3h  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                                     ^bar fill: Cam (78% ≥80%)
+                                                                  ^bar fill: Xanh (<80%)
+
+UsageBar spec (trên header navy):
+  Track bg  : rgba(255,255,255,0.2)          — nền bar
+  Track h   : 4px, width: 120px, border-radius: 2px
+  Fill color: theo ngưỡng A1
+  Label trái: "5h" / "7d" — font 10px monospace, color: white
+  % phải    : "78%" — font 10px, color theo ngưỡng
+  Reset text: "Reset Xh Ym" / "Reset Xd Yh" — font 9px, opacity 0.6, white
+  Gap 2 bars: 3px
+  Chỉ hiện  : khi active account là OAuth (API key account → ẩn, không hiện gì)
+```
+
+**States của UsageBar trong AppHeader:**
+
+```
+Bình thường (OAuth, có data):
+  ● Tên Account
+  sk-ant-****XXXX
+  5h [████████░░] 78%  Reset 1h 20m    ← cam vì ≥80%
+  7d [████░░░░░░] 42%  Reset 4d 3h     ← xanh vì <80%
+
+Loading (vừa switch account / fetch đầu tiên):
+  ● Tên Account
+  sk-ant-****XXXX
+  5h [░░░░░░░░░░] …
+  7d [░░░░░░░░░░] …   ← skeleton pulse animation, opacity 0.4
+
+Error (timeout/unauthorized):
+  ● Tên Account
+  sk-ant-****XXXX
+  (không hiển thị usage bars — ẩn lặng lẽ, header về 56px)
+
+API Key account:
+  ● Tên Account
+  sk-ant-****XXXX
+  (không có usage bars — API key không có quota 5hr/7day)
+```
+
+#### A3. Wireframe AccountCard (sau thêm UsageBar)
+
+Usage bars chèn vào thân card, ngay sau OAuth badges, trước nút actions.
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  [★ ACTIVE] [OAuth] Tên Account                            │
+│  session-id-masked                                          │
+│  [Còn 12 ngày]                                             │
+│  ────────── Quota Claude Pro ─────────────────────────────  │  ← divider + label
+│  5h [████████░░] 78%  ·  Resets in 1h 20m    (fill: Cam)  │
+│  7d [████░░░░░░] 42%  ·  Resets in 4d 3h     (fill: Xanh) │
+│                                                             │
+│  [Đặt active]  [Copy API key]  [Xóa]                       │
+└────────────────────────────────────────────────────────────┘
+
+UsageBar spec (trong card — nền trắng):
+  Track bg  : rgba(203,203,203,0.4)   — nền bar trong card
+  Fill color: theo ngưỡng A1 (giống AppHeader)
+  Label     : "5h" / "7d" — font 10px, color #4A3F8C
+  % value   : font 10px, color theo ngưỡng
+  Reset text: "Resets in ..." — font 9px, color #6B7280
+  Width bar : 100px (card hẹp hơn header)
+
+Fetch strategy cho AccountCard:
+  - Lazy: dùng IntersectionObserver — chỉ fetch khi card scroll vào viewport
+  - Active account: poll mỗi 60s (đồng bộ AppHeader)
+  - Inactive account: fetch 1 lần khi vào viewport, KHÔNG poll tự động
+  - Kết quả cache 60s tại backend (§30.2 TDD) — gọi nhiều lần trong 60s = cache hit
+
+API Key account → toàn bộ section Quota ẨN (không render).
+
+States đặc biệt:
+  OAuth, đang load → skeleton bar (pulse, màu xám nhạt)
+  OAuth, error     → "Không lấy được quota" (font 10px, #CBCBCB)
+  OAuth, null pct  → ẩn từng bar bị null (hiện bar còn lại nếu có)
+```
+
+#### A4. Component UsageBar — Props
+
+```tsx
+interface UsageBarProps {
+  label: string            // "5h" | "7d"
+  pct: number | null       // 0..100 hoặc null (ẩn bar)
+  resetsAt?: number        // unix seconds — hiện countdown "Resets in Xh Ym"
+  onHeader?: boolean       // true → track bg sáng trên nền navy, text white
+  loading?: boolean        // true → skeleton state
+}
+```
+
+---
+
+### Phần B — BUG-004 UX Fallback (AgentRosterItem)
+
+> Backend fix (WS `chain_updated`) do SD xử lý. Phần này chỉ thiết kế UX fallback phía frontend.
+
+Khi card đang ACTIVE nhưng data chưa về (race window 1–5s):
+
+```
+ACTIVE — thiếu model (đang khởi tạo):
+┌── 4px border cam ──────────────────────────┐
+│  ● Senior Developer              (196×100)  │
+│  đang khởi tạo…       ← italic, cam #F05922│
+│                                             │
+│                                             │
+└────────────────────────────────────────────┘
+
+ACTIVE — có description nhưng chưa có tokens:
+┌── 4px border cam ──────────────────────────┐
+│  ● Senior Developer                         │
+│  Viết unit test cho parser.py               │
+│  — tokens         ← placeholder, không ẩn  │
+└────────────────────────────────────────────┘
+```
+
+Rule:
+- Nếu ACTIVE và `!model` → hiện "đang khởi tạo…" (10px, italic, cam)
+- Nếu ACTIVE và `totalTokens === 0` → hiện "— tokens" thay vì ẩn
+
+---
+
+### Phần C — Dispatcher Node (FR-004)
+
+#### C1. Visual Style so sánh
+
+| Property | Subagent ACTIVE | Subagent DONE | Dispatcher ACTIVE | Dispatcher DONE |
+|----------|----------------|--------------|-------------------|----------------|
+| Border trái | 4px #F05922 | 1px #CBCBCB | 4px #251C53 | 4px #251C53 |
+| Background | rgba(255,170,128,0.12) | #F5F5F5 | **#251C53** | rgba(37,28,83,0.08) |
+| Text màu | #251C53 | #4A3F8C | **white** | #251C53 |
+| Indicator dòng 1 | ● pulse cam | ✓ xanh | **🧠** (tĩnh) | **🧠** (tĩnh) |
+| Label | display_name | display_name | **"Claude (Dispatcher)"** | **"Claude (Dispatcher)"** |
+| "Xem lịch sử" | Có (xem C2) | Có (xem C2) | **KHÔNG** | **KHÔNG** |
+| Kích thước | 196 × 100px | 196 × 100px | 196 × 100px | 196 × 100px |
+
+#### C2. Wireframe Dispatcher Node
+
+```
+ACTIVE (session đang Running):
+┌── 4px border #251C53 ────────────────────────┐
+│  bg: #251C53                                  │
+│  🧠  Claude (Dispatcher)      (text: white)   │
+│  sonnet-4-6 : WF-FEATURE Sprint 5...          │
+│  (model: white bold, desc: rgba(255,255,255,0.8)) │
+│  3.1M tokens                                  │
+│  (text: rgba(255,255,255,0.6))                │
+└───────────────────────────────────────────────┘
+
+DONE (session đã Ended):
+┌── 4px border #251C53 ────────────────────────┐
+│  bg: rgba(37,28,83,0.08), opacity 0.65        │
+│  🧠  Claude (Dispatcher)      (text: #251C53) │
+│  sonnet-4-6 : WF-FEATURE Sprint 5...          │
+│  (hover: opacity 1.0, boxShadow nhẹ)          │
+│  3.1M tokens                                  │
+└───────────────────────────────────────────────┘
+
+Vị trí trong chain (luôn đầu tiên):
+[🧠 Dispatcher] → [● Tech Lead ACTIVE] → [✓ Senior Dev] → ...
+       ^
+       index 0 trong roster[], không thể dịch chuyển
+
+Edge cases:
+  Session chỉ có Dispatcher  → card đơn độc, không có arrow connector
+  Dispatcher tokens = 0       → ẩn dòng tokens (không hiện "— tokens", khác BUG-004)
+  model = null                → ẩn dòng model+description
+```
+
+#### C3. Render condition cho "Xem lịch sử" (gộp luôn BUG-005)
+
+```tsx
+// AgentRosterItem.tsx — điều kiện mới (thay thế `entry.call_count > 1`):
+const hasHistory = !entry.is_dispatcher && entry.call_count >= 1
+
+// Giải thích:
+//   !entry.is_dispatcher  → Dispatcher không có history[], ẩn nút
+//   entry.call_count >= 1 → BUG-005 fix: hiện ngay từ lần gọi đầu tiên
+//   (trước: call_count > 1 → agent chỉ gọi 1 lần không xem được chi tiết)
+```
+
+---
+
+### Phần D — Toggle 2 Chế Độ Pipeline (FR-005)
+
+#### D1. Vị trí Toggle
+
+Toggle đặt ở phần đầu `AgentStatusPage`, bên phải inline với page title.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Agent Status                       [Theo Session │ Tổng hợp]           │
+│  ──────────────────────────────────────────────────────────────────────  │
+│  (nội dung thay đổi theo mode, instant, không animation)                 │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Toggle — Segmented Control style:
+  Container: border 1px solid #CBCBCB, border-radius 6px, display: inline-flex
+  Button active  : bg #251C53, text white, font-medium 13px
+  Button inactive: bg transparent, text #4A3F8C, hover bg #F5F5F5
+  Height: 32px, padding: 0 12px
+  Persistent: localStorage key "pipelineMode", default "session"
+```
+
+#### D2. Mode "Theo Session" (hiện tại)
+
+Không thay đổi — giữ nguyên `AgentStatusPanel` + `SessionCard`/`PipelineCard` hiện tại.
+
+#### D3. Wireframe Mode "Tổng hợp" (AggregatePipelineView)
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  Tổng hợp — 127 sessions · 847 lượt gọi                                │
+│  [ 🔍 Tìm vai trò...                   ]   [Tất cả thời gian ▾]        │
+├───────────────────────────────────────────────────────────────────────-┤
+│  Vai trò              Lần gọi   Sessions   Token IN   Token OUT  Active │
+│  (bg header: #251C53, text: white, font: 12px semibold)                │
+├──────────────────────────────────────────────────────────────────────-─┤
+│  Tech Lead              247        45       31.2M      4.8M            │  row trắng
+│  Senior Developer       189        38       22.4M      3.1M        2   │  ← active_now=2, cam
+│  ← viền trái 3px #F05922 nếu active_now > 0                           │
+│  Junior Developer       134        29       14.7M      2.1M            │  row #F9FAFB
+│  Business Analyst        87        22        9.3M      1.4M            │  row trắng
+│  QA Engineer             67        18        7.1M      1.0M            │  row #F9FAFB
+│  ...                                                                   │
+│  (scroll tự nhiên, không phân trang — estimate ≤ 30 role unique)       │
+└────────────────────────────────────────────────────────────────────────┘
+
+Chi tiết table:
+  Row height   : 44px
+  Data row     : trắng / #F9FAFB xen kẽ
+  Active row   : viền trái 3px #F05922 + text "N đang chạy" màu #F05922 ở cột Active
+  Token format : compact — 1200 → "1.2k", 1_000_000 → "1.0M" (fmtTokensCompact có sẵn)
+  Sort mặc định: call_count DESC (nhiều gọi nhất lên đầu)
+  Filter search: real-time theo display_name, không phân biệt hoa/thường
+
+Dropdown thời gian (query param `window`):
+  "Tất cả thời gian" (default, window=0)
+  "7 ngày"           (window=7)
+  "30 ngày"          (window=30)
+  "90 ngày"          (window=90)
+
+Polling: gọi lại /api/pipeline/aggregate mỗi 30s khi ở aggregate mode
+  (không dùng WS — endpoint polling là đủ cho view tổng hợp)
+```
+
+#### D4. States đặc biệt AggregatePipelineView
+
+```
+Loading state (fetch đầu tiên):
+  ┌──────────────────────────────────────────────────────┐
+  │  Tổng hợp — đang tải...                              │
+  │  ░░░░░░░░░░░  ░░░░  ░░░░  ░░░░░░   ← skeleton rows  │
+  │  ░░░░░░░░░░░  ░░░░  ░░░░  ░░░░░░   (5 rows, pulse)  │
+  └──────────────────────────────────────────────────────┘
+
+Error state:
+  ⚠ Không lấy được dữ liệu · [Thử lại]
+  (text #F05922, 13px, căn giữa)
+
+Empty state (project mới, chưa có subagent):
+  🤖
+  Chưa có dữ liệu subagent
+  Dữ liệu xuất hiện khi có agent được gọi trong session
+  (căn giữa, text #CBCBCB)
+```
+
+#### D5. Quyết định Layout Aggregate View
+
+| Câu hỏi | Quyết định | Lý do |
+|---------|-----------|-------|
+| Table hay Card grid? | Table (tabular) | Aggregate là data comparison — table dễ so sánh số liệu |
+| Phân trang? | Không — scroll tự nhiên | ≤ 30 role unique trong thực tế; phân trang phức tạp UX không cần thiết |
+| Sort mặc định? | call_count DESC | Vai trò được dùng nhiều nhất thường là quan trọng nhất |
+| Group theo project? | Không mặc định — dropdown filter | Giữ đơn giản; filter project khi cần |
+| Animation transition? | Instant (không fade) | Backend fetch mới → có loading state; animation + loading state = double delay |
+| active_now: pulse hay viền? | Viền trái 3px cam + text "N đang chạy" | Pulse chỉ dành cho ACTIVE agent được gọi realtime (thống nhất toàn app) |
+
+---
+
+### BUG-005 — Rule nút "Xem lịch sử"
+
+**Rule đúng:** Nút "Xem lịch sử" PHẢI hiện khi `call_count >= 1` (không phải `> 1`).
+
+**Root cause:** `AgentRosterItem.tsx` dòng 29 — điều kiện sai:
+```tsx
+// TRƯỚC (sai — agent gọi 1 lần không xem được):
+const hasHistory = entry.call_count > 1
+
+// SAU (đúng — kết hợp cả BUG-005 fix + Dispatcher exclusion):
+const hasHistory = !entry.is_dispatcher && entry.call_count >= 1
+```
+
+Điều kiện kép `!entry.is_dispatcher && call_count >= 1`:
+- Fix BUG-005: agent gọi đúng 1 lần vẫn thấy nút, xem được chi tiết lượt đó
+- Loại Dispatcher: `is_dispatcher=true` → ẩn nút (backend trả `history=[]`)
+
+Label nút "Xem lịch sử" giữ nguyên — phù hợp dù chỉ có 1 entry.
+
+---
+
+### Component List (bổ sung Sprint 5)
+
+| Component | Loại | File | Mô tả |
+|-----------|------|------|-------|
+| `UsageBar` | new | `components/UsageBar.tsx` | Progress bar quota, 2 states (header/card), polling |
+| `AggregatePipelineView` | new | `components/AggregatePipelineView.tsx` | Table aggregate role, search, dropdown thời gian |
+| `usePipelineMode` | hook (new) | `hooks/usePipelineMode.ts` | Toggle "session"/"aggregate", persist localStorage |
+| `AppHeader` | edit | `components/layout/AppHeader.tsx` | Thêm 2 UsageBar dưới account name; height 56→80px |
+| `AccountCard` | edit | `components/accounts/AccountCard.tsx` | Thêm section Quota sau OAuth badges (ẩn khi api_key) |
+| `AgentRosterItem` | edit | `components/sessions/AgentRosterItem.tsx` | Dispatcher style (Navy) + BUG-004 fallback + BUG-005 fix |
+
+---
+
+### Design Tokens bổ sung Sprint 5
+
+```css
+/* Header height */
+--header-height: 80px;           /* tăng từ 56px để chứa usage bars */
+
+/* Usage bars */
+--usage-bar-h: 4px;
+--usage-bar-w-header: 120px;     /* trên AppHeader */
+--usage-bar-w-card: 100px;       /* trong AccountCard */
+--usage-bar-track-header: rgba(255,255,255,0.2);
+--usage-bar-track-card:   rgba(203,203,203,0.4);
+--usage-color-ok:    #22C55E;    /* < 80% */
+--usage-color-warn:  #F05922;    /* ≥ 80% (cam, không dùng đỏ) */
+
+/* Dispatcher node */
+--dispatcher-bg-active: #251C53;
+--dispatcher-text-active: #FFFFFF;
+--dispatcher-border: 4px solid #251C53;
+--dispatcher-bg-done: rgba(37,28,83,0.08);
+
+/* Toggle segment control */
+--toggle-active-bg: #251C53;
+--toggle-inactive-text: #4A3F8C;
+--toggle-height: 32px;
+--toggle-border: 1px solid #CBCBCB;
+```
+
+---
+
+### Accessibility (Sprint 5)
+
+- `UsageBar`: `role="progressbar"`, `aria-valuenow={pct}`, `aria-valuemin={0}`, `aria-valuemax={100}`, `aria-label="Session 5 giờ: 78% — Resets in 1h 20m"`
+- Dispatcher node: `aria-label="Claude Dispatcher — phiên chính — [đang chạy / đã hoàn thành]"`
+- Toggle segment: `role="group"`, `aria-label="Chế độ hiển thị pipeline"`, mỗi button `aria-pressed={true/false}`
+- Aggregate table: `role="table"`, `<thead>`/`<tbody>` rõ ràng, `<th scope="col">` cho mỗi cột header
+
+---
+
+### Quyết định UX Sprint 5
+
+| Câu hỏi | Quyết định | Lý do |
+|---------|-----------|-------|
+| Header height 56→80px có phá layout? | Chấp nhận — cần thiết | Usage bar phải luôn visible với active account; tooltip/hover-only làm khó phát hiện |
+| Dispatcher ACTIVE có pulse dot cam? | KHÔNG — dùng 🧠 icon tĩnh | Dispatcher là phiên gốc, không phải agent đang "được gọi"; cam pulse sẽ gây nhầm với subagent active |
+| Dispatcher DONE: ẩn button "Xem lịch sử"? | Ẩn (`is_dispatcher` check) | Backend trả `history=[]` — không có gì để xem |
+| API key account hiển thị usage? | Ẩn toàn bộ section Quota | API key không có quota 5hr/7day theo Anthropic; hiện section trống gây nhầm |
+| Aggregate polling interval? | 30s | Pipeline view không cần realtime hard như session view; 30s là cân bằng UX/network |
+| Dispatcher tokens=0 → hiện "— tokens"? | Ẩn — không hiện | Khác BUG-004 (subagent đang khởi tạo): Dispatcher lúc đầu chưa có turn nào là hợp lý, không cần báo |
