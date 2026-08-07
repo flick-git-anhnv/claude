@@ -116,3 +116,19 @@ export function fmtTokensCompact(n: number): string | null {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
   return n.toString()
 }
+
+/**
+ * Sprint 5: Format countdown đến thời điểm reset usage quota.
+ * resetsAt: unix seconds (từ UsageInfo.resets_at / seven_day_resets_at)
+ * Ví dụ: "1h 20m" | "4d 3h" | "45m" | "Đã reset"
+ */
+export function fmtResetsIn(resetsAt: number): string {
+  const diffSec = Math.max(0, resetsAt - Math.floor(Date.now() / 1000))
+  if (diffSec === 0) return 'Đã reset'
+  const days = Math.floor(diffSec / 86400)
+  const hours = Math.floor((diffSec % 86400) / 3600)
+  const mins = Math.floor((diffSec % 3600) / 60)
+  if (days >= 1) return `${days}d ${hours}h`
+  if (hours >= 1) return `${hours}h ${mins}m`
+  return `${mins}m`
+}

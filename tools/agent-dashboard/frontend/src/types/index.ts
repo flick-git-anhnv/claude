@@ -4,6 +4,7 @@ export type SessionState = 'Running' | 'Idle' | 'Ended';
 export type WsStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 export type RangeFilter = '7d' | '30d' | '12w' | '6m';
 export type ViewMode = 'by-agent' | 'by-project';
+export type PipelineMode = 'session' | 'aggregate';
 
 // Sprint 3 — Chain types (FR-001) — kept for backward-compat, superseded by Sprint 4 Roster
 export interface ChainStep {
@@ -54,6 +55,7 @@ export interface RosterEntry {
   total_tokens: RosterTokens;
   history: RosterHistoryEntry[];
   status: 'done' | 'active';
+  is_dispatcher?: boolean;    // Sprint 5 FR-004: true for Dispatcher node (always index 0)
 }
 
 export interface RosterResponse {
@@ -142,6 +144,45 @@ export interface OAuthStatus {
   last_refreshed_at: string | null;
 }
 
+// ─── Sprint 5: Usage & Aggregate types ───────────────────────────────────────
+
+/** Quota usage từ Anthropic API — trả về bởi GET /api/accounts/usage/active và /api/accounts/{id}/usage */
+export interface UsageInfo {
+  account_id?: string;
+  five_hour_pct?: number | null;        // 0..100, đã tính %
+  seven_day_pct?: number | null;        // 0..100, đã tính %
+  seven_day_opus_pct?: number | null;
+  seven_day_sonnet_pct?: number | null;
+  resets_at?: number | null;            // unix seconds — session (5h) window reset
+  seven_day_resets_at?: number | null;  // unix seconds — weekly window reset
+  rate_limit_type?: string | null;
+  overage_status?: string | null;
+  fetched_at?: number;                  // unix seconds, cache timestamp
+  error?: string | null;                // 'api_key' | 'no_oauth' | 'unauthorized' | 'timeout' | 'network' | 'http_NNN'
+}
+
+/** 1 entry trong aggregate roster — tổng hợp theo vai trò */
+export interface AggregateEntry {
+  role: string;
+  display_name: string;
+  call_count: number;
+  session_count: number;
+  latest_model: string | null;
+  first_called_at: string;   // ISO8601
+  last_called_at: string;    // ISO8601
+  total_tokens: RosterTokens;
+  status: 'done' | 'active';
+  active_now: number;        // số session đang chạy role này
+}
+
+/** Response từ GET /api/pipeline/aggregate */
+export interface AggregateResponse {
+  mode: 'aggregate';
+  total_sessions: number;
+  total_calls: number;
+  roster: AggregateEntry[];
+}
+
 // ─── Token analytics types ────────────────────────────────────────────────────
 
 export interface TokenBucket {
@@ -181,7 +222,8 @@ export type DeltaEvent =
   | { event: 'watcher_status'; alive: boolean; error?: string }
   | { event: 'subagent_changed'; session_id: string; subagent: CurrentSubagent }   // Track B
   | { event: 'session_title_changed'; session_id: string; title: string; source: 'ai_title' | 'user_text' }  // Sprint 3
-  | { event: 'session_context_updated'; session_id: string; context_pct: number; last_input_total: number; max_context: number };  // Sprint 3
+  | { event: 'session_context_updated'; session_id: string; context_pct: number; last_input_total: number; max_context: number }  // Sprint 3
+  | { event: 'chain_updated'; session_id: string; child_session_id: string; reason: string };  // Sprint 5 BUG-004
 
 export interface WsMessage {
   type: 'snapshot' | 'delta' | 'pong';
@@ -196,6 +238,8 @@ export interface WsAppState {
   sessions: Session[];
   activeAccount: ActiveAccount | null;
   watcherAlive: boolean;
+  /** Sprint 5 BUG-004: counter tăng khi parent session nhận chain_updated WS event — PipelineCard dùng làm dep để refetch */
+  chainUpdateTriggers: Record<string, number>;
 }
 
 export type WsAction =

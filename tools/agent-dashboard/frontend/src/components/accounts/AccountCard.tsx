@@ -1,4 +1,13 @@
-import type { Account } from '../../types'
+/**
+ * AccountCard — Sprint 5 (nâng cấp)
+ * - Thêm section "Quota Claude Pro" với UsageBar cho OAuth accounts
+ * - Fetch /api/accounts/{id}/usage lazy (1 lần khi mount)
+ * - Active OAuth account: fetch ngay khi mount (backend cache 60s đảm bảo fresh data)
+ * - API key account: ẩn toàn bộ section Quota (không có quota 5hr/7day)
+ */
+import { useEffect, useState } from 'react'
+import type { Account, UsageInfo } from '../../types'
+import UsageBar from '../common/UsageBar'
 
 interface AccountCardProps {
   account: Account
@@ -21,6 +30,35 @@ function fmtRemaining(sec: number): string {
 export default function AccountCard({ account, onActivate, onCopy, onDelete }: AccountCardProps) {
   const isOAuth = account.kind === 'oauth_session'
   const maskedDisplay = isOAuth ? account.oauth_masked : account.key_masked
+
+  const [usage, setUsage] = useState<UsageInfo | null>(null)
+  const [usageLoading, setUsageLoading] = useState(false)
+
+  // Fetch usage khi mount (lazy — 1 lần, không poll tự động)
+  // Active account được AppHeader poll, tại đây chỉ cần snapshot lần đầu
+  useEffect(() => {
+    if (!isOAuth) return   // API key account → không fetch
+
+    let cancelled = false
+    setUsageLoading(true)
+
+    fetch(`/api/accounts/${account.id}/usage`)
+      .then(r => r.ok ? r.json() as Promise<UsageInfo> : null)
+      .then(data => {
+        if (!cancelled) {
+          setUsage(data)
+          setUsageLoading(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsage(null)
+          setUsageLoading(false)
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [account.id, isOAuth])
 
   return (
     <div
@@ -81,6 +119,24 @@ export default function AccountCard({ account, onActivate, onCopy, onDelete }: A
           </div>
         )}
       </div>
+
+      {/* Sprint 5: Section Quota — chỉ khi OAuth */}
+      {isOAuth && (usageLoading || usage != null) && (
+        <div className="mb-3 pt-2 border-t border-kz-gray">
+          <span
+            style={{ fontSize: 10, fontWeight: 600, color: '#4A3F8C', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+          >
+            Quota Claude Pro
+          </span>
+          {usageLoading && usage == null ? (
+            <UsageBar usage={null} onHeader={false} loading={true} />
+          ) : usage?.error != null ? (
+            <p style={{ fontSize: 10, color: '#CBCBCB', marginTop: 4 }}>Không lấy được quota</p>
+          ) : (
+            <UsageBar usage={usage} onHeader={false} loading={false} />
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-2 flex-wrap">

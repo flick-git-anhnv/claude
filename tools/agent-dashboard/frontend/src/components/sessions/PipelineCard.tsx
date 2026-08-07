@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import type { RosterResponse, RosterEntry, RosterHistoryEntry } from '../../types'
 import AgentRosterItem from './AgentRosterItem'
 import { fmtTokensCompact, fmtDateTime } from '../../utils/format'
+import { useWsState } from '../../contexts/WsContext'
 
 interface PipelineCardProps {
   sessionId: string
@@ -227,7 +228,11 @@ export default function PipelineCard({
   const [fetchState, setFetchState] = useState<FetchState>('loading')
   const [selectedHistory, setSelectedHistory] = useState<RosterEntry | null>(null)
 
-  // Fetch chain khi mount hoặc khi lastSubagentAt thay đổi
+  // Sprint 5 BUG-004: subscribe chain_updated WS event — counter tăng → trigger refetch
+  const { chainUpdateTriggers } = useWsState()
+  const chainUpdateCount = chainUpdateTriggers[sessionId] ?? 0
+
+  // Fetch chain khi mount, khi lastSubagentAt thay đổi, hoặc khi chain_updated nhận được
   useEffect(() => {
     let cancelled = false
     setFetchState('loading')
@@ -255,7 +260,7 @@ export default function PipelineCard({
     return () => {
       cancelled = true
     }
-  }, [sessionId, lastSubagentAt])
+  }, [sessionId, lastSubagentAt, chainUpdateCount])
 
   // Fail silently: empty / error → không render gì
   if (fetchState === 'empty' || fetchState === 'error') return null

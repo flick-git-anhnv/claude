@@ -5,6 +5,7 @@ export const initialWsState: WsAppState = {
   sessions: [],
   activeAccount: null,
   watcherAlive: true,
+  chainUpdateTriggers: {},
 }
 
 function applyDelta(sessions: Session[], delta: DeltaEvent): Session[] {
@@ -125,6 +126,18 @@ export function wsReducer(state: WsAppState, action: WsAction): WsAppState {
       }
       if (delta.event === 'watcher_status') {
         return { ...state, watcherAlive: delta.alive }
+      }
+      // Sprint 5 BUG-004: chain_updated → tăng counter cho parent session_id
+      // PipelineCard dùng counter này làm dep trong useEffect để refetch /chain
+      if (delta.event === 'chain_updated') {
+        const prev = state.chainUpdateTriggers[delta.session_id] ?? 0
+        return {
+          ...state,
+          chainUpdateTriggers: {
+            ...state.chainUpdateTriggers,
+            [delta.session_id]: prev + 1,
+          },
+        }
       }
       return { ...state, sessions: applyDelta(state.sessions, delta) }
     }

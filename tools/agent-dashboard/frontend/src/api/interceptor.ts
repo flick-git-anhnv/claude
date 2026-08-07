@@ -9,6 +9,9 @@ import {
   getMockTokenSummary,
   getMockSessionHistory,
   getMockChain,
+  MOCK_USAGE_ACTIVE,
+  getMockUsage,
+  MOCK_AGGREGATE,
 } from './mockData'
 import type { Account } from '../types'
 
@@ -115,6 +118,34 @@ function handleMockRequest(input: RequestInfo | URL, init?: RequestInit): Respon
   if (method === 'GET' && chainMatch) {
     const sessionId = chainMatch[1]
     return jsonResponse(getMockChain(sessionId))
+  }
+
+  // Sprint 5 — GET /api/accounts/usage/active (active account usage, dùng trong AppHeader)
+  // PHẢI match TRƯỚC pattern /:id/usage để tránh "usage" bị coi là account id
+  if (method === 'GET' && path === '/api/accounts/usage/active') {
+    const activeAcc = mockAccounts.find(a => a.is_active)
+    // Chỉ trả usage cho OAuth account (kind === 'oauth') — api_key không có quota bar
+    if (!activeAcc || (activeAcc as Account & { kind?: string }).kind === 'api_key') {
+      return errorResponse('NO_OAUTH_ACTIVE', 'No active OAuth account', 404)
+    }
+    return jsonResponse(MOCK_USAGE_ACTIVE)
+  }
+
+  // Sprint 5 — GET /api/accounts/:id/usage (per-account usage, dùng trong AccountCard)
+  const accountUsageMatch = path.match(/^\/api\/accounts\/([^/]+)\/usage$/)
+  if (method === 'GET' && accountUsageMatch) {
+    const id = accountUsageMatch[1]
+    const account = mockAccounts.find(a => a.id === id)
+    if (!account) return errorResponse('ACCOUNT_NOT_FOUND', 'Không tìm thấy tài khoản', 404)
+    if ((account as Account & { kind?: string }).kind === 'api_key') {
+      return errorResponse('NOT_OAUTH', 'Usage only available for OAuth accounts', 404)
+    }
+    return jsonResponse(getMockUsage(id))
+  }
+
+  // Sprint 5 — GET /api/pipeline/aggregate (FR-005 AggregatePipelineView)
+  if (method === 'GET' && path.startsWith('/api/pipeline/aggregate')) {
+    return jsonResponse(MOCK_AGGREGATE)
   }
 
   // GET /api/health
