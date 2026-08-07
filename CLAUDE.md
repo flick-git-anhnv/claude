@@ -113,6 +113,8 @@ CTO  (L1 - Executive)
 
 **Pre-0b (khuyến nghị) — Đọc LESSONS.md:** Nếu `docs/LESSONS.md` tồn tại → đọc lướt qua 5–10 entry gần nhất để nhắc nhở workflow/business decision đã học — tránh lặp lại sai lầm quy trình đã ghi nhận. Không cần đọc lại nếu đã đọc trong cùng session.
 
+**Pre-0c (khuyến nghị) — Đọc CONTEXT-HINTS:** Nếu `_workspace/CONTEXT-HINTS.md` tồn tại (do task-planner tạo cho task hiện tại) → đọc file này để nhận ngay danh sách module liên quan, skill nên dùng, và UNCERTAIN entries cần watch out — thay vì phải đọc toàn bộ CODE-GRAPH. Dispatcher nên nhúng nội dung CONTEXT-HINTS.md vào đầu prompt của agent đầu tiên trong chain (nếu file này có).
+
 Trước khi hiển thị Dispatcher phân tích, PHẢI:
 
 1. **Glob** `docs/plans/PLAN-*.md` (plan cũ, 1 file) VÀ `docs/plans/PLAN-*/PLAN-MASTER.md` (plan mới, cấu trúc folder) → tìm plan liên quan đến task hiện tại (so sánh bằng tên task / slug).
@@ -954,7 +956,10 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 - [ ] DESIGN cập nhật (nếu thay đổi UI / wireframe)
 - [ ] ADR tạo mới hoặc cập nhật (nếu thay đổi kiến trúc)
 - [ ] Test case cập nhật (nếu thay đổi AC / behavior)
-- [ ] CODE-GRAPH impact: [liệt kê module/node bị ảnh hưởng (thêm/xóa/rename module, thay đổi API, DB schema, dependency), hoặc "Không có"]
+- [ ] CODE-GRAPH impact:
+  - Depth-1 (WILL BREAK): [module có quan hệ trực tiếp với phần đã thay đổi — tra cột "Callers/Used-by" trong CODE-GRAPH. Nếu không có → "Isolated change — không có module nào phụ thuộc"]
+  - Depth-2 (LIKELY AFFECTED): [module gọi các module ở depth-1 — liệt kê nếu rõ ràng từ CODE-GRAPH, hoặc "Cần trace thêm"]
+  - *(Gợi ý: chạy skill `/detect-impact` để tự động điền mục này thay vì trace thủ công)*
 - [ ] Không có tài liệu nào cần cập nhật (giải thích lý do): ___
 ```
 
@@ -1039,19 +1044,19 @@ Trước khi đánh dấu bất kỳ task code nào là hoàn thành, developer 
 
 ### 16.2 Cấu trúc thư mục & naming convention
 
-> **Lý do (P6):** 1 file plan gộp chung tiến độ + chi tiết + Handoff Log của mọi bước ngày càng phình to theo số bước, khiến agent bước sau phải đọc toàn bộ lịch sử không liên quan. Tách MASTER (tổng quan, nhẹ) khỏi step file (chi tiết, riêng từng bước) giữ mỗi file gọn và chỉ nạp đúng phần cần thiết.
+> **Lý do (P6):** 1 file plan gộp chung tiến độ + chi tiết + Handoff Payload của mọi bước ngày càng phình to theo số bước, khiến agent bước sau phải đọc toàn bộ lịch sử không liên quan. Tách MASTER (tổng quan, nhẹ) khỏi step file (chi tiết, riêng từng bước) giữ mỗi file gọn và chỉ nạp đúng phần cần thiết.
 
 ```
 docs/plans/PLAN-[task-slug]-[YYYY-MM-DD]/
 ├── PLAN-MASTER.md              ← tổng quan: mô tả, bảng phases/steps (status + link), blockers, lịch sử cập nhật
 └── steps/
-    ├── STEP-1.1-[ten].md       ← chi tiết bước 1.1: nhiệm vụ, Đã làm, artifact, Handoff Log riêng
+    ├── STEP-1.1-[ten].md       ← chi tiết bước 1.1: nhiệm vụ, Đã làm, artifact, Handoff Payload riêng
     ├── STEP-1.2-[ten].md
     └── STEP-N.M-[ten].md
 ```
 
 - MASTER KHÔNG chứa chi tiết từng bước — chỉ 1 dòng trạng thái + link tới step file tương ứng.
-- Mỗi step file độc lập, tự chứa đủ context Handoff Log của riêng bước đó.
+- Mỗi step file độc lập, tự chứa đủ context Handoff Payload của riêng bước đó.
 
 ### 16.3 Status icons bắt buộc
 
@@ -1066,10 +1071,12 @@ docs/plans/PLAN-[task-slug]-[YYYY-MM-DD]/
 ### 16.4 Cách cập nhật plan sau mỗi bước
 
 Sau khi 1 bước hoàn thành, PHẢI `Edit` cả 2 file theo đúng thứ tự:
-1. **Step file trước:** điền "Đã làm", artifact, quyết định quan trọng, Handoff Log, commit hash, đổi `status:` trong frontmatter → `done`, điền `completed_at`.
+1. **Step file trước:** điền "Đã làm", artifact, quyết định quan trọng, **Handoff Payload** (3 key: `do_not_redo`, `watch_out`, `next_inputs`), commit hash, đổi `status:` trong frontmatter → `done`, điền `completed_at`.
 2. **MASTER sau:** đổi đúng 1 dòng status trong bảng Phases & Steps (`⬜`/`🔄` → `✅`), điền cột "Hoàn thành lúc", cập nhật `updated:` ở frontmatter MASTER, thêm 1 dòng vào "Lịch sử cập nhật".
 
 KHÔNG chép lại nội dung chi tiết của step file vào MASTER — MASTER chỉ link tới.
+
+> **Handoff Payload — quy tắc truyền sang bước kế tiếp (GX-6):** Dispatcher/task-planner chỉ trích xuất 3 key (`do_not_redo`, `watch_out`, `next_inputs`) từ mục "Handoff Payload" của step file liền trước để nhúng vào prompt bước kế tiếp — KHÔNG truyền toàn bộ section "Đã làm". Bước kế tiếp chỉ cần biết "KHÔNG làm lại gì", "cần cẩn thận gì", và "input cần dùng" — không cần toàn bộ lịch sử thao tác của bước trước. Nếu bước kế tiếp đặc biệt cần biết chi tiết "Đã làm" → ghi rõ trong `next_inputs` thay vì truyền cả section.
 
 **Template:** `.claude/templates/PLAN-MASTER-template.md` + `.claude/templates/PLAN-STEP-template.md`
 **Agent quản lý plan:** `task-planner`
@@ -1092,12 +1099,12 @@ Nếu không chắc chắn → hỏi user xác nhận môi trường trước kh
 #### Bước 2a — Cơ chế LOCAL (dùng `Agent` tool)
 
 Với mỗi bước ⬜/🔄 kế tiếp trong plan:
-1. Gọi `Agent` với `subagent_type` đúng vai trò phụ trách bước đó (VD: `senior-developer`, `junior-developer`, `qa-engineer`...). Prompt PHẢI tự chứa đủ context: mô tả bước, đường dẫn PLAN-MASTER.md, đường dẫn step file (`steps/STEP-N.M-*.md`) cần điền, artifact mong đợi, và nguyên văn Handoff Log của bước liền trước (nếu có) — vì subagent không thấy lịch sử session chính.
+1. Gọi `Agent` với `subagent_type` đúng vai trò phụ trách bước đó (VD: `senior-developer`, `junior-developer`, `qa-engineer`...). Prompt PHẢI tự chứa đủ context: mô tả bước, đường dẫn PLAN-MASTER.md, đường dẫn step file (`steps/STEP-N.M-*.md`) cần điền, artifact mong đợi, và 3 key Handoff Payload của bước liền trước (nếu có) — vì subagent không thấy lịch sử session chính.
    > **Pre-coding:** Nhúng 1 dòng vào đầu prompt coding subagent: *"Trước khi code, chạy pre-coding-check skill tại `.claude/commands/pre-coding-check.md` (CODE-GRAPH → Lessons → GOTCHAS, tối đa 5 tool calls)."* — thay vì viết lại toàn bộ hướng dẫn CODE-GRAPH/lessons/GOTCHAS mỗi lần.
 2. Subagent thực hiện xong bước PHẢI tự:
    a. `git add` + `git commit` — message chi tiết theo format ở Bước 3 dưới.
    b. `git push` lên remote/nhánh hiện tại (nếu remote đã cấu hình và user đã cho phép push trong phạm vi task).
-   c. `Edit` step file (`steps/STEP-N.M-*.md`): điền "Đã làm", artifact, quyết định quan trọng, Handoff Log, commit hash, `status: done`, **thời gian hoàn thành thực tế** (`YYYY-MM-DD HH:mm`, lấy từ lệnh hệ thống — KHÔNG tự đoán) vào `completed_at`.
+   c. `Edit` step file (`steps/STEP-N.M-*.md`): điền "Đã làm", artifact, quyết định quan trọng, Handoff Payload (3 key: do_not_redo, watch_out, next_inputs), commit hash, `status: done`, **thời gian hoàn thành thực tế** (`YYYY-MM-DD HH:mm`, lấy từ lệnh hệ thống — KHÔNG tự đoán) vào `completed_at`.
    d. `Edit` PLAN-MASTER.md: đổi đúng 1 dòng status bước đó ⬜/🔄 → ✅, điền cột "Hoàn thành lúc".
 3. Subagent trả về **tóm tắt ngắn** (≤ 5 dòng: đã làm gì, artifact nào, đã commit/push chưa) — KHÔNG trả nguyên log/tool-call chi tiết về session chính.
 4. Session chính chỉ hiển thị tóm tắt đó theo format §5 CORE.md, không giữ lại toàn bộ quá trình subagent đã chạy.
@@ -1117,17 +1124,17 @@ Tương tự Bước 2a với 2 điều chỉnh: **(1)** Dùng `RemoteTrigger` a
 Plan: docs/plans/PLAN-[slug]-[date]/steps/STEP-N.M-[ten].md
 ```
 
-#### Bước 4 — BẮT BUỘC: Handoff Log (tránh bước sau phải đọc lại / nghiên cứu lại)
+#### Bước 4 — BẮT BUỘC: Handoff Payload (tránh bước sau phải đọc lại / nghiên cứu lại)
 
-1. Ngay sau khi hoàn thành bước (cùng lúc với Bước 2a.c / 2b tương ứng), agent/trigger PHẢI điền mục **"## Handoff Log — bước sau cần biết"** trong CHÍNH step file của bước đó (`steps/STEP-N.M-*.md`, xem cấu trúc ở `PLAN-STEP-template.md`), theo format:
+1. Ngay sau khi hoàn thành bước (cùng lúc với Bước 2a.c / 2b tương ứng), agent/trigger PHẢI điền mục **"## Handoff Payload — bước sau đọc phần này"** trong CHÍNH step file của bước đó (`steps/STEP-N.M-*.md`, xem cấu trúc ở `PLAN-STEP-template.md`), theo format:
    ```
    - Đã làm: [tóm tắt 2-3 câu, KHÔNG chép lại toàn bộ log]
-   - File/module đã đọc hoặc đổi: [đường dẫn cụ thể]
-   - Quyết định quan trọng: [nếu có — vd: chọn cách A vì lý do X]
-   - Bước sau cần biết: [cảnh báo / gotcha / điều KHÔNG cần làm lại — nếu có, ghi rõ; nếu không có → "Không có"]
+   - do_not_redo: [thao tác đã làm xong, bước sau KHÔNG làm lại; nếu không có → "Không có"]
+   - watch_out: [gotcha / điều kiện bất ngờ bước sau cần biết; nếu không có → "Không có"]
+   - next_inputs: [artifact/file/quyết định bước sau cần dùng làm input; nếu không có → "Không có"]
    ```
-2. Trước khi giao bước kế tiếp cho subagent/trigger mới, `task-planner`/Dispatcher PHẢI `Read` mục "Handoff Log" trong step file của bước LIỀN TRƯỚC (không cần đọc toàn bộ các step file cũ hơn), và **nhúng nguyên văn nội dung đó vào đầu prompt** của bước kế tiếp — coi như "bối cảnh đã biết", không để agent mới tự đọc lại toàn bộ codebase để suy ra lại những gì bước trước đã xác định.
-3. Agent bước sau CHỈ đọc thêm file/code ngoài phạm vi Handoff Log đã cung cấp — không đọc lại phần đã được tóm tắt rõ. Nếu nghi ngờ cần bối cảnh từ bước xa hơn (không phải bước liền trước) → agent tự `Read` thêm đúng step file đó, không đọc toàn bộ `steps/`.
+2. Trước khi giao bước kế tiếp cho subagent/trigger mới, `task-planner`/Dispatcher PHẢI `Read` mục "Handoff Payload" trong step file của bước LIỀN TRƯỚC (không cần đọc toàn bộ các step file cũ hơn), và **chỉ nhúng 3 key** (`do_not_redo`, `watch_out`, `next_inputs`) vào đầu prompt của bước kế tiếp — KHÔNG truyền toàn bộ section "Đã làm", không để agent mới tự đọc lại toàn bộ codebase để suy ra lại những gì bước trước đã xác định.
+3. Agent bước sau CHỈ đọc thêm file/code ngoài phạm vi Handoff Payload đã cung cấp — không đọc lại phần đã được tóm tắt rõ. Nếu nghi ngờ cần bối cảnh từ bước xa hơn (không phải bước liền trước) → agent tự `Read` thêm đúng step file đó, không đọc toàn bộ `steps/`.
 
 #### Ngoại lệ — KHÔNG áp dụng session isolation khi:
 - Plan chỉ có 1 bước duy nhất (không đáng tách session).
@@ -1136,14 +1143,14 @@ Plan: docs/plans/PLAN-[slug]-[date]/steps/STEP-N.M-[ten].md
 
 #### Khuyến nghị Strategic Compact (học từ `strategic-compact` skill của affaan-m/ecc)
 
-> **Mục đích:** Tránh auto-compact xảy ra giữa lúc đang thực hiện dở 1 bước nhiều-turn — mất chi tiết Handoff Log giữa việc sẽ khiến agent bước sau phải đọc lại từ đầu.
+> **Mục đích:** Tránh auto-compact xảy ra giữa lúc đang thực hiện dở 1 bước nhiều-turn — mất chi tiết Handoff Payload giữa việc sẽ khiến agent bước sau phải đọc lại từ đầu.
 
 **Quy tắc:** Ngay sau khi 1 phase/bước trong plan vừa hoàn thành (logical boundary rõ ràng) VÀ context window đã dùng ≥ 50%, Dispatcher PHẢI chủ động gợi ý user:
 
 ```
 Gợi ý: Phase [N] vừa hoàn thành — đây là điểm dừng tốt để compact context.
 Gõ /compact ngay bây giờ để giải phóng context window trước khi bắt đầu Phase [N+1].
-(Nếu bỏ qua, auto-compact có thể xảy ra giữa Phase [N+1] và làm mất Handoff Log.)
+(Nếu bỏ qua, auto-compact có thể xảy ra giữa Phase [N+1] và làm mất Handoff Payload.)
 ```
 
 **Thời điểm nên gợi ý compact (theo thứ tự ưu tiên):**
@@ -1203,6 +1210,9 @@ Gõ /compact ngay bây giờ để giải phóng context window trước khi b�
 | `UNCERTAIN` | Chưa rõ: module mới tạo, code bị xóa chưa cập nhật, hoặc có mâu thuẫn giữa doc và code thực tế |
 
 Quy tắc: khi agent đọc CODE-GRAPH gặp label `UNCERTAIN` ở node liên quan đến task → **PHẢI** đọc trực tiếp source file đó để xác nhận, không dựa vào thông tin cũ.
+
+**Staleness rule (GX-4 — Last verified):** Khi coding agent đọc CODE-GRAPH trước task, nếu gặp entry CONFIRMED có cột `Last verified` cũ hơn 30 ngày so với ngày hiện tại VÀ module đó xuất hiện trong output `git log --oneline -7` (có commit gần đây) → tạm downgrade label sang UNCERTAIN, phải đọc source file trực tiếp để re-verify trước khi sử dụng thông tin đó. Sau khi verify xong → cập nhật `Last verified` thành ngày hôm nay.
+> **Ghi chú:** Rule này chủ yếu áp dụng cho phần mô tả nghiệp vụ và Confidence label trong CODE-GRAPH.md. Nếu project đã cài `graphify`, phần cấu trúc/dependency được tự động re-index qua `graphify update --diff` — không cần re-verify thủ công cho các trường graphify quản lý.
 
 ### 17.3 Ai cập nhật CODE-GRAPH
 
@@ -1499,6 +1509,8 @@ Agent PHẢI thêm vào phần artifact output:
 
 | Ngày | Phiên bản | Nội dung thay đổi | Đối tượng | Lý do |
 |------|-----------|------------------|-----------|-------|
+| 2026-08-04 | v2.0 | Áp dụng 3 đề xuất E1-E3(A) từ nghiên cứu nextlevelbuilder/ui-ux-pro-max-skill (Mode A): (E1) Cài skill UI UX Pro Max vào `.claude/skills/ui-ux-pro-max/` (data 84 styles/192 palettes/74 font pairings/98 UX guidelines/22 stacks, MIT License) + `.claude/commands/ui-ux-pro-max.md` làm reference lệnh, nhắc dùng trong `ui-ux-designer.md` + `senior-developer.md`; (E2) Thêm "Bước 0 — Xác định Design System" vào quy trình `ui-ux-designer.md`, dùng Design System Generator sinh `design-system/<project>/MASTER.md` làm nguồn sự thật xuyên session; (E3 phương án A) Thêm nhắc tra cứu `.claude/lessons/avalonia/` (Simple Query Rule) vào `pre-coding-check.md` trước khi code Avalonia | `.claude/skills/ui-ux-pro-max/` (mới), `.claude/commands/ui-ux-pro-max.md` (mới), `.claude/agents/ui-ux-designer.md`, `.claude/agents/senior-developer.md`, `.claude/commands/pre-coding-check.md`, CLAUDE.md §21 | Học từ ui-ux-pro-max-skill: searchable design database thay vì AI tự đoán style/màu/font, Design System Generator persist pattern, stack-specific guidelines có Do/Don't (bao gồm Avalonia). Xem `docs/research/RESEARCH-ui-ux-pro-max-skill-2026-08-04.md` |
+| 2026-08-04 | v1.9 | Áp dụng 6 đề xuất GX-1 đến GX-6 từ nghiên cứu GitNexus (Mode A): (GX-1) thêm cột Callers/Used-by + depth-1/depth-2 taxonomy cho PR checklist §15.3 + CODE-GRAPH-template.md; (GX-2) field `deps:` trong PLAN-STEP frontmatter + validation trước khi giao bước; (GX-3) EDD eval + skill `/detect-impact` graphify-aware tự động phân tích blast radius; (GX-4) cột `Last verified` + staleness rule §17.2 cho CODE-GRAPH; (GX-5) step 3b sinh _workspace/CONTEXT-HINTS.md trong task-planner + Pre-0c trong §3.0; (GX-6) "Handoff Log" → "Handoff Payload" 3-key (do_not_redo, watch_out, next_inputs) trong PLAN-STEP-template.md + §16.4 §16.5 + task-planner.md | CLAUDE.md §3.0 §15.3 §16.4 §16.5 §17.2 §21; `.claude/templates/CODE-GRAPH-template.md`; `.claude/templates/PLAN-STEP-template.md`; `.claude/agents/task-planner.md`; `.claude/commands/detect-impact.md` (mới); `.claude/evals/detect-impact.md` (mới) | Học từ GitNexus blast-radius depth grouping, DAG deps declaration, detect_changes tool, incremental stale detection, skills auto-install, readonly dep isolation. Xem `docs/research/RESEARCH-gitnexus-2026-08-04.md` |
 | 2026-07-30 | v1.8 | Áp dụng 4 đề xuất E1-E4 từ nghiên cứu MemMachine/MemMachine (Mode A): (E1) Category tagging cho GOTCHAS.md — bảng lọc nhanh + label `[SCRIPT]`/`[ENCODING]`/`[UI-BINDING]`/`[CONFIG]`/`[GIT]`/`[AGENT-LOOP]` cho G001-G006 + cập nhật template entry + CORE.md §6 nhắc tra category; (E2) Sufficiency tracking trong §17.1 — sau khi CODE-GRAPH thiếu thông tin, ghi rõ câu nào còn thiếu, chỉ đọc file của câu đó; (E3) Simple Query Rule cho lessons lookup trong `~/.claude/CLAUDE.md` — bắt đầu 1 file, dừng khi đủ, tối đa 3 lượt; (E4) Tạo `.claude/commands/pre-coding-check.md` compact skill + cập nhật §16.5 Bước 2a nhắc reference skill | CLAUDE.md §17.1 §16.5 §21, `.claude/shared/GOTCHAS.md`, `.claude/shared/CORE.md`, `~/.claude/CLAUDE.md §lessons`, `.claude/commands/pre-coding-check.md` (mới) | Học từ MemMachine: Category system, CoQ sufficiency checking, Simple Query Rule của SKILL.md. Xem `docs/research/RESEARCH-memmachine-2026-07-29.md` |
 | 2026-07-29 | v1.7 | Áp dụng đề xuất P1-P5 từ nghiên cứu github.com/Graphify-Labs/graphify (Mode A): (1) §3.0 Pre-0b + §3.3 — đọc/ghi `docs/LESSONS.md`; (2) §15.3 — thêm dòng CODE-GRAPH impact vào PR checklist; (3) §17.1 — query-first checklist 5 câu hỏi thay vì "bắt đầu coding" mơ hồ; (4) §17.2 — Confidence labels CONFIRMED/INFERRED/UNCERTAIN; (5) §17.3 + §17.6 (mới) — công cụ tùy chọn `graphify` CLI, và khi project đã cài thì BẮT BUỘC Senior/Junior Developer chạy `graphify update --diff` sau khi code (WF-FEATURE Bước 10, WF-BUGFIX Bước 3) trước khi tự sửa tay CODE-GRAPH.md | CLAUDE.md §3.0 §3.3 §15.3 §17.1 §17.2 §17.3 §17.6 §21, `docs/LESSONS.md` (mới), `.claude/templates/CODE-GRAPH-template.md` | Học từ Graphify: real graph traversal thay Markdown tĩnh, confidence labels theo schema EXTRACTED/INFERRED/AMBIGUOUS, always-on injection pattern. Xem `docs/research/RESEARCH-graphify-2026-07-29.md` |
 | 2026-07-27 | v1.6 | Revert model ID về thế hệ trước: `claude-opus-5` → `claude-opus-4-7` (CTO, Tech Lead, Code Migrator), `claude-sonnet-5` → `claude-sonnet-4-6` (16 agent còn lại). Đồng bộ CORE.md §7, CLAUDE.md §13.1/§13.1b/§18.5, writing-agent-skill.md, agents-view.html như trước commit a849534. Giữ `claude-haiku-4-5` cho Tầng 3 (không đổi) | `.claude/agents/*.md`, `.claude/shared/CORE.md`, `.claude/commands/writing-agent-skill.md`, `agents-view.html`, CLAUDE.md §13 §18.5 §21 | User yêu cầu sửa lại model như trước (revert commit a849534) |
