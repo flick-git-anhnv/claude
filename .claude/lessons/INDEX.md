@@ -37,6 +37,7 @@
 | React & Web | [react-web/](react-web/) | React 19, Vite, TypeScript, thư viện web (KaTeX/MathLive), bundle & test |
 | Linux Desktop | [linux-desktop/](linux-desktop/) | GNOME, dconf/gsettings, kiosk mode, X11/Wayland, systemd desktop |
 | Computer Vision | [computer-vision/](computer-vision/) | OpenCV, threshold/segmentation, license-plate/OCR tooling |
+| Reverse Engineering | [reverse-engineering/](reverse-engineering/) | Audit .jar/.class/.so, license/key harvest, JNI/JVM bytecode, no-JDK tooling |
 
 ---
 
@@ -47,6 +48,11 @@
 
 ### computer-vision/
 - [opencv-otsu-fails-on-full-plate-photo-with-margin.md](computer-vision/opencv-otsu-fails-on-full-plate-photo-with-margin.md) — Otsu global threshold ra 0 box khi ảnh còn nền trắng/viền quanh biển số (histogram đa mode); adaptiveThreshold blockSize sai lại làm ký tự rỗng ruột. Fix: định vị biển số bằng HSV color mask trước, Otsu lại trong vùng biển đã crop sạch
+
+### reverse-engineering/
+- [java-no-jdk-classfile-string-harvest.md](reverse-engineering/java-no-jdk-classfile-string-harvest.md) — Audit license/key hardcode trong .jar/.so mà không cần cài JDK: tự parse constant pool `.class` (magic CAFEBABE, tag=1 UTF8) bằng Python thuần; JNI export `Java_...` luôn là ASCII literal nên chỉ cần regex string-scan trên `.so`, không cần objdump/pyelftools. Phát hiện ArcSoft SDK dùng `RegisterNatives` động (0 export tên cố định dù có `JNI_OnLoad`) để ẩn ánh xạ JNI
+- [android-native-sdk-self-validates-despite-app-level-check-missing.md](reverse-engineering/android-native-sdk-self-validates-despite-app-level-check-missing.md) — Static review thấy app KHÔNG gọi `FaceEngine.activeOffline()` → tưởng bypass license được bằng file rác >100 byte; test động qua `adb + run-as` (backup file thật, ghi đè rác, force-stop, đọc logcat, restore) lộ ra native `init()` tự validate độc lập, trả `MERR_ASF_ACTIVATION_DATA_DESTROYED` — kết luận severity phải HẠ xuống sau kiểm chứng động, đừng tin static analysis một mình
+- [ghidra-portable-setup-and-entropy-model-detection.md](reverse-engineering/ghidra-portable-setup-and-entropy-model-detection.md) — Setup Ghidra headless portable trên Windows không cài gì vào máy: cần JDK 21 đầy đủ (không phải JRE) + PATH dạng Unix `/c/...` (không phải `C:/...`) cho Git Bash + `JAVA_HOME_OVERRIDE` trong launch.properties. Kỹ thuật entropy-scan + byte-histogram phát hiện model AI 86MB nhúng trong .so là plaintext hoàn toàn (7.3-7.5 bit/byte, không phải ~8.0 của encrypted thật) chỉ trong vài giây, không cần disassemble
 
 ### linux-desktop/
 - [xlib-concurrent-taskrun-abandon-domino-block.md](linux-desktop/xlib-concurrent-taskrun-abandon-domino-block.md) — "Bỏ qua task chậm, bắn Task.Run mới" khi gọi vào CÙNG 1 Xlib Display gây domino: task mới chỉ xếp hàng chờ khoá nội bộ Xlib, tự tính đủ timeout rồi bị coi là "chậm" tiếp — burst 66-118 dòng warning liên tiếp. Fix: LUÔN await task cũ xong thật trước khi lấy lệnh kế tiếp
@@ -86,6 +92,7 @@
 - [keyboard-hotkey-input-allows-value-that-global-handler-never-reaches.md](react-web/keyboard-hotkey-input-allows-value-that-global-handler-never-reaches.md) — Ô nhập "phím tắt tuỳ chỉnh" cho phép gõ số 1-9 làm hotkey, nhưng global keydown handler đã `return` sớm ở nhánh "phím 1-9 = chọn nhãn theo MRU" TRƯỚC khi tới đoạn so khớp custom hotkey → hotkey số lưu thành công nhưng vĩnh viễn không phím nào kích hoạt được (im lặng cả 2 đầu). Fix: chặn tại input (`alert` + revert) + chặn tại server (`normalizeHotkey` reject số)
 - [percent-quota-relative-vs-absolute-share-of-total-pool.md](react-web/percent-quota-relative-vs-absolute-share-of-total-pool.md) — Tính năng chia % công việc cho nhiều user: công thức đầu `percent / sum(percent đã cấu hình)` khiến 1 user DUY NHẤT có percent bất kỳ (dù 30%) luôn nhận HẾT 100% pool — vì % là tỉ lệ TƯƠNG ĐỐI giữa những người cấu hình, không phải % TUYỆT ĐỐI trên tổng. Tự phát hiện bằng 1 test case "chỉ 1 user có %" trước khi ship. Fix: `target = round(percent/100 * TOTAL)`, `need = max(0, target - đã_có)` — chỉ top-up phần thiếu
 - [js-date-parse-python-microseconds-nan.md](react-web/js-date-parse-python-microseconds-nan.md) — `new Date("2026-08-06T08:30:00.123456+00:00")` trả NaN: Python `datetime.isoformat()` sinh 6 chữ số microseconds, ECMAScript Date chỉ hỗ trợ 3 chữ số (milliseconds). Fix: `normalizeIso()` truncate `.xxxxxx` → `.xxx` + đổi `+00:00` → `Z` trước khi parse; thêm fallback "dd/MM HH:mm" khi diff > 24h
+- [vite-manualchunks-includes-react-substring-circular-chunk.md](react-web/vite-manualchunks-includes-react-substring-circular-chunk.md) — `manualChunks` viết tay dùng `id.includes('react')` gộp nhầm dependency gián tiếp của `recharts` (react-redux, react-is...) vào chunk `vendor-react`, tạo vòng `vendor-utils ⇄ vendor-react` — Rollup vẫn build thành công (chỉ warning) nhưng lúc runtime TDZ khiến React không mount được gì → trang trắng hoàn toàn, server trả 200 bình thường (dễ nhầm là lỗi CORS/network). Fix: xoá `manualChunks`, để Rollup tự chia; luôn verify bằng browser thật (Playwright `pageerror`), không chỉ test HTTP status
 
 ### csharp-winforms/
 - [winforms-modal-child-hidden-behind-dialoghost.md](csharp-winforms/winforms-modal-child-hidden-behind-dialoghost.md) — Popup mới đè lên dialog xác nhận (`dialogHost` borderless Form riêng) bị che khuất im lặng nếu tự viết `Form.ShowDialog(owner)`; pattern đúng trong codebase là UserControl con + `MaskedUserControl` (như `UcSelectVouchers`), không phải Form riêng + TopMost
