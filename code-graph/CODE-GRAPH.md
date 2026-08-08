@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-08 | **Bởi:** senior-developer | **Version:** 1.8
+**Cập nhật lần cuối:** 2026-08-08 | **Bởi:** senior-developer | **Version:** 1.9
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -55,7 +55,8 @@ Workspace điều phối AI agents cho KZTEK — Multi-Agent Orchestration Frame
 │       ├── backend/             ← Python/FastAPI: file-watcher, WebSocket, SQLite (port 7770)
 │       └── frontend/            ← Vite/React/TS/Tailwind (build tĩnh)
 │           └── src/utils/format.ts  ← Tiện ích format: fmtNum, fmtTime, fmtDateTime,
-│                                        fmtDateShort, fmtDate, fmtRelative, normalizeIso
+│                                        fmtDateShort, fmtDate, fmtRelative, normalizeIso,
+│                                        fmtTokensCompact, fmtTokenDisplay, fmtModelShort (shared helpers Bug 3)
 ```
 
 ---
@@ -243,6 +244,12 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/routes/accounts.py` | Update | BUG-002: POST /api/accounts trả 409 ACCOUNT_NAME_DUPLICATE cho cả api_key lẫn oauth_session khi tên trùng | senior-developer |
 | 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/db.py` | Update | FR-006-dispatcher: `get_session_chain` — dispatcher_entry.history giờ populated từ non-Agent tool events (Read/Write/Bash…); call_count = len(history) khi có events (fallback 1); history[last].status='active' khi session Running | senior-developer |
 | 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AgentRosterItem.tsx` | Update | FR-006-dispatcher: DispatcherNode nhận `onShowHistory` prop; hiện nút "Xem lịch sử" khi history.length>0; hasHistory = entry.history.length>0 (bỏ điều kiện !is_dispatcher) | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/utils/format.ts` | Update | Bug 3: thêm `fmtTokenDisplay(n)` (luôn trả string, "— tokens" khi null/0) + `fmtModelShort(model)` — shared helpers thống nhất token/model display trên 3 tab | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/types/index.ts` | Update | Bug 2: thêm `is_active?: boolean` vào `ProjectRosterItem` — backend backfill từ active_agents set | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/db.py` | Update | Bug 2: `get_pipeline_aggregate` thêm `is_active` vào mỗi project_roster item sau khi build active_agents — dùng active_roles set | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AgentRosterItem.tsx` | Update | Bug 1: khôi phục hasHistory = is_dispatcher?history.length>0:call_count>=1 (regression FR-006-dispatcher); dùng fmtTokenDisplay/fmtModelShort; DoneSubagentNode luôn hiện "— tokens" | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/PipelineCard.tsx` | Update | Bug 1: HistoryPanel dùng fmtTokenDisplay (luôn hiện "— tokens"), hiện model placeholder "—" khi null cho non-dispatcher history items | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AggregatePipelineView.tsx` | Update | Bug 2+3: ProjectPipelineRow dùng sub.is_active; xóa shortModel() local → dùng fmtModelShort; tất cả pipeline nodes dùng fmtTokenDisplay thay fmtNum | senior-developer |
 
 ---
 
