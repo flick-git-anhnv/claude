@@ -132,3 +132,23 @@ export function fmtResetsIn(resetsAt: number): string {
   if (hours >= 1) return `${hours}h ${mins}m`
   return `${mins}m`
 }
+
+/** Decode project slug back to absolute directory path (Windows support) */
+export function decodeProjectSlug(slug: string): string {
+  if (/^[a-z]--/.test(slug)) {
+    const drive = slug[0].toUpperCase() + ':\\'
+    const remainder = slug.slice(3)
+    return drive + remainder.split('--').join('\\')
+  }
+  return slug
+}
+
+/** Return friendly error message for Anthropic API usage error */
+export function getUsageErrorMsg(error: string | null | undefined): string {
+  if (!error) return ''
+  if (error === 'http_429') return 'Quá giới hạn lượt gọi (Rate Limit 429). Đang chờ reset...'
+  if (error === 'unauthorized') return 'Phiên đăng nhập hết hạn. Cần đăng nhập lại.'
+  if (error === 'timeout') return 'Yêu cầu quá thời gian. Đang thử lại...'
+  if (error === 'network') return 'Lỗi kết nối mạng. Đang thử lại...'
+  return `Lỗi lấy quota (${error}). Đang thử lại...`
+}

@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
     cursors = await db_module.load_cursors(conn)
     _tail_reader.restore_cursors(cursors)
 
-    active_sessions = await db_module.get_active_sessions(conn)
+    active_sessions = await db_module.get_active_sessions(conn, include_subagents=True)
     startup_changes = _state_mgr.initialize_from_db(active_sessions)
     logger.info(
         "State machine seeded with %d sessions; %d stale-state corrections",
@@ -93,6 +93,9 @@ async def lifespan(app: FastAPI):
     oauth_task = asyncio.create_task(
         _oauth_refresh_scheduler(store), name="oauth_refresh"
     )
+    sync_task = asyncio.create_task(
+        _credentials_sync_scheduler(store), name="credentials_sync"
+    )
 
     # Log emergency backup warning if present from previous crash
     from .oauth_service import check_emergency_backup
@@ -113,6 +116,7 @@ async def lifespan(app: FastAPI):
     pipeline_task.cancel()
     ticker_task.cancel()
     oauth_task.cancel()
+    sync_task.cancel()
     _watcher.stop()
     await conn.close()
     logger.info("Agent Dashboard stopped")
@@ -383,6 +387,40 @@ async def _oauth_refresh_scheduler(store: Any) -> None:
             break
         except Exception as exc:
             logger.exception("OAuth refresh scheduler error: %s", exc)
+
+
+# ── Credentials sync scheduler ───────────────────────────────────────────────
+
+async def _credentials_sync_scheduler(store: Any) -> None:
+    """Watch credentials file for manual login/logout and sync with store."""
+    from .oauth_service import sync_credentials_with_store
+
+    while True:
+        try:
+            await asyncio.sleep(3.0)  # poll file every 3 seconds
+            changed = await sync_credentials_with_store(
+                store,
+                config.CLAUDE_CREDENTIALS_FILE,
+                _oauth_refresh_lock,
+            )
+            if changed:
+                # Broadcast the new active account state to all WS connections
+                active = store.get_active()
+                payload = make_delta(
+                    "account_changed",
+                    {
+                        "active_id": active["id"] if active else None,
+                        "name": active["name"] if active else None,
+                        "kind": active["kind"] if active else None,
+                        "key_masked": active.get("key_masked") if active and active.get("kind") == "api_key" else None,
+                        "oauth_masked": active.get("oauth_masked") if active and active.get("kind") == "oauth_session" else None,
+                    },
+                )
+                await _ws_manager.broadcast(payload)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.exception("Credentials sync scheduler error: %s", exc)
 
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────

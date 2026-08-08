@@ -73,8 +73,8 @@ export default function AppHeader() {
     }
   }, [activeAccount?.id, activeAccount?.kind])
 
-  // Hiển thị bars khi: có usage data không có error, hoặc đang loading (skeleton)
-  const showBars = usageLoading || (usage != null && usage.error == null)
+  // Hiển thị bars khi: có active account và không phải API Key (OAuth hoặc chưa load) (UI-001)
+  const showBars = activeAccount != null && activeAccount.kind !== 'api_key'
   const headerHeight = showBars ? 80 : 56
 
   return (

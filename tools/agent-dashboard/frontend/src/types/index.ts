@@ -114,7 +114,7 @@ export type AccountKind = 'api_key' | 'oauth_session';
 
 export interface Account {
   id: string;
-  kind?: AccountKind;  // optional for backward-compat with mocks + legacy delta payloads (Sprint 2 hotfix)
+  kind: AccountKind;  // changed to required (DEBT-001)
   name: string;
   // api_key accounts
   key_masked?: string;      // "sk-ant-api03-****XXXX"
@@ -132,7 +132,7 @@ export interface Account {
 export interface ActiveAccount {
   id: string;
   name: string;
-  kind?: AccountKind;  // optional: WS delta account_changed hiện chưa gửi kind (Sprint 3 sẽ chuẩn hóa)
+  kind: AccountKind;  // changed to required (DEBT-001)
   key_masked?: string;
   oauth_masked?: string;
 }
@@ -161,7 +161,32 @@ export interface UsageInfo {
   error?: string | null;                // 'api_key' | 'no_oauth' | 'unauthorized' | 'timeout' | 'network' | 'http_NNN'
 }
 
-/** 1 entry trong aggregate roster — tổng hợp theo vai trò */
+export interface ProjectRosterItem {
+  role: string;
+  display_name: string;
+  call_count: number;
+  total_tokens: {
+    input: number;
+    output: number;
+  };
+}
+
+export interface ActiveAgentEntry {
+  session_id: string;
+  role: string | null;
+  display_name: string;
+  is_dispatcher: boolean;
+  model: string | null;
+  current_activity: string | null;
+  tokens: {
+    input: number;
+    output: number;
+    cache_creation: number;
+    cache_read: number;
+  };
+}
+
+/** 1 entry trong aggregate roster — tổng hợp theo vai trò hoặc dự án */
 export interface AggregateEntry {
   role: string;
   display_name: string;
@@ -172,8 +197,11 @@ export interface AggregateEntry {
   last_called_at: string;    // ISO8601
   total_tokens: RosterTokens;
   status: 'done' | 'active';
-  active_now: number;        // số session đang chạy role này
+  active_now: number;        // số session đang chạy role này hoặc dự án này
+  project_roster?: ProjectRosterItem[];
+  active_agents?: ActiveAgentEntry[];
 }
+
 
 /** Response từ GET /api/pipeline/aggregate */
 export interface AggregateResponse {
@@ -218,7 +246,7 @@ export type DeltaEvent =
   | { event: 'agent_update'; session_id: string; last_event_at: string; tool_use?: string; tokens_added?: Partial<TokenCounts> }
   | { event: 'agent_state_changed'; session_id: string; state: SessionState }
   | { event: 'token_update'; session_id: string; delta: Partial<TokenCounts>; cumulative: TokenCounts }
-  | { event: 'account_changed'; active_id: string; name: string; key_masked: string }
+  | { event: 'account_changed'; active_id: string | null; name: string | null; kind: AccountKind | null; key_masked?: string | null; oauth_masked?: string | null }
   | { event: 'watcher_status'; alive: boolean; error?: string }
   | { event: 'subagent_changed'; session_id: string; subagent: CurrentSubagent }   // Track B
   | { event: 'session_title_changed'; session_id: string; title: string; source: 'ai_title' | 'user_text' }  // Sprint 3

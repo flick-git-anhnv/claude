@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react'
 import type { Account, UsageInfo } from '../../types'
 import UsageBar from '../common/UsageBar'
+import { getUsageErrorMsg } from '../../utils/format'
 
 interface AccountCardProps {
   account: Account
@@ -131,7 +132,12 @@ export default function AccountCard({ account, onActivate, onCopy, onDelete }: A
           {usageLoading && usage == null ? (
             <UsageBar usage={null} onHeader={false} loading={true} />
           ) : usage?.error != null ? (
-            <p style={{ fontSize: 10, color: '#CBCBCB', marginTop: 4 }}>Không lấy được quota</p>
+            <p
+              style={{ fontSize: 10, color: '#CBCBCB', marginTop: 4, cursor: 'help' }}
+              title={getUsageErrorMsg(usage.error)}
+            >
+              Không lấy được quota ⓘ
+            </p>
           ) : (
             <UsageBar usage={usage} onHeader={false} loading={false} />
           )}

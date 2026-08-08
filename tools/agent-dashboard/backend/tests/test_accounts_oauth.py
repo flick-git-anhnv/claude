@@ -530,3 +530,75 @@ def test_activate_and_scheduler_serialized_by_lock(tmp_path):
 
     # 3. AccountStore reflects A as active
     assert store._data["active_id"] == acc_a
+
+
+def test_sync_credentials_with_store(store, tmp_path):
+    from agent_dashboard.oauth_service import sync_credentials_with_store, write_credentials
+    import asyncio
+
+    creds_path = tmp_path / ".credentials.json"
+    lock = asyncio.Lock()
+
+    # Setup stored accounts
+    oauth_a = {
+        "accessToken": "sk-ant-TOKEN-A",
+        "refreshToken": "sk-ant-REFRESH-A",
+        "expiresAt": 9999999999000,
+        "refreshTokenExpiresAt": 9999999999000,
+    }
+    oauth_b = {
+        "accessToken": "sk-ant-TOKEN-B",
+        "refreshToken": "sk-ant-REFRESH-B",
+        "expiresAt": 9999999999000,
+        "refreshTokenExpiresAt": 9999999999000,
+    }
+
+    acc_a = store.add_oauth_account("Account A", oauth_a, "org-a")
+    acc_b = store.add_oauth_account("Account B", oauth_b, "org-b")
+    store.activate(acc_a)
+
+    async def run_tests():
+        # Scenario 1: File doesn't exist -> active account Acc A marked as needing relogin
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        assert store.get_account(acc_a)["needs_relogin"] is True
+
+        # Scenario 2: User logs in with new tokens for Acc A -> needs_relogin cleared, tokens updated
+        new_oauth_a = dict(oauth_a)
+        new_oauth_a["accessToken"] = "sk-ant-TOKEN-A-NEW"
+        write_credentials(creds_path, {"claudeAiOauth": new_oauth_a, "organizationUuid": "org-a"})
+
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        assert store.get_account(acc_a)["needs_relogin"] is False
+        assert store.get_account(acc_a)["oauth"]["accessToken"] == "sk-ant-TOKEN-A-NEW"
+        assert store._data["active_id"] == acc_a
+
+        # Scenario 3: Swapping tokens on disk to match Acc B -> active pointer switches to Acc B
+        write_credentials(creds_path, {"claudeAiOauth": oauth_b, "organizationUuid": "org-b"})
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        assert store._data["active_id"] == acc_b
+
+        # Scenario 4: Writing a completely brand new token when Acc B is active (needs_relogin is False)
+        # -> should auto-create a new account instead of overwriting Acc B
+        new_oauth_c = {
+            "accessToken": "sk-ant-TOKEN-C",
+            "refreshToken": "sk-ant-REFRESH-C",
+            "expiresAt": 9999999999000,
+            "refreshTokenExpiresAt": 9999999999000,
+        }
+        write_credentials(creds_path, {"claudeAiOauth": new_oauth_c, "organizationUuid": "org-c"})
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        
+        # The active account is now the new auto-created account
+        new_active_id = store._data["active_id"]
+        assert new_active_id != acc_b
+        assert store.get_account(new_active_id)["name"] == "OAuth (Imported)"
+        assert store.get_account(new_active_id)["oauth"]["accessToken"] == "sk-ant-TOKEN-C"
+        # Acc B's token remains unchanged
+        assert store.get_account(acc_b)["oauth"]["accessToken"] == "sk-ant-TOKEN-B"
+
+    asyncio.get_event_loop().run_until_complete(run_tests())
+

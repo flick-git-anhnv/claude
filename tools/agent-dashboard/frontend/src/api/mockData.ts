@@ -499,6 +499,7 @@ export const MOCK_ACCOUNTS: Account[] = [
   {
     id: 'acc-001',
     name: 'KZTEK Production',
+    kind: 'api_key',
     key_masked: 'sk-ant-****PROD',
     is_active: true,
     created_at: ago(86400 * 30),
@@ -506,6 +507,7 @@ export const MOCK_ACCOUNTS: Account[] = [
   {
     id: 'acc-002',
     name: 'KZTEK Dev',
+    kind: 'api_key',
     key_masked: 'sk-ant-****DEVX',
     is_active: false,
     created_at: ago(86400 * 14),
@@ -513,6 +515,7 @@ export const MOCK_ACCOUNTS: Account[] = [
   {
     id: 'acc-003',
     name: 'Personal',
+    kind: 'api_key',
     key_masked: 'sk-ant-****PERS',
     is_active: false,
     created_at: ago(86400 * 7),

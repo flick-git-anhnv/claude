@@ -19,7 +19,7 @@
  *   - bình thường           → 2 bars + label + reset countdown
  */
 import type { UsageInfo } from '../../types'
-import { fmtResetsIn } from '../../utils/format'
+import { fmtResetsIn, getUsageErrorMsg } from '../../utils/format'
 
 interface UsageBarProps {
   usage: UsageInfo | null
@@ -40,12 +40,14 @@ function SingleBar({
   resetsAt,
   onHeader,
   loading,
+  error = false,
 }: {
   label: string
   pct: number | null | undefined
   resetsAt: number | null | undefined
   onHeader: boolean
   loading: boolean
+  error?: boolean
 }) {
   const trackBg = onHeader ? 'rgba(255,255,255,0.2)' : 'rgba(203,203,203,0.4)'
   const barW = onHeader ? 120 : 100
@@ -79,7 +81,7 @@ function SingleBar({
         aria-valuenow={pct ?? 0}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${label === '5h' ? 'Session 5 giờ' : 'Weekly 7 ngày'}: ${pct != null ? pct.toFixed(0) : '?'}%`}
+        aria-label={`${label === '5h' ? 'Session 5 giờ' : 'Weekly 7 ngày'}: ${error ? 'lỗi' : pct != null ? pct.toFixed(0) : '?'}%`}
         style={{
           width: barW,
           height: 4,
@@ -111,11 +113,11 @@ function SingleBar({
           flexShrink: 0,
         }}
       >
-        {loading ? '…' : pct != null ? `${pct.toFixed(0)}%` : '?'}
+        {loading ? '…' : error ? '--' : pct != null ? `${pct.toFixed(0)}%` : '?'}
       </span>
 
       {/* Reset countdown */}
-      {!loading && resetsAt != null && (
+      {!loading && !error && resetsAt != null && (
         <span style={{ fontSize: 9, color: resetColor, flexShrink: 0 }}>
           Reset {fmtResetsIn(resetsAt)}
         </span>
@@ -125,28 +127,34 @@ function SingleBar({
 }
 
 export default function UsageBar({ usage, onHeader = false, loading = false }: UsageBarProps) {
-  // Ẩn hoàn toàn khi null hoặc có error
-  if (!loading && (usage == null || usage.error != null)) return null
+  // Ẩn hoàn toàn khi null, hoặc khi error là api_key (không phải OAuth) (UI-001)
+  if (!loading && (usage == null || usage.error === 'api_key')) return null
+
+  const hasError = usage != null && usage.error != null
+  const errorMsg = hasError ? getUsageErrorMsg(usage.error) : ''
 
   return (
     <div
       className="flex flex-col"
       style={{ gap: 3, marginTop: 4 }}
       aria-label="Quota sử dụng Anthropic"
+      title={hasError ? errorMsg : undefined}
     >
       <SingleBar
         label="5h"
-        pct={loading ? null : usage?.five_hour_pct}
-        resetsAt={usage?.resets_at}
+        pct={loading || hasError ? null : usage?.five_hour_pct}
+        resetsAt={loading || hasError ? null : usage?.resets_at}
         onHeader={onHeader}
         loading={loading}
+        error={hasError}
       />
       <SingleBar
         label="7d"
-        pct={loading ? null : usage?.seven_day_pct}
-        resetsAt={usage?.seven_day_resets_at}
+        pct={loading || hasError ? null : usage?.seven_day_pct}
+        resetsAt={loading || hasError ? null : usage?.seven_day_resets_at}
         onHeader={onHeader}
         loading={loading}
+        error={hasError}
       />
     </div>
   )

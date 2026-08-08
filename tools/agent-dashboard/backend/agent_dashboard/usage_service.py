@@ -81,12 +81,14 @@ async def get_usage(
             info["error"] = f"http_{r.status_code}"
         else:
             data = r.json()
-            info["five_hour_pct"]         = _pct(data.get("five_hour"))
-            info["seven_day_pct"]         = _pct(data.get("seven_day"))
+            fh = data.get("five_hour")
+            sd = data.get("seven_day")
+            info["five_hour_pct"]         = _pct(fh)
+            info["seven_day_pct"]         = _pct(sd)
             info["seven_day_opus_pct"]    = _pct(data.get("seven_day_opus"))
             info["seven_day_sonnet_pct"]  = _pct(data.get("seven_day_sonnet"))
-            info["resets_at"]             = data.get("resets_at")
-            info["seven_day_resets_at"]   = data.get("seven_day_resets_at")
+            info["resets_at"]             = _parse_resets_at(fh, data.get("resets_at"))
+            info["seven_day_resets_at"]   = _parse_resets_at(sd, data.get("seven_day_resets_at"))
             info["rate_limit_type"]       = data.get("rate_limit_type")
             info["overage_status"]        = data.get("overage_status")
     except httpx.TimeoutException:
@@ -114,11 +116,14 @@ def invalidate_cache(account_id: Optional[str] = None) -> None:
 def _pct(v: object) -> Optional[float]:
     """Convert a raw API utilisation value to a 0..100 percentage.
 
-    The Anthropic API appears to return values in 0..1 ratio form based on the
-    SDK source (verified via binary analysis of claude.exe). We handle both
-    0..1 and 0..100 defensively: if the value is ≤ 1.0 we treat it as a ratio
+    Handles both direct numerical values and dictionaries with a "utilization" key.
+    We handle both 0..1 and 0..100 defensively: if the value is ≤ 1.0 we treat it as a ratio
     and multiply by 100.
     """
+    if v is None:
+        return None
+    if isinstance(v, dict):
+        v = v.get("utilization")
     if v is None:
         return None
     try:
@@ -126,3 +131,38 @@ def _pct(v: object) -> Optional[float]:
         return round(f * 100, 1) if f <= 1.0 else round(f, 1)
     except (TypeError, ValueError):
         return None
+
+
+def _parse_iso_to_unix(iso_str: object) -> Optional[int]:
+    if not iso_str or not isinstance(iso_str, str):
+        return None
+    try:
+        from datetime import datetime
+        cleaned = iso_str.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(cleaned)
+        return int(dt.timestamp())
+    except Exception:
+        return None
+
+
+def _parse_resets_at(block: object, top_level_val: object) -> Optional[int]:
+    if top_level_val is not None:
+        try:
+            return int(top_level_val)  # type: ignore
+        except (TypeError, ValueError):
+            pass
+        if isinstance(top_level_val, str):
+            res = _parse_iso_to_unix(top_level_val)
+            if res is not None:
+                return res
+
+    if isinstance(block, dict):
+        nested = block.get("resets_at")
+        if nested is not None:
+            try:
+                return int(nested)  # type: ignore
+            except (TypeError, ValueError):
+                pass
+            if isinstance(nested, str):
+                return _parse_iso_to_unix(nested)
+    return None

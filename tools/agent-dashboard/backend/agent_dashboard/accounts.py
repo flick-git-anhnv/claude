@@ -293,6 +293,7 @@ class AccountStore:
                 if org_uuid is not None:
                     a["organizationUuid"] = org_uuid
                 a["last_refreshed_at"] = datetime.now(timezone.utc).isoformat()
+                a["needs_relogin"] = False
                 self._save()
                 return True
         return False

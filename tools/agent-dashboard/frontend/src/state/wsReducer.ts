@@ -115,12 +115,20 @@ export function wsReducer(state: WsAppState, action: WsAction): WsAppState {
     case 'DELTA': {
       const delta = action.payload
       if (delta.event === 'account_changed') {
+        if (!delta.active_id) {
+          return {
+            ...state,
+            activeAccount: null,
+          }
+        }
         return {
           ...state,
           activeAccount: {
             id: delta.active_id,
-            name: delta.name,
-            key_masked: delta.key_masked,
+            name: delta.name!,
+            kind: delta.kind!,
+            key_masked: delta.key_masked ?? undefined,
+            oauth_masked: delta.oauth_masked ?? undefined,
           },
         }
       }

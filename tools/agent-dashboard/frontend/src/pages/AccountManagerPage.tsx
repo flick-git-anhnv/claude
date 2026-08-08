@@ -54,7 +54,9 @@ export default function AccountManagerPage() {
           event: 'account_changed',
           active_id: activated.id,
           name: activated.name,
-          key_masked: activated.key_masked ?? activated.oauth_masked ?? '',
+          kind: activated.kind,
+          key_masked: activated.kind === 'api_key' ? activated.key_masked : undefined,
+          oauth_masked: activated.kind === 'oauth_session' ? activated.oauth_masked : undefined,
         },
       })
       showToast(`Đã đặt "${activated.name}" làm tài khoản active`)

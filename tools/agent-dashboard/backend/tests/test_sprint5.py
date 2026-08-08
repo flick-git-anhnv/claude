@@ -152,6 +152,38 @@ class TestGetUsage:
         assert "error" not in result
 
     @pytest.mark.asyncio
+    async def test_nested_successful_response_parses_fields(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "five_hour": {
+                "utilization": 4.0,
+                "resets_at": "2026-08-08T09:40:00.830483+00:00",
+            },
+            "seven_day": {
+                "utilization": 64.0,
+                "resets_at": "2026-08-10T00:00:00.830510+00:00",
+            },
+            "rate_limit_type": "five_hour",
+        }
+
+        with patch("agent_dashboard.usage_service.httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(return_value=mock_response)
+            MockClient.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await get_usage("acc-001", "token-xyz")
+
+        assert result["account_id"] == "acc-001"
+        assert result["five_hour_pct"] == 4.0
+        assert result["seven_day_pct"] == 64.0
+        assert result["resets_at"] == 1786182000  # 2026-08-08T09:40:00
+        assert result["seven_day_resets_at"] == 1786320000  # 2026-08-10T00:00:00
+        assert result["rate_limit_type"] == "five_hour"
+        assert "error" not in result
+
+    @pytest.mark.asyncio
     async def test_401_returns_unauthorized_error(self):
         mock_response = MagicMock()
         mock_response.status_code = 401
@@ -478,3 +510,41 @@ class TestPipelineAggregate:
         result = await db_module.get_pipeline_aggregate(conn)
         sr_entry = next(r for r in result["roster"] if r["role"] == "senior-developer")
         assert sr_entry["active_now"] == 1  # only the Running child counts
+
+    @pytest.mark.asyncio
+    async def test_group_by_project(self, conn):
+        # Project A
+        await _insert_session(conn, "pa-1", project="proj-a", state="Ended")
+        await _insert_session(
+            conn, "ca-1",
+            project="proj-a", is_subagent=True, parent_session_id="pa-1",
+            attribution_agent="senior-developer", state="Ended",
+            token_input=100, token_output=50
+        )
+        await _insert_session(
+            conn, "ca-2",
+            project="proj-a", is_subagent=True, parent_session_id="pa-1",
+            attribution_agent="tech-lead", state="Ended",
+            token_input=200, token_output=100
+        )
+        # Project B
+        await _insert_session(conn, "pb-1", project="proj-b", state="Ended")
+        await _insert_session(
+            conn, "cb-1",
+            project="proj-b", is_subagent=True, parent_session_id="pb-1",
+            attribution_agent="qa-engineer", state="Ended",
+            token_input=300, token_output=150
+        )
+
+        result = await db_module.get_pipeline_aggregate(conn, group_by="project")
+        assert result["total_sessions"] == 2
+        assert result["total_calls"] == 3
+        
+        roster = result["roster"]
+        proj_a_entry = next(r for r in roster if r["role"] == "proj-a")
+        proj_b_entry = next(r for r in roster if r["role"] == "proj-b")
+        
+        assert proj_a_entry["call_count"] == 2
+        assert proj_a_entry["total_tokens"]["input"] == 400  # pa-1 (100) + ca-1 (100) + ca-2 (200)
+        assert proj_b_entry["call_count"] == 1
+        assert proj_b_entry["total_tokens"]["input"] == 400  # pb-1 (100) + cb-1 (300)

@@ -183,7 +183,7 @@ def update_account(request: Request, acc_id: str, body: AccountUpdate):
 
 
 @router.delete("/{acc_id}", status_code=204)
-def delete_account(request: Request, acc_id: str):
+async def delete_account(request: Request, acc_id: str):
     store = _store(request)
     try:
         store.delete_account(acc_id)
@@ -370,12 +370,18 @@ def _broadcast_account_change(request: Request, active: dict | None) -> None:
         {
             "active_id": active["id"] if active else None,
             "name": active["name"] if active else None,
-            "key_masked": (
-                active.get("key_masked") or active.get("oauth_masked") if active else None
-            ),
+            "kind": active["kind"] if active else None,
+            "key_masked": active.get("key_masked") if active and active.get("kind") == "api_key" else None,
+            "oauth_masked": active.get("oauth_masked") if active and active.get("kind") == "oauth_session" else None,
         },
     )
 
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        asyncio.ensure_future(ws_manager.broadcast(payload))
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(ws_manager.broadcast(payload))
+    except RuntimeError:
+        try:
+            # Running in a worker thread (non-async route context)
+            asyncio.run(ws_manager.broadcast(payload))
+        except Exception:
+            pass

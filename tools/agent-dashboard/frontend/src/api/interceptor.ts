@@ -75,6 +75,7 @@ function handleMockRequest(input: RequestInfo | URL, init?: RequestInit): Respon
     const newAccount: Account = {
       id: `acc-${++accountIdCounter}`,
       name: body.name,
+      kind: 'api_key',
       key_masked: body.api_key.slice(0, 8) + '****' + body.api_key.slice(-4),
       is_active: false,
       created_at: new Date().toISOString(),
