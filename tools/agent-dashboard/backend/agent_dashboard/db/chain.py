@@ -19,6 +19,26 @@ import aiosqlite
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_text(text: str) -> str:
+    """Làm sạch text có thể chứa lone surrogates từ lỗi encoding cũ.
+
+    Lone surrogates (U+DC80..U+DCFF) xuất hiện khi bytes đọc sai encoding rồi
+    Python áp errors='surrogateescape' (VD: byte 0x9D → U+DC9D). Hàm encode lại
+    về bytes gốc qua surrogateescape, sau đó decode UTF-8 với errors='replace' để
+    thay thế byte không hợp lệ bằng U+FFFD thay vì giữ surrogate phá vỡ JSON.
+
+    Với text KHÔNG có surrogate, hàm trả nguyên bản (fast path).
+    """
+    # Fast path: không có surrogate → không cần xử lý
+    if not any(0xD800 <= ord(c) <= 0xDFFF for c in text):
+        return text
+    try:
+        return text.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        # Fallback: xóa toàn bộ surrogate, giữ phần còn lại
+        return "".join(c for c in text if not (0xD800 <= ord(c) <= 0xDFFF))
+
+
 def _extract_user_turn_text(payload_json: Optional[str]) -> Optional[str]:
     """Trích văn bản user thực từ payload JSONL (dùng cho dispatcher history).
 
@@ -29,6 +49,9 @@ def _extract_user_turn_text(payload_json: Optional[str]) -> Optional[str]:
 
     Đây là hành vi mong đợi ở fix vấn đề 3: mỗi user turn = 1 dòng history,
     description = nội dung yêu cầu thay vì tên tool.
+
+    Encoding safety: text được làm sạch qua _sanitize_text() trước khi trả về —
+    loại bỏ lone surrogates có thể xuất hiện trong dữ liệu cũ đọc sai encoding.
     """
     if not payload_json:
         return None
@@ -42,7 +65,7 @@ def _extract_user_turn_text(payload_json: Optional[str]) -> Optional[str]:
     content = message.get("content")
     # Trường hợp content là string (user turn cũ format)
     if isinstance(content, str):
-        s = content.strip()
+        s = _sanitize_text(content.strip())
         return s[:120] if s else None
     if not isinstance(content, list):
         return None
@@ -62,7 +85,10 @@ def _extract_user_turn_text(payload_json: Optional[str]) -> Optional[str]:
     if has_tool_result or not text_parts:
         return None
     combined = " ".join(text_parts).strip()
-    return combined[:120] if combined else None
+    if not combined:
+        return None
+    sanitized = _sanitize_text(combined)
+    return sanitized[:120] if sanitized else None
 
 
 async def _backfill_chain_results(
