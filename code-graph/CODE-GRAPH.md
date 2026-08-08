@@ -1,5 +1,5 @@
 # CODE-GRAPH.md — Bản đồ codebase: KZTEK Multi-Agent Workspace
-**Cập nhật lần cuối:** 2026-08-07 | **Bởi:** senior-developer | **Version:** 1.7
+**Cập nhật lần cuối:** 2026-08-08 | **Bởi:** senior-developer | **Version:** 1.8
 
 > File này được duy trì tự động bởi coding agents.
 > **Đọc file này TRƯỚC khi đọc source code** để hiểu cấu trúc dự án mà không cần mở từng file.
@@ -241,6 +241,8 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-08-07 | `tools/agent-dashboard/backend/agent_dashboard/main.py` | Update | Sprint 5 BUG-004: broadcast chain_updated với parent_session_id khi child event processed; include pipeline router | senior-developer |
 | 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/accounts.py` | Update | BUG-002: thêm `_name_exists()`, duplicate-name guard (case-insensitive) trong `add_account` + `add_oauth_account` → raise ValueError("ACCOUNT_NAME_DUPLICATE") | senior-developer |
 | 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/routes/accounts.py` | Update | BUG-002: POST /api/accounts trả 409 ACCOUNT_NAME_DUPLICATE cho cả api_key lẫn oauth_session khi tên trùng | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/db.py` | Update | FR-006-dispatcher: `get_session_chain` — dispatcher_entry.history giờ populated từ non-Agent tool events (Read/Write/Bash…); call_count = len(history) khi có events (fallback 1); history[last].status='active' khi session Running | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AgentRosterItem.tsx` | Update | FR-006-dispatcher: DispatcherNode nhận `onShowHistory` prop; hiện nút "Xem lịch sử" khi history.length>0; hasHistory = entry.history.length>0 (bỏ điều kiện !is_dispatcher) | senior-developer |
 
 ---
 

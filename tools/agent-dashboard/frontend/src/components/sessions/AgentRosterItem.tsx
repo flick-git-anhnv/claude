@@ -2,10 +2,14 @@
  * AgentRosterItem — Sprint 5 (nâng cấp từ Sprint 4)
  *
  * Thay đổi Sprint 5:
- * - FR-004: Dispatcher node (`is_dispatcher=true`) → style Navy #251C53, icon 🧠, no "Xem lịch sử"
+ * - FR-004: Dispatcher node (`is_dispatcher=true`) → style Navy #251C53, icon 🧠
  * - BUG-004: Khi ACTIVE + !model → "đang khởi tạo…" (italic, cam)
  *            Khi ACTIVE + tokens=0 → "— tokens" thay vì ẩn hẳn
- * - BUG-005: hasHistory = `!is_dispatcher && call_count >= 1` (sửa từ `> 1`)
+ * - BUG-005: hasHistory = `call_count >= 1 && history.length > 0` (sửa từ `> 1`)
+ *
+ * FR-006-dispatcher (sau Sprint 5):
+ * - Dispatcher cũng có nút "Xem lịch sử" khi backend trả về history[] không rỗng
+ *   (history = các tool call top-level của Dispatcher: Read, Write, Bash, v.v.)
  *
  * Layout per entry (196×100px):
  * - Dòng 1: indicator + tên + "(xN)" badge
@@ -27,13 +31,23 @@ function shortModel(model: string | null): string | null {
   return model.replace(/^claude-/, '')
 }
 
-// ── Dispatcher node (FR-004) ──────────────────────────────────────────────────
+// ── Dispatcher node (FR-004, FR-006-dispatcher) ──────────────────────────────
 
-function DispatcherNode({ entry, position }: { entry: RosterEntry; position: number }) {
+function DispatcherNode({
+  entry,
+  position,
+  onShowHistory,
+}: {
+  entry: RosterEntry
+  position: number
+  onShowHistory: (entry: RosterEntry) => void
+}) {
   const isActive = entry.status === 'active'
   const modelShort = shortModel(entry.latest_model)
   const totalTokens = entry.total_tokens.input + entry.total_tokens.output
   const tokensLabel = totalTokens > 0 ? fmtTokensCompact(totalTokens) : null
+  // FR-006-dispatcher: show history button when backend populates history[]
+  const hasHistory = entry.history.length > 0
 
   // ACTIVE: nền Navy đặc, chữ trắng
   // DONE: nền Navy nhạt, chữ Navy, opacity 0.65
@@ -100,12 +114,33 @@ function DispatcherNode({ entry, position }: { entry: RosterEntry; position: num
         </p>
       )}
 
-      {/* Dòng 3: tokens — ẩn nếu 0 (khác BUG-004: Dispatcher 0 tokens là hợp lý) */}
-      {tokensLabel && (
-        <div style={{ marginTop: 'auto', paddingTop: 2 }}>
-          <span style={{ fontSize: 10, color: tokenColor }}>
-            {tokensLabel} tokens
+      {/* Dòng 3: tokens + "Xem lịch sử" (FR-006-dispatcher) */}
+      {(tokensLabel || hasHistory) && (
+        <div
+          className="flex items-center"
+          style={{ marginTop: 'auto', paddingTop: 2, gap: 4 }}
+        >
+          <span style={{ fontSize: 10, color: tokenColor, flex: 1 }}>
+            {tokensLabel ? `${tokensLabel} tokens` : ''}
           </span>
+          {hasHistory && (
+            <button
+              onClick={() => onShowHistory(entry)}
+              style={{
+                fontSize: 9,
+                color: isActive ? 'rgba(255,255,255,0.8)' : '#4A3F8C',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                textDecorationStyle: 'dotted',
+                flexShrink: 0,
+              }}
+            >
+              Xem lịch sử
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -372,13 +407,14 @@ function DoneSubagentNode({
 export default function AgentRosterItem({ entry, position, onShowHistory }: AgentRosterItemProps) {
   const isActive = entry.status === 'active'
 
-  // BUG-005 fix + FR-004: nút "Xem lịch sử" chỉ hiện khi KHÔNG là Dispatcher VÀ có ≥1 lần gọi
-  // (trước: call_count > 1 → agent gọi đúng 1 lần không thấy nút)
-  const hasHistory = !entry.is_dispatcher && entry.call_count >= 1
+  // FR-006-dispatcher: nút "Xem lịch sử" hiện khi history[] không rỗng — kể cả Dispatcher.
+  // Trước (Sprint 5): !is_dispatcher && call_count >= 1 → Dispatcher không bao giờ có nút.
+  // Sau (FR-006-dispatcher): history.length > 0 → Dispatcher cũng có nút khi backend trả dữ liệu.
+  const hasHistory = entry.history.length > 0
 
   // FR-004: Dispatcher → render riêng với style Navy
   if (entry.is_dispatcher) {
-    return <DispatcherNode entry={entry} position={position} />
+    return <DispatcherNode entry={entry} position={position} onShowHistory={onShowHistory} />
   }
 
   // Subagent bình thường

@@ -1190,12 +1190,50 @@ async def get_session_chain(
     # first entry so the frontend can render it at the head of the pipeline view.
     # Token accounting: parent_row tokens are the Dispatcher's OWN LLM turns —
     # they do NOT include children's tokens (each session has its own DB row).
+    #
+    # FR-006-dispatcher: Build history from the Dispatcher's own tool events
+    # (non-Agent calls: Read, Write, Edit, Bash, etc.) — chronological order.
+    # Agent dispatches are already visible as subagent cards; dispatcher history
+    # shows the top-level actions the Dispatcher itself performed between them.
+    async with conn.execute(
+        """SELECT ts, tool_name
+             FROM events
+            WHERE session_id = ? AND tool_name IS NOT NULL AND tool_name != 'Agent'
+            ORDER BY ts ASC""",
+        (session_id,),
+    ) as _dcur:
+        _disp_event_rows = await _dcur.fetchall()
+
+    dispatcher_history: list[dict[str, Any]] = []
+    for _idx, _dev in enumerate(_disp_event_rows, start=1):
+        dispatcher_history.append({
+            "call_index":     _idx,
+            "started_at":     _dev["ts"],
+            "description":    _dev["tool_name"],
+            "model":          None,
+            "tokens":         None,
+            "result_summary": None,
+            "result_full":    None,
+            "duration_ms":    None,
+            "status":         "done",  # annotated below
+        })
+
+    # Annotate last item as active when session is still Running
+    if dispatcher_history:
+        if session_state == "Running":
+            dispatcher_history[-1]["status"] = "active"
+        # All earlier items are always done
+        for _h in dispatcher_history[:-1]:
+            _h["status"] = "done"
+
     dispatcher_entry: dict[str, Any] = {
         "role":               "__dispatcher__",
         "display_name":       "Claude (Dispatcher)",
         "is_dispatcher":      True,
         "status":             "active" if session_state == "Running" else "done",
-        "call_count":         1,
+        # call_count reflects own tool events so HistoryPanel header is accurate;
+        # falls back to 1 when no own tool events (unlikely but safe).
+        "call_count":         len(dispatcher_history) if dispatcher_history else 1,
         "latest_description": parent_row["title"] or "Phiên chính",
         "latest_model":       parent_row["agent_type"],
         "first_called_at":    parent_row["started_at"],
@@ -1206,7 +1244,7 @@ async def get_session_chain(
             "cache_creation": parent_row["token_cache_creation"] or 0,
             "cache_read":     parent_row["token_cache_read"] or 0,
         },
-        "history": [],  # Dispatcher has no per-call history — it IS the session
+        "history": dispatcher_history,
     }
 
     return {
