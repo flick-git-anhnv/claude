@@ -357,7 +357,10 @@ class TestDispatcherNode:
         assert dispatcher["is_dispatcher"] is True
         assert dispatcher["role"] == "__dispatcher__"
         assert dispatcher["display_name"] == "Claude (Dispatcher)"
-        assert dispatcher["history"] == []
+        # Session không có user turn nhưng có title → fallback 1 dòng history
+        # với description = title (fix vấn đề 3).
+        assert len(dispatcher["history"]) == 1
+        assert dispatcher["history"][0]["description"] == "My session"
         assert dispatcher["call_count"] == 1
 
     @pytest.mark.asyncio
@@ -422,83 +425,81 @@ class TestDispatcherNode:
 
     # ── FR-006-dispatcher: Dispatcher history from own tool events ────────────
 
+    # Helper: insert a user turn event with realistic payload (text or tool_result).
+    @staticmethod
+    async def _insert_user_event(
+        conn, session_id: str, ts: str, *, text: str | None = None,
+        is_tool_result: bool = False,
+    ) -> None:
+        if is_tool_result:
+            payload = json.dumps({
+                "type": "user",
+                "message": {"content": [{"type": "tool_result", "tool_use_id": "x", "content": "ok"}]},
+            })
+        else:
+            payload = json.dumps({
+                "type": "user",
+                "message": {"content": [{"type": "text", "text": text or ""}]},
+            })
+        await conn.execute(
+            """INSERT INTO events (session_id, ts, type, tool_name, payload_json)
+               VALUES (?, ?, 'user', NULL, ?)""",
+            (session_id, ts, payload),
+        )
+
     @pytest.mark.asyncio
-    async def test_dispatcher_history_built_from_non_agent_events(self, conn):
-        """FR-006-dispatcher: non-Agent tool events populate dispatcher history[]."""
+    async def test_dispatcher_history_built_from_user_turns(self, conn):
+        """Fix vấn đề 3: mỗi user turn = 1 dòng history, description = văn bản người dùng."""
         parent_id = "parent-disp-007"
         await _insert_session(conn, parent_id, state="Ended")
-        # Insert Dispatcher's own tool calls (not Agent dispatches)
-        for tool, ts in [
-            ("Read",  "2026-08-08T10:01:00"),
-            ("Write", "2026-08-08T10:02:00"),
-            ("Bash",  "2026-08-08T10:03:00"),
-        ]:
-            await conn.execute(
-                """INSERT INTO events (session_id, ts, type, tool_name, payload_json)
-                   VALUES (?, ?, 'tool_use', ?, '{}')""",
-                (parent_id, ts, tool),
-            )
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:01:00", text="Fix lỗi login")
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:02:00", text="Thêm test unit")
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:03:00", text="Deploy staging")
         await conn.commit()
 
         result = await db_module.get_session_chain(conn, parent_id)
         dispatcher = result["roster"][0]
 
         assert len(dispatcher["history"]) == 3
-        assert dispatcher["history"][0]["description"] == "Read"
-        assert dispatcher["history"][1]["description"] == "Write"
-        assert dispatcher["history"][2]["description"] == "Bash"
+        assert dispatcher["history"][0]["description"] == "Fix lỗi login"
+        assert dispatcher["history"][1]["description"] == "Thêm test unit"
+        assert dispatcher["history"][2]["description"] == "Deploy staging"
         assert dispatcher["call_count"] == 3
 
     @pytest.mark.asyncio
-    async def test_dispatcher_history_excludes_agent_events(self, conn):
-        """FR-006-dispatcher: Agent tool_use events are NOT in dispatcher history
-        (they are already shown as subagent cards)."""
+    async def test_dispatcher_history_excludes_tool_results(self, conn):
+        """Fix vấn đề 3: các event type='user' nhưng là tool_result KHÔNG được coi là user turn."""
         parent_id = "parent-disp-008"
         await _insert_session(conn, parent_id, state="Ended")
-        # One Agent dispatch + one Read
-        await _insert_agent_event(conn, parent_id, "senior-developer",
-                                  ts="2026-08-08T10:01:00")
-        await conn.execute(
-            """INSERT INTO events (session_id, ts, type, tool_name, payload_json)
-               VALUES (?, '2026-08-08T10:02:00', 'tool_use', 'Read', '{}')""",
-            (parent_id,),
-        )
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:01:00", text="Chạy pytest")
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:02:00", is_tool_result=True)
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:03:00", is_tool_result=True)
         await conn.commit()
 
         result = await db_module.get_session_chain(conn, parent_id)
         dispatcher = result["roster"][0]
 
-        # Only the Read event should appear, not the Agent dispatch
         assert len(dispatcher["history"]) == 1
-        assert dispatcher["history"][0]["description"] == "Read"
+        assert dispatcher["history"][0]["description"] == "Chạy pytest"
 
     @pytest.mark.asyncio
-    async def test_dispatcher_history_empty_when_no_own_tool_events(self, conn):
-        """FR-006-dispatcher: history stays [] when only Agent events exist."""
+    async def test_dispatcher_history_fallback_to_title_when_no_user_turns(self, conn):
+        """Fix vấn đề 3: session cũ không có user turn → dùng title làm 1 dòng."""
         parent_id = "parent-disp-009"
-        await _insert_session(conn, parent_id, state="Ended")
-        await _insert_agent_event(conn, parent_id, "tech-lead")
+        await _insert_session(conn, parent_id, state="Ended", title="Phiên cũ")
 
         result = await db_module.get_session_chain(conn, parent_id)
         dispatcher = result["roster"][0]
 
-        assert dispatcher["history"] == []
-        assert dispatcher["call_count"] == 1  # fallback to 1 when no own events
+        assert len(dispatcher["history"]) == 1
+        assert dispatcher["history"][0]["description"] == "Phiên cũ"
 
     @pytest.mark.asyncio
     async def test_dispatcher_history_last_item_active_when_running(self, conn):
-        """FR-006-dispatcher: last history item is 'active' when session Running."""
         parent_id = "parent-disp-010"
         await _insert_session(conn, parent_id, state="Running")
-        for tool, ts in [
-            ("Read",  "2026-08-08T10:01:00"),
-            ("Bash",  "2026-08-08T10:02:00"),
-        ]:
-            await conn.execute(
-                """INSERT INTO events (session_id, ts, type, tool_name, payload_json)
-                   VALUES (?, ?, 'tool_use', ?, '{}')""",
-                (parent_id, ts, tool),
-            )
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:01:00", text="Bắt đầu")
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:02:00", text="Tiếp tục")
         await conn.commit()
 
         result = await db_module.get_session_chain(conn, parent_id)
@@ -509,18 +510,10 @@ class TestDispatcherNode:
 
     @pytest.mark.asyncio
     async def test_dispatcher_history_all_done_when_ended(self, conn):
-        """FR-006-dispatcher: all history items are 'done' when session Ended."""
         parent_id = "parent-disp-011"
         await _insert_session(conn, parent_id, state="Ended")
-        for tool, ts in [
-            ("Read",  "2026-08-08T10:01:00"),
-            ("Write", "2026-08-08T10:02:00"),
-        ]:
-            await conn.execute(
-                """INSERT INTO events (session_id, ts, type, tool_name, payload_json)
-                   VALUES (?, ?, 'tool_use', ?, '{}')""",
-                (parent_id, ts, tool),
-            )
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:01:00", text="Task A")
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:02:00", text="Task B")
         await conn.commit()
 
         result = await db_module.get_session_chain(conn, parent_id)
@@ -530,14 +523,9 @@ class TestDispatcherNode:
 
     @pytest.mark.asyncio
     async def test_dispatcher_history_fields_schema(self, conn):
-        """FR-006-dispatcher: each history item has required RosterHistoryEntry fields."""
         parent_id = "parent-disp-012"
         await _insert_session(conn, parent_id, state="Ended")
-        await conn.execute(
-            """INSERT INTO events (session_id, ts, type, tool_name, payload_json)
-               VALUES (?, '2026-08-08T10:01:00', 'tool_use', 'Edit', '{}')""",
-            (parent_id,),
-        )
+        await self._insert_user_event(conn, parent_id, "2026-08-08T10:01:00", text="Edit file")
         await conn.commit()
 
         result = await db_module.get_session_chain(conn, parent_id)
@@ -545,7 +533,7 @@ class TestDispatcherNode:
 
         assert item["call_index"] == 1
         assert item["started_at"] == "2026-08-08T10:01:00"
-        assert item["description"] == "Edit"
+        assert item["description"] == "Edit file"
         assert item["model"] is None
         assert item["tokens"] is None
         assert item["result_summary"] is None

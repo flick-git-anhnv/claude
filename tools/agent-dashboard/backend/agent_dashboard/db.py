@@ -1,6 +1,7 @@
 """Database layer — aiosqlite, WAL mode, single writer via asyncio."""
 from __future__ import annotations
 
+import json as _json
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,6 +10,52 @@ from typing import Any, Optional
 import aiosqlite
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_user_turn_text(payload_json: Optional[str]) -> Optional[str]:
+    """Trích văn bản user thực từ payload JSONL (dùng cho dispatcher history).
+
+    Trả về:
+      - str[:120]  nếu event này là 1 lượt user thực (message.content chứa block
+                   type='text' và không phải tool_result). Cắt 120 ký tự để hiển thị gọn.
+      - None       nếu event là tool_result, meta message, hoặc không parse được.
+
+    Đây là hành vi mong đợi ở fix vấn đề 3: mỗi user turn = 1 dòng history,
+    description = nội dung yêu cầu thay vì tên tool.
+    """
+    if not payload_json:
+        return None
+    try:
+        data = _json.loads(payload_json)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    message = data.get("message") or {}
+    content = message.get("content")
+    # Trường hợp content là string (user turn cũ format)
+    if isinstance(content, str):
+        s = content.strip()
+        return s[:120] if s else None
+    if not isinstance(content, list):
+        return None
+    has_tool_result = False
+    text_parts: list[str] = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        btype = block.get("type")
+        if btype == "tool_result":
+            has_tool_result = True
+            break
+        if btype == "text":
+            t = block.get("text") or ""
+            if t.strip():
+                text_parts.append(t.strip())
+    if has_tool_result or not text_parts:
+        return None
+    combined = " ".join(text_parts).strip()
+    return combined[:120] if combined else None
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 
@@ -1191,31 +1238,54 @@ async def get_session_chain(
     # Token accounting: parent_row tokens are the Dispatcher's OWN LLM turns —
     # they do NOT include children's tokens (each session has its own DB row).
     #
-    # FR-006-dispatcher: Build history from the Dispatcher's own tool events
-    # (non-Agent calls: Read, Write, Edit, Bash, etc.) — chronological order.
-    # Agent dispatches are already visible as subagent cards; dispatcher history
-    # shows the top-level actions the Dispatcher itself performed between them.
+    # FR-006-dispatcher (Fix vấn đề 3): Build history from USER TURNS instead
+    # of every tool call. Trước đây mỗi tool (Read/Write/Bash/…) là 1 dòng —
+    # gây ra danh sách quá dài, khó theo dõi. Giờ nhóm theo mỗi lần user gửi
+    # tin nhắn (human turn), description = trích văn bản đầu tiên của tin đó.
+    #
+    # Phân biệt user turn thực với tool_result: tool_result có content=list
+    # chứa block type='tool_result'; user turn thực chứa block type='text'.
     async with conn.execute(
-        """SELECT ts, tool_name
+        """SELECT ts, payload_json
              FROM events
-            WHERE session_id = ? AND tool_name IS NOT NULL AND tool_name != 'Agent'
+            WHERE session_id = ? AND type = 'user'
             ORDER BY ts ASC""",
         (session_id,),
     ) as _dcur:
         _disp_event_rows = await _dcur.fetchall()
 
     dispatcher_history: list[dict[str, Any]] = []
-    for _idx, _dev in enumerate(_disp_event_rows, start=1):
+    _idx = 0
+    for _dev in _disp_event_rows:
+        text = _extract_user_turn_text(_dev["payload_json"])
+        if text is None:
+            continue  # tool_result hoặc user meta message → bỏ qua
+        _idx += 1
         dispatcher_history.append({
             "call_index":     _idx,
             "started_at":     _dev["ts"],
-            "description":    _dev["tool_name"],
+            "description":    text,
             "model":          None,
             "tokens":         None,
             "result_summary": None,
             "result_full":    None,
             "duration_ms":    None,
             "status":         "done",  # annotated below
+        })
+
+    # Fallback: nếu không có user turn nào (trường hợp hiếm — session cũ chưa
+    # lưu payload_json đầy đủ), dùng title làm 1 dòng đại diện để không rỗng.
+    if not dispatcher_history and parent_row["title"]:
+        dispatcher_history.append({
+            "call_index":     1,
+            "started_at":     parent_row["started_at"],
+            "description":    parent_row["title"],
+            "model":          None,
+            "tokens":         None,
+            "result_summary": None,
+            "result_full":    None,
+            "duration_ms":    None,
+            "status":         "done",
         })
 
     # Annotate last item as active when session is still Running

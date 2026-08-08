@@ -250,6 +250,11 @@ Commit thay đổi config từ project khác: skill `/sync-global`.
 | 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AgentRosterItem.tsx` | Update | Bug 1: khôi phục hasHistory = is_dispatcher?history.length>0:call_count>=1 (regression FR-006-dispatcher); dùng fmtTokenDisplay/fmtModelShort; DoneSubagentNode luôn hiện "— tokens" | senior-developer |
 | 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/PipelineCard.tsx` | Update | Bug 1: HistoryPanel dùng fmtTokenDisplay (luôn hiện "— tokens"), hiện model placeholder "—" khi null cho non-dispatcher history items | senior-developer |
 | 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AggregatePipelineView.tsx` | Update | Bug 2+3: ProjectPipelineRow dùng sub.is_active; xóa shortModel() local → dùng fmtModelShort; tất cả pipeline nodes dùng fmtTokenDisplay thay fmtNum | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/main.py` | Update | Fix vấn đề 2: `agent_started` delta chỉ broadcast khi `not is_subagent` — trước đó subagent transcripts bị nhét vào state.sessions frontend, hiển thị dòng RUNNING trùng | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/backend/agent_dashboard/db.py` | Update | Fix vấn đề 3: `get_session_chain` dispatcher_history dựng từ USER TURNS (parse payload_json, lọc tool_result) thay vì mỗi tool_name; thêm helper `_extract_user_turn_text`; fallback dùng title nếu không có user turn | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/components/common/UsageBar.tsx` | Update | Fix vấn đề 1: khi có error (429/unauthorized/timeout) → hiện dòng "⚠ msg" rõ ràng thay vì 2 bar rỗng "5h --" "7d --"; loại prop `error` trong SingleBar | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/state/wsReducer.ts` | Update | Fix vấn đề 4: thêm helper `mapIfChanged` — giữ nguyên identity `sessions` array khi delta không match hoặc không đổi field → tránh re-render toàn app mỗi WS event; top-level short-circuit khi nextSessions===state.sessions | senior-developer |
+| 2026-08-08 | `tools/agent-dashboard/frontend/src/components/sessions/AggregatePipelineView.tsx` | Update | Fix vấn đề 4: cache lastJsonStr, skip setData nếu response text bằng lần trước → tránh AggregateCard grid re-render mỗi 5s poll | senior-developer |
 
 ---
 

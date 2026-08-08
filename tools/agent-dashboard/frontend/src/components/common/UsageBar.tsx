@@ -40,14 +40,12 @@ function SingleBar({
   resetsAt,
   onHeader,
   loading,
-  error = false,
 }: {
   label: string
   pct: number | null | undefined
   resetsAt: number | null | undefined
   onHeader: boolean
   loading: boolean
-  error?: boolean
 }) {
   const trackBg = onHeader ? 'rgba(255,255,255,0.2)' : 'rgba(203,203,203,0.4)'
   const barW = onHeader ? 120 : 100
@@ -81,7 +79,7 @@ function SingleBar({
         aria-valuenow={pct ?? 0}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${label === '5h' ? 'Session 5 giờ' : 'Weekly 7 ngày'}: ${error ? 'lỗi' : pct != null ? pct.toFixed(0) : '?'}%`}
+        aria-label={`${label === '5h' ? 'Session 5 giờ' : 'Weekly 7 ngày'}: ${pct != null ? pct.toFixed(0) : '?'}%`}
         style={{
           width: barW,
           height: 4,
@@ -113,11 +111,11 @@ function SingleBar({
           flexShrink: 0,
         }}
       >
-        {loading ? '…' : error ? '--' : pct != null ? `${pct.toFixed(0)}%` : '?'}
+        {loading ? '…' : pct != null ? `${pct.toFixed(0)}%` : '?'}
       </span>
 
       {/* Reset countdown */}
-      {!loading && !error && resetsAt != null && (
+      {!loading && resetsAt != null && (
         <span style={{ fontSize: 9, color: resetColor, flexShrink: 0 }}>
           Reset {fmtResetsIn(resetsAt)}
         </span>
@@ -133,28 +131,40 @@ export default function UsageBar({ usage, onHeader = false, loading = false }: U
   const hasError = usage != null && usage.error != null
   const errorMsg = hasError ? getUsageErrorMsg(usage.error) : ''
 
+  // Fix vấn đề 1: khi có lỗi (rate-limit, unauthorized, timeout...), thay vì hiện
+  // 2 bar rỗng "5h --" "7d --" gây khó hiểu → hiện 1 dòng thông báo rõ lý do.
+  if (hasError && !loading) {
+    const color = onHeader ? 'rgba(255,255,255,0.85)' : '#F05922'
+    return (
+      <div
+        style={{ marginTop: 4, fontSize: 10, color, lineHeight: 1.3, maxWidth: 220 }}
+        title={errorMsg}
+        aria-label={`Quota Anthropic: ${errorMsg}`}
+      >
+        ⚠ {errorMsg}
+      </div>
+    )
+  }
+
   return (
     <div
       className="flex flex-col"
       style={{ gap: 3, marginTop: 4 }}
       aria-label="Quota sử dụng Anthropic"
-      title={hasError ? errorMsg : undefined}
     >
       <SingleBar
         label="5h"
-        pct={loading || hasError ? null : usage?.five_hour_pct}
-        resetsAt={loading || hasError ? null : usage?.resets_at}
+        pct={loading ? null : usage?.five_hour_pct}
+        resetsAt={loading ? null : usage?.resets_at}
         onHeader={onHeader}
         loading={loading}
-        error={hasError}
       />
       <SingleBar
         label="7d"
-        pct={loading || hasError ? null : usage?.seven_day_pct}
-        resetsAt={loading || hasError ? null : usage?.seven_day_resets_at}
+        pct={loading ? null : usage?.seven_day_pct}
+        resetsAt={loading ? null : usage?.seven_day_resets_at}
         onHeader={onHeader}
         loading={loading}
-        error={hasError}
       />
     </div>
   )

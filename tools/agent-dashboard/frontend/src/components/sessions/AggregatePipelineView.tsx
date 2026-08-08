@@ -516,6 +516,10 @@ export default function AggregatePipelineView() {
   useEffect(() => {
     let cancelled = false
 
+    // Fix vấn đề 4: cache JSON string của lần fetch trước để skip setData khi
+    // nội dung không đổi → tránh AggregateCard re-render mỗi 5s dù data giữ nguyên.
+    let lastJsonStr = ''
+
     async function fetchAggregate() {
       try {
         const params = new URLSearchParams()
@@ -523,7 +527,18 @@ export default function AggregatePipelineView() {
         params.set('group_by', groupBy)
         const r = await fetch(`/api/pipeline/aggregate?${params}`)
         if (!r.ok) throw new Error(`aggregate fetch ${r.status}`)
-        const json: AggregateResponse = await r.json()
+        const rawText = await r.text()
+        if (rawText === lastJsonStr) {
+          // Content không đổi — chỉ update timestamp, không re-render lưới card
+          if (!cancelled) {
+            setLastUpdated(new Date())
+            if (loading) setLoading(false)
+            if (error) setError(false)
+          }
+          return
+        }
+        lastJsonStr = rawText
+        const json: AggregateResponse = JSON.parse(rawText)
         if (!cancelled) {
           setData(json)
           setLastUpdated(new Date())

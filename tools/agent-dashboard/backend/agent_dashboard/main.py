@@ -261,14 +261,18 @@ async def _process_file(conn: Any, file_path: str) -> None:
         change = _state_mgr.update_activity(parsed.session_id, parsed.timestamp)
 
         # WebSocket deltas
-        if is_new:
+        # Fix vấn đề 2: chỉ broadcast agent_started cho session GỐC (is_subagent=False).
+        # Subagent transcripts (agent-*.jsonl trong subagents/) đã có kênh chain_updated
+        # riêng cho parent — nếu broadcast agent_started ở đây, frontend wsReducer
+        # sẽ nhét subagent vào danh sách sessions gốc, hiển thị trùng dòng RUNNING.
+        if is_new and not parsed.is_subagent:
             await _ws_manager.broadcast(make_delta("agent_started", {
                 "session_id": parsed.session_id,
                 "project":    parsed.project,
                 "agent_type": parsed.agent_type,
                 "started_at": parsed.timestamp,
             }))
-        else:
+        elif not is_new:
             delta_payload: dict = {
                 "session_id":    parsed.session_id,
                 "last_event_at": parsed.timestamp,
