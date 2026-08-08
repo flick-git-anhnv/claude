@@ -602,3 +602,49 @@ def test_sync_credentials_with_store(store, tmp_path):
 
     asyncio.get_event_loop().run_until_complete(run_tests())
 
+
+# ── BUG-002: Duplicate account name validation ────────────────────────────────
+
+def test_add_account_duplicate_name_raises(store):
+    """add_account must reject a name that already exists (api_key accounts)."""
+    store.add_account("My Account", "sk-ant-first-0001")
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_account("My Account", "sk-ant-second-0002")
+
+
+def test_add_account_duplicate_name_case_insensitive(store):
+    """Name uniqueness check is case-insensitive."""
+    store.add_account("kztek dev", "sk-ant-lower-0001")
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_account("KZTEK DEV", "sk-ant-upper-0002")
+
+
+def test_add_oauth_account_duplicate_name_raises(store):
+    """add_oauth_account must reject a name that already exists (oauth_session accounts)."""
+    store.add_oauth_account("OAuth Work", _make_oauth_block(), None)
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_oauth_account("OAuth Work", _make_oauth_block(), None)
+
+
+def test_add_account_duplicate_name_cross_kind(store):
+    """Name collision is detected across different account kinds."""
+    store.add_account("Shared Name", "sk-ant-api-0001")
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_oauth_account("Shared Name", _make_oauth_block(), None)
+
+
+def test_add_account_unique_names_succeed(store):
+    """Two accounts with different names must both be created without error."""
+    id1 = store.add_account("Account Alpha", "sk-ant-alpha-0001")
+    id2 = store.add_account("Account Beta", "sk-ant-beta-0002")
+    assert id1 != id2
+    assert len(store.list_accounts()) == 2
+
+
+def test_add_account_duplicate_does_not_persist(store):
+    """A rejected duplicate-name call must not leave any partial record in the store."""
+    store.add_account("Clean State", "sk-ant-first-0001")
+    with pytest.raises(ValueError):
+        store.add_account("Clean State", "sk-ant-second-0002")
+    assert len(store.list_accounts()) == 1
+

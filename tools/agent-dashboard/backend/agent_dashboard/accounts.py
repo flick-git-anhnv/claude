@@ -202,6 +202,10 @@ class AccountStore:
 
     # ── CRUD ──────────────────────────────────────────────────────────────────
 
+    def _name_exists(self, name: str) -> bool:
+        """Return True if any existing account has the same name (case-insensitive)."""
+        return any(a["name"].lower() == name.lower() for a in self._data["accounts"])
+
     def list_accounts(self) -> List[Dict[str, Any]]:
         active_id = self._data.get("active_id")
         result = []
@@ -230,7 +234,13 @@ class AccountStore:
         return result
 
     def add_account(self, name: str, api_key: str) -> str:
-        """Add an API-key account. Returns the new account id."""
+        """Add an API-key account. Returns the new account id.
+
+        Raises ValueError("ACCOUNT_NAME_DUPLICATE") if name already exists
+        (case-insensitive).
+        """
+        if self._name_exists(name):
+            raise ValueError("ACCOUNT_NAME_DUPLICATE")
         acc_id = f"acc-{uuid.uuid4().hex[:8]}"
         self._data["accounts"].append(
             {
@@ -245,7 +255,13 @@ class AccountStore:
         return acc_id
 
     def add_oauth_account(self, name: str, oauth_block: Dict[str, Any], org_uuid: Optional[str]) -> str:
-        """Add an OAuth-session account from a .credentials.json snapshot."""
+        """Add an OAuth-session account from a .credentials.json snapshot.
+
+        Raises ValueError("ACCOUNT_NAME_DUPLICATE") if name already exists
+        (case-insensitive).
+        """
+        if self._name_exists(name):
+            raise ValueError("ACCOUNT_NAME_DUPLICATE")
         missing = REQUIRED_OAUTH_FIELDS - set(oauth_block.keys())
         if missing:
             raise ValueError(f"OAUTH_SNAPSHOT_INVALID: missing fields {missing}")

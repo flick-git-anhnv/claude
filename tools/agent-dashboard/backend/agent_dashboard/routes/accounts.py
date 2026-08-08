@@ -52,7 +52,10 @@ def add_account(request: Request, body: AccountCreate):
         try:
             acc_id = store.add_account(body.name, body.api_key)  # type: ignore[arg-type]
         except ValueError as exc:
-            raise HTTPException(400, detail=error_response("ACCOUNT_KEY_INVALID", str(exc)))
+            code = str(exc)
+            if code.startswith("ACCOUNT_NAME_DUPLICATE"):
+                raise HTTPException(409, detail=error_response("ACCOUNT_NAME_DUPLICATE", "Account name already exists"))
+            raise HTTPException(400, detail=error_response("ACCOUNT_KEY_INVALID", code))
         acc = store.get_account(acc_id)
         if not acc:
             raise HTTPException(500, detail=error_response("INTERNAL_ERROR", "Account creation failed"))
@@ -83,7 +86,10 @@ def add_account(request: Request, body: AccountCreate):
             raise ValueError("Missing claudeAiOauth block in credentials file")
         acc_id = store.add_oauth_account(body.name, oauth_block, raw.get("organizationUuid"))
     except ValueError as exc:
-        raise HTTPException(400, detail=error_response("OAUTH_SNAPSHOT_INVALID", str(exc)))
+        code = str(exc)
+        if code.startswith("ACCOUNT_NAME_DUPLICATE"):
+            raise HTTPException(409, detail=error_response("ACCOUNT_NAME_DUPLICATE", "Account name already exists"))
+        raise HTTPException(400, detail=error_response("OAUTH_SNAPSHOT_INVALID", code))
     except Exception as exc:
         raise HTTPException(500, detail=error_response("INTERNAL_ERROR", str(exc)))
 
