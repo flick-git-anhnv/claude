@@ -118,6 +118,32 @@ export function fmtTokensCompact(n: number): string | null {
 }
 
 /**
+ * Shared token display label — Bug 3: thống nhất hiển thị tokens ở cả 3 tab.
+ * null / undefined / 0 → "— tokens"  (dash, never empty)
+ * n > 0                → "1.5K tokens" / "1.2M tokens"
+ *
+ * Dùng thay cho ad-hoc `tokensLabel ? ... : ''` rải rác trong code.
+ */
+export function fmtTokenDisplay(n: number | null | undefined): string {
+  if (n == null || n <= 0) return '— tokens'
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M tokens`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K tokens`
+  return `${n} tokens`
+}
+
+/**
+ * Rút gọn model slug thành tên ngắn hiển thị.
+ * "claude-sonnet-4-6" → "sonnet-4-6"
+ * null                → null
+ *
+ * Shared helper — Bug 3: dùng chung 1 chỗ, không tái khai báo trong mỗi component.
+ */
+export function fmtModelShort(model: string | null | undefined): string | null {
+  if (!model) return null
+  return model.replace(/^claude-/, '')
+}
+
+/**
  * Sprint 5: Format countdown đến thời điểm reset usage quota.
  * resetsAt: unix seconds (từ UsageInfo.resets_at / seven_day_resets_at)
  * Ví dụ: "1h 20m" | "4d 3h" | "45m" | "Đã reset"

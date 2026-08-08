@@ -169,6 +169,8 @@ export interface ProjectRosterItem {
     input: number;
     output: number;
   };
+  /** Bug 2: backend tính từ active_agents — true nếu role đang Running trong project này */
+  is_active?: boolean;
 }
 
 export interface ActiveAgentEntry {

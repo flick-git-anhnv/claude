@@ -17,18 +17,12 @@
  * - Dòng 3: tokens + "Xem lịch sử" (nếu hasHistory)
  */
 import type { RosterEntry } from '../../types'
-import { fmtTokensCompact } from '../../utils/format'
+import { fmtTokensCompact, fmtTokenDisplay, fmtModelShort } from '../../utils/format'
 
 interface AgentRosterItemProps {
   entry: RosterEntry
   position: number
   onShowHistory: (entry: RosterEntry) => void
-}
-
-/** Rút gọn model slug: "claude-sonnet-4-6" → "sonnet-4-6" */
-function shortModel(model: string | null): string | null {
-  if (!model) return null
-  return model.replace(/^claude-/, '')
 }
 
 // ── Dispatcher node (FR-004, FR-006-dispatcher) ──────────────────────────────
@@ -43,7 +37,7 @@ function DispatcherNode({
   onShowHistory: (entry: RosterEntry) => void
 }) {
   const isActive = entry.status === 'active'
-  const modelShort = shortModel(entry.latest_model)
+  const modelShort = fmtModelShort(entry.latest_model)
   const totalTokens = entry.total_tokens.input + entry.total_tokens.output
   const tokensLabel = totalTokens > 0 ? fmtTokensCompact(totalTokens) : null
   // FR-006-dispatcher: show history button when backend populates history[]
@@ -161,7 +155,7 @@ function ActiveSubagentNode({
   onShowHistory: (e: RosterEntry) => void
 }) {
   const totalTokens = entry.total_tokens.input + entry.total_tokens.output
-  const modelShort = shortModel(entry.latest_model)
+  const modelShort = fmtModelShort(entry.latest_model)
 
   // BUG-004: ACTIVE + tokens=0 → "— tokens" thay vì ẩn
   const tokensLabel = totalTokens === 0 ? '— tokens' : `${fmtTokensCompact(totalTokens)} tokens`
@@ -296,8 +290,9 @@ function DoneSubagentNode({
   onShowHistory: (e: RosterEntry) => void
 }) {
   const totalTokens = entry.total_tokens.input + entry.total_tokens.output
-  const tokensLabel = fmtTokensCompact(totalTokens)
-  const modelShort = shortModel(entry.latest_model)
+  // Bug 3: dùng fmtTokenDisplay để luôn hiện "— tokens" khi zero (không bao giờ để trống)
+  const tokensLabel = fmtTokenDisplay(totalTokens)
+  const modelShort = fmtModelShort(entry.latest_model)
 
   const ariaLabel = `${position}. ${entry.display_name}${hasHistory ? ` (${entry.call_count} lần)` : ''} — đã hoàn thành`
 
@@ -365,39 +360,37 @@ function DoneSubagentNode({
         </p>
       )}
 
-      {/* Dòng 3: tokens + "Xem lịch sử" */}
-      {(tokensLabel || hasHistory) && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginTop: 'auto',
-            paddingTop: 2,
-          }}
-        >
-          <span style={{ fontSize: 9, color: '#B8B3D6', flex: 1 }}>
-            {tokensLabel ? `${tokensLabel} tokens` : ''}
-          </span>
-          {hasHistory && (
-            <button
-              onClick={() => onShowHistory(entry)}
-              style={{
-                fontSize: 9,
-                color: '#4A3F8C',
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                textDecorationStyle: 'dotted',
-                flexShrink: 0,
-              }}
-            >
-              Xem lịch sử
-            </button>
-          )}
-        </div>
-      )}
+      {/* Dòng 3: tokens (luôn hiện via fmtTokenDisplay) + "Xem lịch sử" */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginTop: 'auto',
+          paddingTop: 2,
+        }}
+      >
+        <span style={{ fontSize: 9, color: '#B8B3D6', flex: 1 }}>
+          {tokensLabel}
+        </span>
+        {hasHistory && (
+          <button
+            onClick={() => onShowHistory(entry)}
+            style={{
+              fontSize: 9,
+              color: '#4A3F8C',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dotted',
+              flexShrink: 0,
+            }}
+          >
+            Xem lịch sử
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -410,7 +403,14 @@ export default function AgentRosterItem({ entry, position, onShowHistory }: Agen
   // FR-006-dispatcher: nút "Xem lịch sử" hiện khi history[] không rỗng — kể cả Dispatcher.
   // Trước (Sprint 5): !is_dispatcher && call_count >= 1 → Dispatcher không bao giờ có nút.
   // Sau (FR-006-dispatcher): history.length > 0 → Dispatcher cũng có nút khi backend trả dữ liệu.
-  const hasHistory = entry.history.length > 0
+  //
+  // Bug 1 (regression FR-006-dispatcher): đổi điều kiện sang `history.length > 0` cho TẤT CẢ
+  // đã làm mất nút "Xem lịch sử" của role thường — mock data có history:[] nhưng call_count:1.
+  // Fix: Dispatcher vẫn dùng history.length (call_count dispatcher không có ý nghĩa),
+  //      regular roles dùng call_count >= 1 (history[] chắc chắn có nội dung vì call đã xảy ra).
+  const hasHistory = entry.is_dispatcher
+    ? entry.history.length > 0
+    : entry.call_count >= 1
 
   // FR-004: Dispatcher → render riêng với style Navy
   if (entry.is_dispatcher) {

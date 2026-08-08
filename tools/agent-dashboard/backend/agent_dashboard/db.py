@@ -1430,6 +1430,18 @@ async def get_pipeline_aggregate(
                 }
                 for ar in act_rows
             ]
+
+            # Bug 2: back-fill is_active into project_roster items.
+            # active_agents is built above; derive the set of currently-running roles
+            # (excluding dispatcher) and stamp each roster item explicitly.
+            active_roles: set[str] = {
+                a["role"]
+                for a in entry["active_agents"]
+                if not a["is_dispatcher"] and a["role"]
+            }
+            for item in entry["project_roster"]:
+                item["is_active"] = item["role"] in active_roles
+
         roster.append(entry)
 
 

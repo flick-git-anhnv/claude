@@ -16,7 +16,7 @@ import type {
   ActiveAgentEntry,
   ProjectRosterItem,
 } from '../../types'
-import { fmtTokensCompact, decodeProjectSlug, fmtNum } from '../../utils/format'
+import { fmtTokenDisplay, fmtModelShort, decodeProjectSlug, fmtNum } from '../../utils/format'
 
 const AGGREGATE_POLL_MS = 5_000   // 5s — realtime token updates
 
@@ -27,14 +27,6 @@ const WINDOW_OPTIONS: WindowOption[] = [
   { label: '30 ngày', value: 30 },
   { label: '90 ngày', value: 90 },
 ]
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function shortModel(m: string | null): string | null {
-  return m ? m.replace(/^claude-/, '') : null
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Skeleton
@@ -93,8 +85,9 @@ function EmptyStateCard() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DispatcherPipelineNode({ agent }: { agent: ActiveAgentEntry }) {
-  const model = shortModel(agent.model)
-  const tok = fmtNum(agent.tokens.input + agent.tokens.output)
+  const model = fmtModelShort(agent.model)
+  // Bug 3: fmtTokenDisplay — nhất quán với AgentRosterItem DispatcherNode
+  const tokLabel = fmtTokenDisplay(agent.tokens.input + agent.tokens.output)
 
   return (
     <div
@@ -127,7 +120,7 @@ function DispatcherPipelineNode({ agent }: { agent: ActiveAgentEntry }) {
       )}
 
       <div style={{ marginTop: 'auto' }}>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{tok} tokens</span>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{tokLabel}</span>
       </div>
     </div>
   )
@@ -146,8 +139,9 @@ function ActiveSubagentPipelineNode({
   agent: ActiveAgentEntry
   instanceCount?: number
 }) {
-  const model = shortModel(agent.model)
-  const tok = fmtNum(agent.tokens.input + agent.tokens.output)
+  const model = fmtModelShort(agent.model)
+  // Bug 3: nhất quán với ActiveSubagentNode trong AgentRosterItem
+  const tokLabel = fmtTokenDisplay(agent.tokens.input + agent.tokens.output)
 
   return (
     <div
@@ -216,7 +210,7 @@ function ActiveSubagentPipelineNode({
       )}
 
       <div style={{ marginTop: 'auto' }}>
-        <span style={{ fontSize: 10, color: '#6B7280' }}>{tok} tokens</span>
+        <span style={{ fontSize: 10, color: '#6B7280' }}>{tokLabel}</span>
       </div>
     </div>
   )
@@ -227,11 +221,12 @@ function ActiveSubagentPipelineNode({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DoneSubagentPipelineNode({ sub }: { sub: ProjectRosterItem }) {
-  const tok = fmtNum(sub.total_tokens.input + sub.total_tokens.output)
+  // Bug 3: fmtTokenDisplay — nhất quán với DoneSubagentNode, luôn hiện "— tokens" khi zero
+  const tokLabel = fmtTokenDisplay(sub.total_tokens.input + sub.total_tokens.output)
 
   return (
     <div
-      title={`${sub.call_count} việc · ${tok} tokens`}
+      title={`${sub.call_count} việc · ${tokLabel}`}
       style={{
         width: 196,
         height: 100,
@@ -270,7 +265,7 @@ function DoneSubagentPipelineNode({ sub }: { sub: ProjectRosterItem }) {
         </span>
       </div>
       <span style={{ fontSize: 9, color: '#9CA3AF' }}>{sub.call_count} việc</span>
-      <span style={{ fontSize: 9, color: '#9CA3AF' }}>{tok} tokens</span>
+      <span style={{ fontSize: 9, color: '#9CA3AF' }}>{tokLabel}</span>
     </div>
   )
 }
@@ -347,7 +342,9 @@ function ProjectPipelineRow({
         {roster.map((sub, idx) => {
           // All running instances of this role (can be > 1 in parallel workflows)
           const runningInstances = activeAgents.filter(a => !a.is_dispatcher && a.role === sub.role)
-          const isActive = runningInstances.length > 0
+          // Bug 2: dùng sub.is_active (field backend mới thêm) làm tín hiệu chính;
+          // fallback sang runningInstances.length > 0 cho backward-compat khi backend cũ.
+          const isActive = sub.is_active === true || runningInstances.length > 0
           // Use instance with highest token count for display info
           const primaryAgent = runningInstances.length > 0
             ? runningInstances.reduce((best, a) =>
@@ -480,7 +477,7 @@ function AggregateCard({
           <div>
             <span style={{ color: '#6B7280' }}>Mô hình: </span>
             <span style={{ fontWeight: 600, color: '#374151' }}>
-              {entry.latest_model ? shortModel(entry.latest_model) : '—'}
+              {fmtModelShort(entry.latest_model) ?? '—'}
             </span>
           </div>
         )}
