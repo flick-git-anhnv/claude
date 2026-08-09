@@ -1,7 +1,7 @@
 ---
 task: PLAN-agent-dashboard-autofailover-2026-08-09
 created: 2026-08-09
-updated: 2026-08-09 22:32
+updated: 2026-08-09 23:10
 status: planning
 workflow: WF-FEATURE
 priority: P1
@@ -50,7 +50,7 @@ Mở rộng Agent Dashboard v1 (đã có Account Manager Anthropic) để thêm 
 | 0.1 | Product Manager — PRD v2.3: scope cuối cùng chỉ Auto-Failover Anthropic, Q1–Q7 đã chốt, Gemini+OpenAI vào Backlog tương lai | product-manager | ✅ | `steps/STEP-0.1-pm-prd.md` | 2026-08-09 21:26 |
 | 0.2 | Business Analyst — User stories + AC chi tiết cho Auto-Failover Anthropic (FAIL-1..7) | business-analyst | ✅ | `steps/STEP-0.2-ba-user-stories.md` | 2026-08-09 22:15 |
 | 0.3 | UI/UX Designer — Wireframe/mockup: failover status indicator, failover chain config UI, wait-and-retry UI, failover log view | ui-ux-designer | ✅ | `steps/STEP-0.3-ux-design.md` | 2026-08-09 22:32 |
-| 0.4 | Engineering Manager — Estimate effort (ước tính ~1 sprint), phân bổ team, quyết định priority | engineering-manager | ⬜ | `steps/STEP-0.4-em-estimate.md` | - |
+| 0.4 | Engineering Manager — Estimate effort (ước tính ~1 sprint), phân bổ team, quyết định priority | engineering-manager | ✅ | `steps/STEP-0.4-em-resource.md` | 2026-08-09 23:10 |
 
 > **Lưu ý:** CTO review không bắt buộc — không đụng auth thật, không đa người dùng. Tech Lead review đủ (đụng credential swap tự động → security audit STRIDE bắt buộc tại bước TL review code).
 
@@ -98,7 +98,9 @@ Mở rộng Agent Dashboard v1 (đã có Account Manager Anthropic) để thêm 
 - [x] `docs/design/DESIGN-agent-dashboard-autofailover.md` — UI/UX Designer ✅
 - [x] `docs/design/DESIGN-agent-dashboard-autofailover.docx` — xuất KZTEK brand ✅
 - [ ] `docs/design/DESIGN-agent-dashboard-autofailover.pdf` — ⚠️ PDF thất bại (RPC Windows) — DOCX đủ dùng
-- [ ] `docs/planning/RESOURCE-agent-dashboard-autofailover.md` — Engineering Manager
+- [x] `docs/planning/RESOURCE-agent-dashboard-autofailover.md` — Engineering Manager ✅
+- [x] `docs/planning/RESOURCE-agent-dashboard-autofailover.docx` — xuất KZTEK brand ✅
+- [ ] `docs/planning/RESOURCE-agent-dashboard-autofailover.pdf` — ⚠️ PDF thất bại (RPC Windows) — DOCX đủ dùng
 - [ ] `docs/planning/SPRINT-agent-dashboard-autofailover.md` — Project Manager
 - [ ] `docs/tech-design/TDD-agent-dashboard-autofailover.md` — Tech Lead
 - [ ] `src/` — failover engine, failover chain config, failover log
@@ -119,7 +121,7 @@ Không có. Tất cả câu hỏi mở đã được chốt — BA có thể b�
 - **Mã hoá credential:** Giữ XOR obfuscation (đã chốt với user, không nâng AES-256).
 - **Storage:** Giữ SQLite (không còn vấn đề concurrent multi-user).
 - **Security audit STRIDE:** Bắt buộc tại bước TL review code (Phase 4.3) vì đụng credential swap tự động.
-- **CTO review:** Không còn bắt buộc — không đụng auth thật, không đa người dùng.
+- **CTO review: SKIP (⏭️ — xác nhận chính thức tại Bước 0.4):** Tính năng đụng credential Anthropic nhưng là MỞ RỘNG của Sprint 2 đã có (`activate_oauth_account`, `refresh_lock`, XOR obfuscation) — không phải cơ chế mới. Sprint 2 không cần CTO review riêng, Auto-Failover nhất quán giữ nguyên. Bù đắp: `security-audit-stride` BẮT BUỘC tại Bước 4.3 (TL review code) — gate cứng trước merge.
 - **Sprint 6 hiện tại KHÔNG bị ảnh hưởng:** Initiative này là branch/feature mới, không rollback Sprint 6.
 
 ## Lịch sử cập nhật
@@ -132,6 +134,7 @@ Không có. Tất cả câu hỏi mở đã được chốt — BA có thể b�
 | 2026-08-09 | Scope final v2.2 — Sau spike TL: OpenAI loại (user quyết định), Antigravity loại (DPAPI/SQLite), Gemini Advanced loại. Vault thu gọn: Gemini CLI piggyback OAuth. PRD đổi tên → `PRD-agent-dashboard-autofailover-gemini.md` | product-manager |
 | 2026-08-09 22:15 | Bước 0.2 ✅ — US + AC viết xong: 7 US, 27 scenarios, 21 BR, 11 EC, 4 câu hỏi TL. DOCX xuất thành công. | business-analyst |
 | 2026-08-09 22:32 | Bước 0.3 ✅ — Design spec 4 component UI: FailoverStatusBadge, FailoverChainConfig, FailoverLogTable, WaitRetryBanner. Mermaid 2 diagram. DOCX xuất thành công. | ui-ux-designer |
+| 2026-08-09 23:10 | Bước 0.4 ✅ — Engineering Manager: Priority P2 xác nhận, CTO Review SKIP (lý do: mở rộng Sprint 2, không cơ chế mới), security-audit-stride BẮT BUỘC tại 4.3, SD 7.5nd + JD 7.5nd, RESOURCE file + DOCX xuất thành công. | engineering-manager |
 | 2026-08-09 | **Scope FINAL v2.3** — Google chặn OAuth cá nhân cho Gemini CLI (lỗi: "This client is no longer supported..."). Gemini CLI Vault KHÔNG KHẢ THI. User quyết định: ưu tiên Anthropic failover trước. (1) Loại hoàn toàn Phase 3 (Gemini CLI Vault → SKIPPED); (2) Đổi tên PRD → `PRD-agent-dashboard-autofailover.md`; (3) Đổi tên folder plan → `PLAN-agent-dashboard-autofailover-2026-08-09`; (4) Q2 chốt: wait-and-retry; (5) Q3 chốt: 2 account. Không còn câu hỏi mở nào chặn BA. | product-manager |
 
 ---
