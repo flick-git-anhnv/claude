@@ -9,6 +9,9 @@ import { useEffect, useState } from 'react'
 import type { Account, UsageInfo } from '../../types'
 import UsageBar from '../common/UsageBar'
 import { getUsageErrorMsg } from '../../utils/format'
+import FailoverStatusBadge from './failover/FailoverStatusBadge'
+import type { FailoverBadgeState } from './failover/FailoverStatusBadge'
+import { useWsState } from '../../contexts/WsContext'
 
 interface AccountCardProps {
   account: Account
@@ -31,6 +34,23 @@ function fmtRemaining(sec: number): string {
 export default function AccountCard({ account, onActivate, onCopy, onDelete }: AccountCardProps) {
   const isOAuth = account.kind === 'oauth_session'
   const maskedDisplay = isOAuth ? account.oauth_masked : account.key_masked
+
+  // Sprint 7: lấy failover state để hiển thị badge
+  const { failoverActiveInfo, failoverExhaustedIds } = useWsState()
+
+  // Xác định failover badge state cho account này
+  const failoverBadge: FailoverBadgeState = (() => {
+    if (
+      failoverActiveInfo != null &&
+      failoverActiveInfo.toAccountId === account.id
+    ) {
+      return 'active'
+    }
+    if (failoverExhaustedIds[account.id]) {
+      return 'exhausted'
+    }
+    return 'none'
+  })()
 
   const [usage, setUsage] = useState<UsageInfo | null>(null)
   const [usageLoading, setUsageLoading] = useState(false)
@@ -93,6 +113,16 @@ export default function AccountCard({ account, onActivate, onCopy, onDelete }: A
           <span className="text-sm font-semibold text-kz-navy truncate">
             {account.name}
           </span>
+
+          {/* Sprint 7: Failover badge (FAILOVER ACTIVE / EXHAUSTED) */}
+          {failoverBadge !== 'none' && (
+            <FailoverStatusBadge
+              failoverBadge={failoverBadge}
+              reason={failoverActiveInfo?.reason}
+              swapLatencyMs={failoverActiveInfo?.latencyMs ?? null}
+              triggeredAt={failoverActiveInfo?.triggeredAt}
+            />
+          )}
         </div>
       </div>
 

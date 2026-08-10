@@ -1,7 +1,7 @@
 ---
 task: PLAN-agent-dashboard-autofailover-2026-08-09
 created: 2026-08-09
-updated: 2026-08-09 23:45
+updated: 2026-08-10 09:00
 status: planning
 workflow: WF-FEATURE
 priority: P1
@@ -74,7 +74,7 @@ Mở rộng Agent Dashboard v1 (đã có Account Manager Anthropic) để thêm 
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 4.1 | Senior Developer — Failover engine backend: giám sát 429/quota, hot-swap credentials < 100ms, failover chain config, wait-and-retry khi hết toàn bộ quota, failover log | senior-developer | ⬜ | `steps/STEP-4.1-sd-failover-engine.md` | - |
-| 4.2 | Junior Developer — Frontend: failover status realtime UI, failover chain config UI, failover log view, cảnh báo hết toàn bộ quota + countdown reset | junior-developer | ⬜ | `steps/STEP-4.2-jd-failover-frontend.md` | - |
+| 4.2 | Junior Developer — Frontend: failover status realtime UI, failover chain config UI, failover log view, cảnh báo hết toàn bộ quota + countdown reset | junior-developer | ✅ | `steps/STEP-4.2-jd-failover-frontend.md` | 2026-08-10 09:00 |
 | 4.3 | Tech Lead — Code review (security audit STRIDE bắt buộc vì đụng credential swap tự động) | tech-lead | ⬜ | `steps/STEP-4.3-tl-review.md` | - |
 | 4.4 | UX/UI Reviewer — Kiểm tra failover status UI: indicator rõ ràng, cảnh báo quota, config chain | ux-ui-reviewer | ⬜ | `steps/STEP-4.4-uxr.md` | - |
 | 4.5 | QA Engineer — Test failover: simulate 429, simulate quota 100%, verify auto-rotation, verify CLI không bị gián đoạn, verify wait-and-retry | qa-engineer | ⬜ | `steps/STEP-4.5-qa.md` | - |
@@ -130,6 +130,7 @@ Không có. Tất cả câu hỏi mở đã được chốt — BA có thể b�
 
 | Ngày | Cập nhật | Agent |
 |------|----------|-------|
+| 2026-08-10 09:00 | Bước 4.2 ✅ — Junior Developer: Frontend Auto-Failover UI hoàn thiện (S7-T21..T27). Tab bar 3 tab AccountManagerPage, FailoverChainConfig, FailoverLogTable, WaitRetryBanner, FailoverToastBridge, tích hợp FailoverStatusBadge vào AccountCard, mock interceptor failover, 48 tests pass, tsc sạch, build OK. | junior-developer |
 | 2026-08-09 | Plan tạo mới (tên folder `PLAN-agent-dashboard-multiuser-2026-08-09`) — khung MASTER, chờ user xác nhận | task-planner |
 | 2026-08-09 21:26 | Bước 0.1 ✅ — PRD v2.0 viết xong (scope sai — hiểu nhầm multi-user là nhiều người). PRD + .docx + .pdf | product-manager |
 | 2026-08-09 | Scope correction v2.1 — "Multi-User" = 1 máy, 1 người, nhiều account AI. Bỏ Auth/RBAC. Phase 2 skip. Q4 chốt: XOR | product-manager |
