@@ -1,7 +1,7 @@
 ---
 task: PLAN-agent-dashboard-autofailover-2026-08-09
 created: 2026-08-09
-updated: 2026-08-09 23:10
+updated: 2026-08-09 23:45
 status: planning
 workflow: WF-FEATURE
 priority: P1
@@ -59,7 +59,7 @@ Mở rộng Agent Dashboard v1 (đã có Account Manager Anthropic) để thêm 
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 1.1 | Project Manager — Lên sprint plan (~1 sprint), backlog ưu tiên, timeline | project-manager | ⬜ | `steps/STEP-1.1-pjm-sprint-plan.md` | - |
-| 1.2 | Tech Lead — Technical Design Doc: failover engine architecture, monitoring design, hot-swap mechanism, retry logic, DB schema mở rộng (failover log), API endpoints mới | tech-lead | ⬜ | `steps/STEP-1.2-tl-tdd.md` | - |
+| 1.2 | Tech Lead — Technical Design Doc: failover engine architecture, monitoring design, hot-swap mechanism, retry logic, DB schema mở rộng (failover log), API endpoints mới | tech-lead | ✅ | `steps/STEP-1.2-tl-tdd.md` | 2026-08-09 23:45 |
 
 ### Phase 2: Sprint A — Multi-User Auth & Phân quyền ⏭️ SKIPPED
 
@@ -102,7 +102,9 @@ Mở rộng Agent Dashboard v1 (đã có Account Manager Anthropic) để thêm 
 - [x] `docs/planning/RESOURCE-agent-dashboard-autofailover.docx` — xuất KZTEK brand ✅
 - [ ] `docs/planning/RESOURCE-agent-dashboard-autofailover.pdf` — ⚠️ PDF thất bại (RPC Windows) — DOCX đủ dùng
 - [ ] `docs/planning/SPRINT-agent-dashboard-autofailover.md` — Project Manager
-- [ ] `docs/tech-design/TDD-agent-dashboard-autofailover.md` — Tech Lead
+- [x] `docs/tech-design/TDD-agent-dashboard-autofailover.md` — Tech Lead ✅
+- [x] `docs/tech-design/TDD-agent-dashboard-autofailover.docx` — xuất KZTEK brand ✅
+- [ ] `docs/tech-design/TDD-agent-dashboard-autofailover.pdf` — ⚠️ PDF thất bại (RPC Windows) — DOCX đủ dùng
 - [ ] `src/` — failover engine, failover chain config, failover log
 - [ ] `tests/` — unit + integration tests cho Auto-Failover
 - [ ] `docs/ux-review/UX-REVIEW-agent-dashboard-autofailover.md` — UX/UI Reviewer
@@ -135,6 +137,7 @@ Không có. Tất cả câu hỏi mở đã được chốt — BA có thể b�
 | 2026-08-09 22:15 | Bước 0.2 ✅ — US + AC viết xong: 7 US, 27 scenarios, 21 BR, 11 EC, 4 câu hỏi TL. DOCX xuất thành công. | business-analyst |
 | 2026-08-09 22:32 | Bước 0.3 ✅ — Design spec 4 component UI: FailoverStatusBadge, FailoverChainConfig, FailoverLogTable, WaitRetryBanner. Mermaid 2 diagram. DOCX xuất thành công. | ui-ux-designer |
 | 2026-08-09 23:10 | Bước 0.4 ✅ — Engineering Manager: Priority P2 xác nhận, CTO Review SKIP (lý do: mở rộng Sprint 2, không cơ chế mới), security-audit-stride BẮT BUỘC tại 4.3, SD 7.5nd + JD 7.5nd, RESOURCE file + DOCX xuất thành công. | engineering-manager |
+| 2026-08-09 23:45 | Bước 1.2 ✅ — Tech Lead: TDD viết xong, 4 câu Q-TL trả lời dứt khoát (detection 15–90s không phải 5s, threshold API-wide distinct≥2/60s, schema 13-field failover_events, T_reset từ usage_service có sẵn). Task breakdown S7-T01..T09 (SD) + S7-T21..T27 (JD). 9 rủi ro kỹ thuật với mitigation. TDD + DOCX xuất thành công (PDF fail RPC như các file khác cùng plan). 2 câu chờ user confirm: AC 5s→90s + FAILOVER_THRESHOLD_PCT=98. | tech-lead |
 | 2026-08-09 | **Scope FINAL v2.3** — Google chặn OAuth cá nhân cho Gemini CLI (lỗi: "This client is no longer supported..."). Gemini CLI Vault KHÔNG KHẢ THI. User quyết định: ưu tiên Anthropic failover trước. (1) Loại hoàn toàn Phase 3 (Gemini CLI Vault → SKIPPED); (2) Đổi tên PRD → `PRD-agent-dashboard-autofailover.md`; (3) Đổi tên folder plan → `PLAN-agent-dashboard-autofailover-2026-08-09`; (4) Q2 chốt: wait-and-retry; (5) Q3 chốt: 2 account. Không còn câu hỏi mở nào chặn BA. | product-manager |
 
 ---

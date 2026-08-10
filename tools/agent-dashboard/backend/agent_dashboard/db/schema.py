@@ -364,6 +364,38 @@ async def _migrate_fix_subagent_project_attribution(conn: aiosqlite.Connection) 
         logger.warning("subagent project migration skipped: %s", exc)
 
 
+async def _migrate_failover_events_table(conn: aiosqlite.Connection) -> None:
+    """Idempotent: create failover_events table + indexes (Sprint 7).
+
+    Uses CREATE TABLE IF NOT EXISTS + CREATE INDEX IF NOT EXISTS — safe on
+    repeated startups. Also purges records older than 30 days (BR from US-003).
+    """
+    await conn.executescript("""
+      CREATE TABLE IF NOT EXISTS failover_events (
+        failover_id         TEXT PRIMARY KEY,
+        occurred_at         TEXT NOT NULL,
+        from_account_id     TEXT,
+        from_account_name   TEXT,
+        to_account_id       TEXT,
+        to_account_name     TEXT,
+        trigger_reason      TEXT NOT NULL,
+        result              TEXT NOT NULL,
+        swap_latency_ms     INTEGER,
+        next_retry_at       TEXT,
+        retry_attempt       INTEGER,
+        error_message       TEXT,
+        chain_snapshot_json TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_failover_events_occurred_at ON failover_events(occurred_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_failover_events_result      ON failover_events(result);
+    """)
+    await conn.execute(
+        "DELETE FROM failover_events WHERE occurred_at < datetime('now', '-30 days')"
+    )
+    await conn.commit()
+    logger.info("DB migration Sprint 7: failover_events ready (+ 30-day purge)")
+
+
 async def init(db_path: Path) -> aiosqlite.Connection:
     """Open DB, enable WAL, create tables, run migrations. Returns open connection."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -378,5 +410,6 @@ async def init(db_path: Path) -> aiosqlite.Connection:
     await _migrate_subagent_flag_column(conn)
     await _migrate_sprint4_columns(conn)
     await _migrate_result_columns(conn)
+    await _migrate_failover_events_table(conn)
     logger.info("DB initialised at %s", db_path)
     return conn

@@ -265,6 +265,18 @@ async def activate_account(request: Request, acc_id: str):
 
     active = store.get_active()
     _broadcast_account_change(request, active)
+
+    # Sprint 7: notify failover engine so it can cancel pending retry scheduler
+    engine = getattr(request.app.state, "failover_engine", None)
+    if engine is not None:
+        try:
+            await engine.on_manual_activation(acc_id)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                "activate_account: failover engine hook error: %s", exc
+            )
+
     return result
 
 

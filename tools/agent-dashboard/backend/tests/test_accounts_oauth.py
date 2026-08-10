@@ -105,7 +105,8 @@ def test_migration_adds_kind_api_key(v1_store_path):
 
 def test_migration_version_bumped(v1_store_path):
     store = AccountStore(v1_store_path)
-    assert store._data["version"] == 2
+    # v1 stores cascade through every migration to the current version (v3 — Sprint 7 added priority/include_in_chain).
+    assert store._data["version"] == 3
 
 
 def test_migration_creates_backup(v1_store_path):

@@ -67,6 +67,15 @@ from .aggregate import (
     get_token_summary,
 )
 
+# ── Failover events (Sprint 7) ────────────────────────────────────────────────
+from .failover import (
+    insert_failover_event,
+    list_failover_events,
+    count_24h,
+    purge_old,
+    serialize_chain_snapshot,
+)
+
 __all__ = [
     # schema
     "init",
@@ -83,4 +92,7 @@ __all__ = [
     "get_session_chain",
     # aggregate
     "get_pipeline_aggregate", "get_token_summary",
+    # failover (Sprint 7)
+    "insert_failover_event", "list_failover_events",
+    "count_24h", "purge_old", "serialize_chain_snapshot",
 ]

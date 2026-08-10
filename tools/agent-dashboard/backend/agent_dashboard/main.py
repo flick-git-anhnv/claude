@@ -22,6 +22,7 @@ from .routes import sessions as sessions_router
 from .routes import tokens as tokens_router
 from .routes import accounts as accounts_router
 from .routes import pipeline as pipeline_router
+from .routes import failover as failover_router
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,17 @@ async def lifespan(app: FastAPI):
     app.state.ws_manager = _ws_manager
     app.state.credentials_path = config.CLAUDE_CREDENTIALS_FILE
     app.state.oauth_refresh_lock = _oauth_refresh_lock
+
+    # 3b. Failover engine (Sprint 7)
+    from .failover import FailoverEngine
+    failover_engine = FailoverEngine(
+        account_store=store,
+        credentials_path=config.CLAUDE_CREDENTIALS_FILE,
+        refresh_lock=_oauth_refresh_lock,
+        db_conn=conn,
+        ws_manager=_ws_manager,
+    )
+    app.state.failover_engine = failover_engine
 
     # 4. Restore file cursors + seed state machine from DB
     cursors = await db_module.load_cursors(conn)
@@ -97,6 +109,9 @@ async def lifespan(app: FastAPI):
         _credentials_sync_scheduler(store), name="credentials_sync"
     )
 
+    # 7b. Start failover engine background tasks (Sprint 7)
+    await failover_engine.start()
+
     # Log emergency backup warning if present from previous crash
     from .oauth_service import check_emergency_backup
     emerg = check_emergency_backup(config.CLAUDE_CREDENTIALS_FILE)
@@ -117,6 +132,7 @@ async def lifespan(app: FastAPI):
     ticker_task.cancel()
     oauth_task.cancel()
     sync_task.cancel()
+    await failover_engine.stop()  # Sprint 7: graceful shutdown
     _watcher.stop()
     await conn.close()
     logger.info("Agent Dashboard stopped")
@@ -442,6 +458,7 @@ def create_app() -> FastAPI:
     app.include_router(tokens_router.router)
     app.include_router(accounts_router.router)
     app.include_router(pipeline_router.router)
+    app.include_router(failover_router.router)  # Sprint 7
 
     # Health endpoint
     @app.get("/api/health")

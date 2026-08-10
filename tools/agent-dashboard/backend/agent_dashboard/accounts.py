@@ -146,10 +146,42 @@ class AccountStore:
             # Migration v1 → v2
             if data.get("version", 1) == 1:
                 data = self._migrate_v1_to_v2(data)
+            # Migration v2 → v3 (Sprint 7: priority + include_in_chain)
+            if data.get("version", 2) == 2:
+                data = self._migrate_v2_to_v3(data)
             self._data = data
         except Exception as exc:
             logger.warning("Could not load accounts.enc (%s), starting fresh", exc)
-            self._data = {"version": 2, "active_id": None, "accounts": []}
+            self._data = {"version": 3, "active_id": None, "accounts": []}
+
+    def _migrate_v2_to_v3(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Add priority + include_in_chain to all accounts; bump version to 3.
+
+        Idempotent: safe to call multiple times — only sets fields that are missing.
+        priority default = position in list (1-based, so first account = highest priority).
+        include_in_chain default = True.
+        """
+        accounts = data.get("accounts", [])
+        for i, acc in enumerate(accounts):
+            if "priority" not in acc:
+                acc["priority"] = i + 1
+            if "include_in_chain" not in acc:
+                acc["include_in_chain"] = True
+
+        data["version"] = 3
+
+        try:
+            plaintext = json.dumps(data, ensure_ascii=False)
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            self._path.write_text(_encrypt(plaintext), encoding="ascii")
+            logger.info(
+                "Migration v2→v3: %d accounts upgraded (priority + include_in_chain)",
+                len(accounts),
+            )
+        except Exception as save_err:
+            logger.warning("Migration v2→v3: save failed (%s)", save_err)
+
+        return data
 
     def _migrate_v1_to_v2(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Add kind='api_key' discriminator to all v1 records; bump version to 2.
@@ -259,6 +291,9 @@ class AccountStore:
 
         Raises ValueError("ACCOUNT_NAME_DUPLICATE") if name already exists
         (case-insensitive).
+
+        Sprint 7: new accounts automatically get priority = len(accounts) + 1
+        (lowest priority — appended to chain tail) and include_in_chain = True.
         """
         if self._name_exists(name):
             raise ValueError("ACCOUNT_NAME_DUPLICATE")
@@ -267,6 +302,7 @@ class AccountStore:
             raise ValueError(f"OAUTH_SNAPSHOT_INVALID: missing fields {missing}")
 
         acc_id = f"acc-{uuid.uuid4().hex[:8]}"
+        default_priority = len(self._data["accounts"]) + 1
         self._data["accounts"].append(
             {
                 "id": acc_id,
@@ -277,6 +313,9 @@ class AccountStore:
                 "needs_relogin": False,
                 "last_refreshed_at": datetime.now(timezone.utc).isoformat(),
                 "created_at": datetime.now(timezone.utc).isoformat(),
+                # Sprint 7: failover chain fields
+                "priority": default_priority,
+                "include_in_chain": True,
             }
         )
         self._save()
@@ -322,6 +361,66 @@ class AccountStore:
                 self._save()
                 return True
         return False
+
+    # ── Sprint 7: Failover chain management ──────────────────────────────────
+
+    def set_priority(self, acc_id: str, priority: int) -> bool:
+        """Set failover priority for an account.  Lower number = higher priority.
+
+        Returns True on success, False if account not found.
+        Raises ValueError if priority < 1.
+        """
+        if priority < 1:
+            raise ValueError("Priority must be >= 1")
+        for a in self._data["accounts"]:
+            if a["id"] == acc_id:
+                a["priority"] = priority
+                self._save()
+                return True
+        return False
+
+    def set_include_in_chain(self, acc_id: str, include: bool) -> bool:
+        """Toggle whether an account participates in the failover chain.
+
+        Returns True on success, False if account not found.
+        Raises ValueError("CHAIN_MUST_HAVE_ONE_INCLUDED") if this would leave
+        zero included OAuth accounts in the chain.
+        """
+        for a in self._data["accounts"]:
+            if a["id"] == acc_id:
+                if not include:
+                    # Guard: at least 1 included must remain
+                    included_count = sum(
+                        1 for x in self._data["accounts"]
+                        if x.get("kind") == "oauth_session"
+                        and x.get("include_in_chain", True)
+                        and x["id"] != acc_id
+                    )
+                    if included_count == 0:
+                        raise ValueError("CHAIN_MUST_HAVE_ONE_INCLUDED")
+                a["include_in_chain"] = include
+                self._save()
+                return True
+        return False
+
+    def get_failover_chain(self) -> List[Dict[str, Any]]:
+        """Return OAuth accounts eligible for failover, sorted by priority (ascending).
+
+        Filters:
+          - kind == "oauth_session"
+          - include_in_chain == True
+          - needs_relogin == False
+
+        Returns list of raw account dicts (mutable — callers should not mutate).
+        """
+        chain = [
+            a for a in self._data["accounts"]
+            if a.get("kind") == "oauth_session"
+            and a.get("include_in_chain", True)
+            and not a.get("needs_relogin", False)
+        ]
+        chain.sort(key=lambda a: a.get("priority", 999))
+        return chain
 
     def delete_account(self, acc_id: str) -> None:
         """Raises ValueError if account is currently active."""
