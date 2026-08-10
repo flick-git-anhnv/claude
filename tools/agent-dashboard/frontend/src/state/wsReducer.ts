@@ -1,4 +1,17 @@
-import type { WsAppState, WsAction, Session, DeltaEvent } from '../types'
+import type { WsAppState, WsAction, Session, DeltaEvent, FailoverActiveInfo, FailoverTriggerReason } from '../types'
+
+/** Chuyển FailoverTriggerReason thành chuỗi hiển thị tiếng Việt ngắn gọn */
+function humanReadableReason(reason: FailoverTriggerReason): string {
+  switch (reason) {
+    case 'http_429':          return '429 detected'
+    case 'quota_5h_full':     return 'Quota 5h full'
+    case 'quota_7d_full':     return 'Quota 7d full'
+    case 'jsonl_rate_limit':  return 'Rate limit (JSONL)'
+    case 'api_wide_suspected':return 'API-wide issue'
+    case 'manual_override':   return 'Manual activation'
+    default:                  return reason
+  }
+}
 
 export const initialWsState: WsAppState = {
   wsStatus: 'connecting',
@@ -6,6 +19,20 @@ export const initialWsState: WsAppState = {
   activeAccount: null,
   watcherAlive: true,
   chainUpdateTriggers: {},
+  // Sprint 7: Failover initial state
+  failoverState: 'idle',
+  failoverNextRetryAt: null,
+  failoverRetryAccount: null,
+  failoverRetryAttempt: 0,
+  failoverMaxRetries: 3,
+  failoverCount24h: 0,
+  failoverActiveInfo: null,
+  failoverExhaustedIds: {},
+  failoverPendingFromId: null,
+  failoverPendingReason: null,
+  failoverToastNonce: 0,
+  failoverToastMessage: '',
+  failoverToastType: 'failover',
 }
 
 /**
@@ -161,6 +188,117 @@ export function wsReducer(state: WsAppState, action: WsAction): WsAppState {
           },
         }
       }
+
+      // ── Sprint 7: Auto-Failover WS events ─────────────────────────────────
+      // Pattern: KHÔNG tạo object mới khi giá trị không đổi (anti-flicker).
+      // Failover events không đụng sessions[] → không gọi applyDelta cho chúng.
+
+      if (delta.event === 'failover_started') {
+        // Lưu from.id + reason tạm để dùng khi failover_completed đến
+        const fromId = delta.from?.id ?? null
+        const reason = humanReadableReason(delta.reason)
+        if (state.failoverState === 'swapping' &&
+            state.failoverPendingFromId === fromId) return state  // dedupe
+        return {
+          ...state,
+          failoverState: 'swapping',
+          failoverPendingFromId: fromId,
+          failoverPendingReason: reason,
+        }
+      }
+
+      if (delta.event === 'failover_completed') {
+        // Xác nhận swap thành công — cập nhật exhausted + activeInfo + toast
+        const newExhaustedIds: Record<string, boolean> = state.failoverPendingFromId
+          ? { ...state.failoverExhaustedIds, [state.failoverPendingFromId]: true }
+          : state.failoverExhaustedIds
+        const activeInfo: FailoverActiveInfo = {
+          toAccountId: delta.to.id,
+          toAccountName: delta.to.name,
+          reason: state.failoverPendingReason ?? 'Failover',
+          latencyMs: delta.swap_latency_ms,
+          triggeredAt: Date.now(),
+        }
+        const toastMsg = `↺ Đã tự động chuyển sang ${delta.to.name} — ${state.failoverPendingReason ?? 'Failover'}`
+        return {
+          ...state,
+          failoverState: 'monitoring',
+          failoverActiveInfo: activeInfo,
+          failoverExhaustedIds: newExhaustedIds,
+          failoverCount24h: state.failoverCount24h + 1,
+          failoverPendingFromId: null,
+          failoverPendingReason: null,
+          failoverToastNonce: state.failoverToastNonce + 1,
+          failoverToastMessage: toastMsg,
+          failoverToastType: 'failover',
+        }
+      }
+
+      if (delta.event === 'failover_failed') {
+        const toastMsg = `! Failover thất bại — ${delta.reason}`
+        return {
+          ...state,
+          failoverState: 'monitoring',
+          failoverPendingFromId: null,
+          failoverPendingReason: null,
+          failoverToastNonce: state.failoverToastNonce + 1,
+          failoverToastMessage: toastMsg,
+          failoverToastType: 'failover-error',
+        }
+      }
+
+      if (delta.event === 'all_accounts_exhausted') {
+        const toastMsg = '! Tất cả account đã hết quota — Hệ thống đang chờ reset'
+        return {
+          ...state,
+          failoverState: 'waiting',
+          failoverNextRetryAt: delta.next_retry_at,
+          failoverRetryAccount: delta.retry_account,
+          failoverRetryAttempt: delta.retry_attempt,
+          failoverMaxRetries: delta.max_retries,
+          failoverToastNonce: state.failoverToastNonce + 1,
+          failoverToastMessage: toastMsg,
+          failoverToastType: 'failover-error',
+        }
+      }
+
+      if (delta.event === 'wait_retry_tick') {
+        // FE tự tính countdown từ next_retry_at — không cần xử lý tick
+        return state
+      }
+
+      if (delta.event === 'retry_success') {
+        const toastMsg = `↺ Đã retry thành công với ${delta.account.name}`
+        return {
+          ...state,
+          failoverState: 'idle',
+          failoverNextRetryAt: null,
+          failoverRetryAccount: null,
+          failoverRetryAttempt: 0,
+          failoverToastNonce: state.failoverToastNonce + 1,
+          failoverToastMessage: toastMsg,
+          failoverToastType: 'failover',
+        }
+      }
+
+      if (delta.event === 'retry_cancelled_by_manual') {
+        return {
+          ...state,
+          failoverState: 'idle',
+          failoverNextRetryAt: null,
+          failoverRetryAccount: null,
+          failoverRetryAttempt: 0,
+        }
+      }
+
+      if (delta.event === 'failover_paused') {
+        return {
+          ...state,
+          failoverState: 'paused',
+        }
+      }
+      // ── End Sprint 7 failover events ─────────────────────────────────────
+
       const nextSessions = applyDelta(state.sessions, delta)
       // Fix vấn đề 4: nếu applyDelta trả CÙNG identity mảng sessions →
       // state không đổi, giữ nguyên reference để tất cả consumers không re-render.

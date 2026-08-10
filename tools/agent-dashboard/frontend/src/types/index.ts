@@ -253,7 +253,16 @@ export type DeltaEvent =
   | { event: 'subagent_changed'; session_id: string; subagent: CurrentSubagent }   // Track B
   | { event: 'session_title_changed'; session_id: string; title: string; source: 'ai_title' | 'user_text' }  // Sprint 3
   | { event: 'session_context_updated'; session_id: string; context_pct: number; last_input_total: number; max_context: number }  // Sprint 3
-  | { event: 'chain_updated'; session_id: string; child_session_id: string; reason: string };  // Sprint 5 BUG-004
+  | { event: 'chain_updated'; session_id: string; child_session_id: string; reason: string }   // Sprint 5 BUG-004
+  // Sprint 7: Auto-Failover events
+  | { event: 'failover_started'; from: { id: string; name: string } | null; to: { id: string; name: string }; reason: FailoverTriggerReason; at: string }
+  | { event: 'failover_completed'; failover_id: string; to: { id: string; name: string }; swap_latency_ms: number }
+  | { event: 'failover_failed'; failover_id: string; reason: string }
+  | { event: 'all_accounts_exhausted'; next_retry_at: string; retry_account: { id: string; name: string }; retry_attempt: number; max_retries: number }
+  | { event: 'wait_retry_tick'; seconds_left: number }   // optional server tick — FE self-calculates from next_retry_at
+  | { event: 'retry_success'; account: { id: string; name: string } }
+  | { event: 'retry_cancelled_by_manual'; activated: { id: string; name: string } }
+  | { event: 'failover_paused'; reason: string; backoff_until: string };
 
 export interface WsMessage {
   type: 'snapshot' | 'delta' | 'pong';
@@ -270,6 +279,24 @@ export interface WsAppState {
   watcherAlive: boolean;
   /** Sprint 5 BUG-004: counter tăng khi parent session nhận chain_updated WS event — PipelineCard dùng làm dep để refetch */
   chainUpdateTriggers: Record<string, number>;
+  // Sprint 7: Auto-Failover engine state
+  failoverState: FailoverEngineState;
+  failoverNextRetryAt: string | null;
+  failoverRetryAccount: { id: string; name: string } | null;
+  failoverRetryAttempt: number;
+  failoverMaxRetries: number;
+  failoverCount24h: number;
+  /** Badge "FAILOVER ACTIVE" tạm thời trên AccountCard — null sau 30s tự ẩn */
+  failoverActiveInfo: FailoverActiveInfo | null;
+  /** Accounts đã bị swap ra — hiển thị badge EXHAUSTED (cho đến khi user reset) */
+  failoverExhaustedIds: Record<string, boolean>;
+  /** Temp: lưu from.id và reason từ failover_started để dùng khi failover_completed đến */
+  failoverPendingFromId: string | null;
+  failoverPendingReason: string | null;
+  /** Nonce tăng khi có toast mới cần hiển thị — FailoverToastBridge watch dep này */
+  failoverToastNonce: number;
+  failoverToastMessage: string;
+  failoverToastType: 'failover' | 'failover-error';
 }
 
 export type WsAction =
@@ -279,6 +306,81 @@ export type WsAction =
   | { type: 'WS_RECONNECTING' }
   | { type: 'SNAPSHOT'; payload: WsSnapshot }
   | { type: 'DELTA'; payload: DeltaEvent };
+
+// ─── Sprint 7: Failover types ────────────────────────────────────────────────
+
+export type FailoverEngineState = 'idle' | 'monitoring' | 'swapping' | 'waiting' | 'retrying' | 'paused'
+
+export type FailoverTriggerReason =
+  | 'http_429'
+  | 'quota_5h_full'
+  | 'quota_7d_full'
+  | 'jsonl_rate_limit'
+  | 'api_wide_suspected'
+  | 'manual_override'
+
+export type FailoverResult =
+  | 'success'
+  | 'swap_failed'
+  | 'wait_and_retry_scheduled'
+  | 'wait_and_retry_success'
+  | 'wait_and_retry_failed'
+  | 'api_wide_suspected'
+  | 'retry_cancelled_by_manual'
+
+export interface FailoverChainItem {
+  acc_id: string
+  name: string
+  priority: number
+  include_in_chain: boolean
+  status: 'active' | 'standby' | 'exhausted' | 'needs_relogin'
+  five_hour_pct: number | null
+  seven_day_pct: number | null
+  resets_at: number | null
+}
+
+export interface FailoverEvent {
+  failover_id: string
+  occurred_at: string           // ISO 8601
+  from_account_id: string | null
+  from_account_name: string | null
+  to_account_id: string | null
+  to_account_name: string | null
+  trigger_reason: FailoverTriggerReason
+  result: FailoverResult
+  swap_latency_ms: number | null
+  next_retry_at: string | null
+  retry_attempt: number | null
+  error_message: string | null
+}
+
+export interface FailoverLogResponse {
+  items: FailoverEvent[]
+  total: number
+  count_24h: number
+}
+
+export interface FailoverStatus {
+  state: FailoverEngineState
+  active_account: { id: string; name: string } | null
+  next_retry_at: string | null
+  retry_account: { id: string; name: string } | null
+  retry_attempt: number
+  max_retries: number
+  count_24h: number
+  api_wide_backoff_until: string | null
+}
+
+/** Thông tin badge "FAILOVER ACTIVE" tạm thời — tự ẩn sau 30s */
+export interface FailoverActiveInfo {
+  toAccountId: string
+  toAccountName: string
+  /** Human-readable trigger reason: "429 detected" | "Quota 5h full" | ... */
+  reason: string
+  latencyMs: number | null
+  /** Date.now() ms timestamp khi swap hoàn tất — dùng tính 30s auto-hide */
+  triggeredAt: number
+}
 
 // ─── API error ────────────────────────────────────────────────────────────────
 

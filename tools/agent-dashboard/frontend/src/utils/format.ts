@@ -169,6 +169,19 @@ export function decodeProjectSlug(slug: string): string {
   return slug
 }
 
+/**
+ * Sprint 7: Format total seconds → "HH:MM:SS" countdown string.
+ * Dùng cho WaitRetryBanner countdown.
+ * Ví dụ: 7473 → "02:04:33"
+ */
+export function fmtCountdown(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds))
+  const hh = Math.floor(s / 3600)
+  const mm = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  return [hh, mm, ss].map(v => String(v).padStart(2, '0')).join(':')
+}
+
 /** Return friendly error message for Anthropic API usage error */
 export function getUsageErrorMsg(error: string | null | undefined): string {
   if (!error) return ''
