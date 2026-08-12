@@ -7,7 +7,7 @@
  *   - "+00:00" timezone suffix (can fail in older V8 builds)
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { normalizeIso, fmtRelative, fmtDateShort } from './format'
+import { normalizeIso, fmtRelative, fmtDateShort, decodeProjectSlug, getUsageErrorMsg } from './format'
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
@@ -149,5 +149,27 @@ describe('fmtDateShort', () => {
   it('returns raw-slice fallback for completely unparseable input', () => {
     const result = fmtDateShort('not-a-date')
     expect(result).not.toContain('NaN')
+  })
+})
+
+describe('decodeProjectSlug', () => {
+  it('decodes windows path from project slug correctly', () => {
+    expect(decodeProjectSlug('c--Users--nguye--Desktop')).toBe('C:\\Users\\nguye\\Desktop')
+    expect(decodeProjectSlug('d--MyProject--Sub')).toBe('D:\\MyProject\\Sub')
+  })
+
+  it('keeps other slugs unchanged', () => {
+    expect(decodeProjectSlug('my-project-slug')).toBe('my-project-slug')
+  })
+})
+
+describe('getUsageErrorMsg', () => {
+  it('translates quota error codes to friendly Vietnamese messages', () => {
+    expect(getUsageErrorMsg('http_429')).toContain('Rate Limit 429')
+    expect(getUsageErrorMsg('unauthorized')).toContain('hết hạn')
+    expect(getUsageErrorMsg('timeout')).toContain('quá thời gian')
+    expect(getUsageErrorMsg('network')).toContain('kết nối mạng')
+    expect(getUsageErrorMsg('some_unknown_error')).toContain('Lỗi lấy quota')
+    expect(getUsageErrorMsg(null)).toBe('')
   })
 })

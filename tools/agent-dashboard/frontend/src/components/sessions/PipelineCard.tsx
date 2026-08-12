@@ -10,7 +10,8 @@
 import { useEffect, useState } from 'react'
 import type { RosterResponse, RosterEntry, RosterHistoryEntry } from '../../types'
 import AgentRosterItem from './AgentRosterItem'
-import { fmtTokensCompact, fmtDateTime } from '../../utils/format'
+import { fmtTokensCompact, fmtDateTime, fmtTokenDisplay, fmtModelShort } from '../../utils/format'
+import { useWsState } from '../../contexts/WsContext'
 
 interface PipelineCardProps {
   sessionId: string
@@ -101,9 +102,12 @@ function HistoryPanel({
       {/* Danh sách history entries — mới nhất lên trên (sort giảm dần theo call_index) */}
       <div className="flex flex-col" style={{ gap: 6 }}>
         {[...entry.history].sort((a, b) => b.call_index - a.call_index).map((h: RosterHistoryEntry) => {
-          const tokenLabel = h.tokens
-            ? fmtTokensCompact(h.tokens.input + h.tokens.output)
-            : null
+          // Bug 1+3: dùng fmtTokenDisplay → luôn hiện "— tokens" khi null/0
+          const tokenSum = h.tokens ? h.tokens.input + h.tokens.output : null
+          const tokenLabel = fmtTokenDisplay(tokenSum)
+          // Bug 1: model null cho regular agent → hiện "(—)"; Dispatcher tool events → ẩn model
+          const modelLabel = fmtModelShort(h.model)
+          const showModelPlaceholder = !modelLabel && !entry.is_dispatcher
           const isExpanded = expandedResult === h.call_index
 
           return (
@@ -131,16 +135,18 @@ function HistoryPanel({
                 >
                   #{h.call_index}
                 </span>
-                {h.model && (
+                {modelLabel ? (
                   <span style={{ fontSize: 10, color: '#4A3F8C', fontWeight: 600 }}>
-                    {h.model.replace(/^claude-/, '')}
+                    {modelLabel}
                   </span>
-                )}
-                {tokenLabel && (
-                  <span style={{ fontSize: 10, color: '#6B7280' }}>
-                    {tokenLabel} tokens
+                ) : showModelPlaceholder ? (
+                  <span style={{ fontSize: 10, color: '#B8B3D6', fontStyle: 'italic' }}>
+                    —
                   </span>
-                )}
+                ) : null}
+                <span style={{ fontSize: 10, color: tokenSum ? '#6B7280' : '#B8B3D6' }}>
+                  {tokenLabel}
+                </span>
                 {h.started_at && (
                   <span style={{ fontSize: 10, color: '#9CA3AF' }}>
                     {fmtDateTime(h.started_at)}
@@ -227,7 +233,11 @@ export default function PipelineCard({
   const [fetchState, setFetchState] = useState<FetchState>('loading')
   const [selectedHistory, setSelectedHistory] = useState<RosterEntry | null>(null)
 
-  // Fetch chain khi mount hoặc khi lastSubagentAt thay đổi
+  // Sprint 5 BUG-004: subscribe chain_updated WS event — counter tăng → trigger refetch
+  const { chainUpdateTriggers } = useWsState()
+  const chainUpdateCount = chainUpdateTriggers[sessionId] ?? 0
+
+  // Fetch chain khi mount, khi lastSubagentAt thay đổi, hoặc khi chain_updated nhận được
   useEffect(() => {
     let cancelled = false
     setFetchState('loading')
@@ -255,7 +265,7 @@ export default function PipelineCard({
     return () => {
       cancelled = true
     }
-  }, [sessionId, lastSubagentAt])
+  }, [sessionId, lastSubagentAt, chainUpdateCount])
 
   // Fail silently: empty / error → không render gì
   if (fetchState === 'empty' || fetchState === 'error') return null

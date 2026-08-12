@@ -105,7 +105,8 @@ def test_migration_adds_kind_api_key(v1_store_path):
 
 def test_migration_version_bumped(v1_store_path):
     store = AccountStore(v1_store_path)
-    assert store._data["version"] == 2
+    # v1 stores cascade through every migration to the current version (v3 — Sprint 7 added priority/include_in_chain).
+    assert store._data["version"] == 3
 
 
 def test_migration_creates_backup(v1_store_path):
@@ -530,3 +531,121 @@ def test_activate_and_scheduler_serialized_by_lock(tmp_path):
 
     # 3. AccountStore reflects A as active
     assert store._data["active_id"] == acc_a
+
+
+def test_sync_credentials_with_store(store, tmp_path):
+    from agent_dashboard.oauth_service import sync_credentials_with_store, write_credentials
+    import asyncio
+
+    creds_path = tmp_path / ".credentials.json"
+    lock = asyncio.Lock()
+
+    # Setup stored accounts
+    oauth_a = {
+        "accessToken": "sk-ant-TOKEN-A",
+        "refreshToken": "sk-ant-REFRESH-A",
+        "expiresAt": 9999999999000,
+        "refreshTokenExpiresAt": 9999999999000,
+    }
+    oauth_b = {
+        "accessToken": "sk-ant-TOKEN-B",
+        "refreshToken": "sk-ant-REFRESH-B",
+        "expiresAt": 9999999999000,
+        "refreshTokenExpiresAt": 9999999999000,
+    }
+
+    acc_a = store.add_oauth_account("Account A", oauth_a, "org-a")
+    acc_b = store.add_oauth_account("Account B", oauth_b, "org-b")
+    store.activate(acc_a)
+
+    async def run_tests():
+        # Scenario 1: File doesn't exist -> active account Acc A marked as needing relogin
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        assert store.get_account(acc_a)["needs_relogin"] is True
+
+        # Scenario 2: User logs in with new tokens for Acc A -> needs_relogin cleared, tokens updated
+        new_oauth_a = dict(oauth_a)
+        new_oauth_a["accessToken"] = "sk-ant-TOKEN-A-NEW"
+        write_credentials(creds_path, {"claudeAiOauth": new_oauth_a, "organizationUuid": "org-a"})
+
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        assert store.get_account(acc_a)["needs_relogin"] is False
+        assert store.get_account(acc_a)["oauth"]["accessToken"] == "sk-ant-TOKEN-A-NEW"
+        assert store._data["active_id"] == acc_a
+
+        # Scenario 3: Swapping tokens on disk to match Acc B -> active pointer switches to Acc B
+        write_credentials(creds_path, {"claudeAiOauth": oauth_b, "organizationUuid": "org-b"})
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        assert store._data["active_id"] == acc_b
+
+        # Scenario 4: Writing a completely brand new token when Acc B is active (needs_relogin is False)
+        # -> should auto-create a new account instead of overwriting Acc B
+        new_oauth_c = {
+            "accessToken": "sk-ant-TOKEN-C",
+            "refreshToken": "sk-ant-REFRESH-C",
+            "expiresAt": 9999999999000,
+            "refreshTokenExpiresAt": 9999999999000,
+        }
+        write_credentials(creds_path, {"claudeAiOauth": new_oauth_c, "organizationUuid": "org-c"})
+        changed = await sync_credentials_with_store(store, creds_path, lock)
+        assert changed is True
+        
+        # The active account is now the new auto-created account
+        new_active_id = store._data["active_id"]
+        assert new_active_id != acc_b
+        assert store.get_account(new_active_id)["name"] == "OAuth (Imported)"
+        assert store.get_account(new_active_id)["oauth"]["accessToken"] == "sk-ant-TOKEN-C"
+        # Acc B's token remains unchanged
+        assert store.get_account(acc_b)["oauth"]["accessToken"] == "sk-ant-TOKEN-B"
+
+    asyncio.get_event_loop().run_until_complete(run_tests())
+
+
+# ── BUG-002: Duplicate account name validation ────────────────────────────────
+
+def test_add_account_duplicate_name_raises(store):
+    """add_account must reject a name that already exists (api_key accounts)."""
+    store.add_account("My Account", "sk-ant-first-0001")
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_account("My Account", "sk-ant-second-0002")
+
+
+def test_add_account_duplicate_name_case_insensitive(store):
+    """Name uniqueness check is case-insensitive."""
+    store.add_account("kztek dev", "sk-ant-lower-0001")
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_account("KZTEK DEV", "sk-ant-upper-0002")
+
+
+def test_add_oauth_account_duplicate_name_raises(store):
+    """add_oauth_account must reject a name that already exists (oauth_session accounts)."""
+    store.add_oauth_account("OAuth Work", _make_oauth_block(), None)
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_oauth_account("OAuth Work", _make_oauth_block(), None)
+
+
+def test_add_account_duplicate_name_cross_kind(store):
+    """Name collision is detected across different account kinds."""
+    store.add_account("Shared Name", "sk-ant-api-0001")
+    with pytest.raises(ValueError, match="ACCOUNT_NAME_DUPLICATE"):
+        store.add_oauth_account("Shared Name", _make_oauth_block(), None)
+
+
+def test_add_account_unique_names_succeed(store):
+    """Two accounts with different names must both be created without error."""
+    id1 = store.add_account("Account Alpha", "sk-ant-alpha-0001")
+    id2 = store.add_account("Account Beta", "sk-ant-beta-0002")
+    assert id1 != id2
+    assert len(store.list_accounts()) == 2
+
+
+def test_add_account_duplicate_does_not_persist(store):
+    """A rejected duplicate-name call must not leave any partial record in the store."""
+    store.add_account("Clean State", "sk-ant-first-0001")
+    with pytest.raises(ValueError):
+        store.add_account("Clean State", "sk-ant-second-0002")
+    assert len(store.list_accounts()) == 1
+

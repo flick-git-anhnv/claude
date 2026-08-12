@@ -11,7 +11,12 @@ function buildSnapshot(): WsSnapshot {
   return {
     sessions: MOCK_SESSIONS.filter(s => s.state !== 'Ended'),
     active_account: activeAccount
-      ? { id: activeAccount.id, name: activeAccount.name, key_masked: activeAccount.key_masked }
+      ? {
+          id: activeAccount.id,
+          name: activeAccount.name,
+          kind: activeAccount.kind ?? 'api_key',
+          key_masked: activeAccount.key_masked,
+        }
       : null,
     watcher_alive: true,
   }

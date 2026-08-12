@@ -116,3 +116,78 @@ export function fmtTokensCompact(n: number): string | null {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
   return n.toString()
 }
+
+/**
+ * Shared token display label — Bug 3: thống nhất hiển thị tokens ở cả 3 tab.
+ * null / undefined / 0 → "— tokens"  (dash, never empty)
+ * n > 0                → "1.5K tokens" / "1.2M tokens"
+ *
+ * Dùng thay cho ad-hoc `tokensLabel ? ... : ''` rải rác trong code.
+ */
+export function fmtTokenDisplay(n: number | null | undefined): string {
+  if (n == null || n <= 0) return '— tokens'
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M tokens`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K tokens`
+  return `${n} tokens`
+}
+
+/**
+ * Rút gọn model slug thành tên ngắn hiển thị.
+ * "claude-sonnet-4-6" → "sonnet-4-6"
+ * null                → null
+ *
+ * Shared helper — Bug 3: dùng chung 1 chỗ, không tái khai báo trong mỗi component.
+ */
+export function fmtModelShort(model: string | null | undefined): string | null {
+  if (!model) return null
+  return model.replace(/^claude-/, '')
+}
+
+/**
+ * Sprint 5: Format countdown đến thời điểm reset usage quota.
+ * resetsAt: unix seconds (từ UsageInfo.resets_at / seven_day_resets_at)
+ * Ví dụ: "1h 20m" | "4d 3h" | "45m" | "Đã reset"
+ */
+export function fmtResetsIn(resetsAt: number): string {
+  const diffSec = Math.max(0, resetsAt - Math.floor(Date.now() / 1000))
+  if (diffSec === 0) return 'Đã reset'
+  const days = Math.floor(diffSec / 86400)
+  const hours = Math.floor((diffSec % 86400) / 3600)
+  const mins = Math.floor((diffSec % 3600) / 60)
+  if (days >= 1) return `${days}d ${hours}h`
+  if (hours >= 1) return `${hours}h ${mins}m`
+  return `${mins}m`
+}
+
+/** Decode project slug back to absolute directory path (Windows support) */
+export function decodeProjectSlug(slug: string): string {
+  if (/^[a-z]--/.test(slug)) {
+    const drive = slug[0].toUpperCase() + ':\\'
+    const remainder = slug.slice(3)
+    return drive + remainder.split('--').join('\\')
+  }
+  return slug
+}
+
+/**
+ * Sprint 7: Format total seconds → "HH:MM:SS" countdown string.
+ * Dùng cho WaitRetryBanner countdown.
+ * Ví dụ: 7473 → "02:04:33"
+ */
+export function fmtCountdown(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds))
+  const hh = Math.floor(s / 3600)
+  const mm = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  return [hh, mm, ss].map(v => String(v).padStart(2, '0')).join(':')
+}
+
+/** Return friendly error message for Anthropic API usage error */
+export function getUsageErrorMsg(error: string | null | undefined): string {
+  if (!error) return ''
+  if (error === 'http_429') return 'Quá giới hạn lượt gọi (Rate Limit 429). Đang chờ reset...'
+  if (error === 'unauthorized') return 'Phiên đăng nhập hết hạn. Cần đăng nhập lại.'
+  if (error === 'timeout') return 'Yêu cầu quá thời gian. Đang thử lại...'
+  if (error === 'network') return 'Lỗi kết nối mạng. Đang thử lại...'
+  return `Lỗi lấy quota (${error}). Đang thử lại...`
+}

@@ -21,6 +21,8 @@ from .ws import ConnectionManager
 from .routes import sessions as sessions_router
 from .routes import tokens as tokens_router
 from .routes import accounts as accounts_router
+from .routes import pipeline as pipeline_router
+from .routes import failover as failover_router
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +55,22 @@ async def lifespan(app: FastAPI):
     app.state.credentials_path = config.CLAUDE_CREDENTIALS_FILE
     app.state.oauth_refresh_lock = _oauth_refresh_lock
 
+    # 3b. Failover engine (Sprint 7)
+    from .failover import FailoverEngine
+    failover_engine = FailoverEngine(
+        account_store=store,
+        credentials_path=config.CLAUDE_CREDENTIALS_FILE,
+        refresh_lock=_oauth_refresh_lock,
+        db_conn=conn,
+        ws_manager=_ws_manager,
+    )
+    app.state.failover_engine = failover_engine
+
     # 4. Restore file cursors + seed state machine from DB
     cursors = await db_module.load_cursors(conn)
     _tail_reader.restore_cursors(cursors)
 
-    active_sessions = await db_module.get_active_sessions(conn)
+    active_sessions = await db_module.get_active_sessions(conn, include_subagents=True)
     startup_changes = _state_mgr.initialize_from_db(active_sessions)
     logger.info(
         "State machine seeded with %d sessions; %d stale-state corrections",
@@ -92,6 +105,12 @@ async def lifespan(app: FastAPI):
     oauth_task = asyncio.create_task(
         _oauth_refresh_scheduler(store), name="oauth_refresh"
     )
+    sync_task = asyncio.create_task(
+        _credentials_sync_scheduler(store), name="credentials_sync"
+    )
+
+    # 7b. Start failover engine background tasks (Sprint 7)
+    await failover_engine.start()
 
     # Log emergency backup warning if present from previous crash
     from .oauth_service import check_emergency_backup
@@ -112,6 +131,8 @@ async def lifespan(app: FastAPI):
     pipeline_task.cancel()
     ticker_task.cancel()
     oauth_task.cancel()
+    sync_task.cancel()
+    await failover_engine.stop()  # Sprint 7: graceful shutdown
     _watcher.stop()
     await conn.close()
     logger.info("Agent Dashboard stopped")
@@ -256,14 +277,18 @@ async def _process_file(conn: Any, file_path: str) -> None:
         change = _state_mgr.update_activity(parsed.session_id, parsed.timestamp)
 
         # WebSocket deltas
-        if is_new:
+        # Fix vấn đề 2: chỉ broadcast agent_started cho session GỐC (is_subagent=False).
+        # Subagent transcripts (agent-*.jsonl trong subagents/) đã có kênh chain_updated
+        # riêng cho parent — nếu broadcast agent_started ở đây, frontend wsReducer
+        # sẽ nhét subagent vào danh sách sessions gốc, hiển thị trùng dòng RUNNING.
+        if is_new and not parsed.is_subagent:
             await _ws_manager.broadcast(make_delta("agent_started", {
                 "session_id": parsed.session_id,
                 "project":    parsed.project,
                 "agent_type": parsed.agent_type,
                 "started_at": parsed.timestamp,
             }))
-        else:
+        elif not is_new:
             delta_payload: dict = {
                 "session_id":    parsed.session_id,
                 "last_event_at": parsed.timestamp,
@@ -278,6 +303,17 @@ async def _process_file(conn: Any, file_path: str) -> None:
                     "cache_read":     parsed.cache_read,
                 }
             await _ws_manager.broadcast(make_delta("agent_update", delta_payload))
+
+        # Sprint 5 — BUG-004: notify parent chain whenever a child transcript
+        # has a new event, even before model/token data arrives (1-5s race window).
+        # Frontend PipelineCard listens for chain_updated and refetches /chain
+        # for the parent session so the active card is shown immediately.
+        if parsed.is_subagent and parsed.parent_session_id:
+            await _ws_manager.broadcast(make_delta("chain_updated", {
+                "session_id":       parsed.parent_session_id,
+                "child_session_id": parsed.session_id,
+                "reason":           "child_event",
+            }))
 
         # Track B: persist + broadcast subagent change (only for Agent tool calls)
         if parsed.subagent_type:
@@ -373,6 +409,40 @@ async def _oauth_refresh_scheduler(store: Any) -> None:
             logger.exception("OAuth refresh scheduler error: %s", exc)
 
 
+# ── Credentials sync scheduler ───────────────────────────────────────────────
+
+async def _credentials_sync_scheduler(store: Any) -> None:
+    """Watch credentials file for manual login/logout and sync with store."""
+    from .oauth_service import sync_credentials_with_store
+
+    while True:
+        try:
+            await asyncio.sleep(3.0)  # poll file every 3 seconds
+            changed = await sync_credentials_with_store(
+                store,
+                config.CLAUDE_CREDENTIALS_FILE,
+                _oauth_refresh_lock,
+            )
+            if changed:
+                # Broadcast the new active account state to all WS connections
+                active = store.get_active()
+                payload = make_delta(
+                    "account_changed",
+                    {
+                        "active_id": active["id"] if active else None,
+                        "name": active["name"] if active else None,
+                        "kind": active["kind"] if active else None,
+                        "key_masked": active.get("key_masked") if active and active.get("kind") == "api_key" else None,
+                        "oauth_masked": active.get("oauth_masked") if active and active.get("kind") == "oauth_session" else None,
+                    },
+                )
+                await _ws_manager.broadcast(payload)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.exception("Credentials sync scheduler error: %s", exc)
+
+
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 
 def create_app() -> FastAPI:
@@ -387,6 +457,8 @@ def create_app() -> FastAPI:
     app.include_router(sessions_router.router)
     app.include_router(tokens_router.router)
     app.include_router(accounts_router.router)
+    app.include_router(pipeline_router.router)
+    app.include_router(failover_router.router)  # Sprint 7
 
     # Health endpoint
     @app.get("/api/health")

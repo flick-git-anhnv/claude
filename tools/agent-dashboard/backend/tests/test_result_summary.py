@@ -13,6 +13,13 @@ from agent_dashboard import db as db_module
 from agent_dashboard.parser import _extract_agent_result
 
 
+# ── Sprint 5 compatibility helper ─────────────────────────────────────────────
+
+def _non_dispatcher_roster(result: dict) -> list:
+    """Filter out the Dispatcher node (FR-004, Sprint 5) from roster."""
+    return [r for r in result["roster"] if not r.get("is_dispatcher")]
+
+
 # ── Helpers to build fake JSONL lines ─────────────────────────────────────────
 
 def _agent_tool_use_line(ts: str, tool_use_id: str, subagent_type: str,
@@ -388,7 +395,7 @@ async def test_chain_result_summary_via_backfill(conn, tmp_path):
     result = await db_module.get_session_chain(conn, session_id)
 
     assert result is not None
-    roster = result["roster"]
+    roster = _non_dispatcher_roster(result)
     assert len(roster) == 1
     history = roster[0]["history"]
     assert len(history) == 1
@@ -435,7 +442,7 @@ async def test_chain_result_summary_async_via_backfill(conn, tmp_path):
 
     result = await db_module.get_session_chain(conn, session_id)
     assert result is not None
-    h = result["roster"][0]["history"][0]
+    h = _non_dispatcher_roster(result)[0]["history"][0]
     assert h["result_summary"] == result_text[:400]
     assert h["result_full"] == result_text
 
@@ -470,7 +477,7 @@ async def test_chain_result_none_when_no_tool_result(conn, tmp_path):
 
     result = await db_module.get_session_chain(conn, session_id)
     assert result is not None
-    h = result["roster"][0]["history"][0]
+    h = _non_dispatcher_roster(result)[0]["history"][0]
     assert h["result_summary"] is None
     assert h["result_full"] is None
     assert h["duration_ms"] is None

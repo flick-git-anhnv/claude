@@ -9,6 +9,9 @@ import {
   getMockTokenSummary,
   getMockSessionHistory,
   getMockChain,
+  MOCK_USAGE_ACTIVE,
+  getMockUsage,
+  MOCK_AGGREGATE,
 } from './mockData'
 import type { Account } from '../types'
 
@@ -72,6 +75,7 @@ function handleMockRequest(input: RequestInfo | URL, init?: RequestInit): Respon
     const newAccount: Account = {
       id: `acc-${++accountIdCounter}`,
       name: body.name,
+      kind: 'api_key',
       key_masked: body.api_key.slice(0, 8) + '****' + body.api_key.slice(-4),
       is_active: false,
       created_at: new Date().toISOString(),
@@ -117,9 +121,121 @@ function handleMockRequest(input: RequestInfo | URL, init?: RequestInit): Respon
     return jsonResponse(getMockChain(sessionId))
   }
 
+  // Sprint 5 — GET /api/accounts/usage/active (active account usage, dùng trong AppHeader)
+  // PHẢI match TRƯỚC pattern /:id/usage để tránh "usage" bị coi là account id
+  if (method === 'GET' && path === '/api/accounts/usage/active') {
+    const activeAcc = mockAccounts.find(a => a.is_active)
+    // Chỉ trả usage cho OAuth account (kind === 'oauth') — api_key không có quota bar
+    if (!activeAcc || (activeAcc as Account & { kind?: string }).kind === 'api_key') {
+      return errorResponse('NO_OAUTH_ACTIVE', 'No active OAuth account', 404)
+    }
+    return jsonResponse(MOCK_USAGE_ACTIVE)
+  }
+
+  // Sprint 5 — GET /api/accounts/:id/usage (per-account usage, dùng trong AccountCard)
+  const accountUsageMatch = path.match(/^\/api\/accounts\/([^/]+)\/usage$/)
+  if (method === 'GET' && accountUsageMatch) {
+    const id = accountUsageMatch[1]
+    const account = mockAccounts.find(a => a.id === id)
+    if (!account) return errorResponse('ACCOUNT_NOT_FOUND', 'Không tìm thấy tài khoản', 404)
+    if ((account as Account & { kind?: string }).kind === 'api_key') {
+      return errorResponse('NOT_OAUTH', 'Usage only available for OAuth accounts', 404)
+    }
+    return jsonResponse(getMockUsage(id))
+  }
+
+  // Sprint 5 — GET /api/pipeline/aggregate (FR-005 AggregatePipelineView)
+  if (method === 'GET' && path.startsWith('/api/pipeline/aggregate')) {
+    return jsonResponse(MOCK_AGGREGATE)
+  }
+
   // GET /api/health
   if (method === 'GET' && path === '/api/health') {
     return jsonResponse({ status: 'ok', uptime_sec: 3600, watcher_alive: true })
+  }
+
+  // ── Sprint 7: Failover endpoints ──────────────────────────────────────────
+
+  // GET /api/failover/status
+  if (method === 'GET' && path === '/api/failover/status') {
+    return jsonResponse({
+      state: 'monitoring',
+      active_account: mockAccounts.find(a => a.is_active)
+        ? { id: mockAccounts.find(a => a.is_active)!.id, name: mockAccounts.find(a => a.is_active)!.name }
+        : null,
+      next_retry_at: null,
+      retry_account: null,
+      retry_attempt: 0,
+      max_retries: 3,
+      count_24h: 2,
+      api_wide_backoff_until: null,
+    })
+  }
+
+  // GET /api/failover/chain
+  if (method === 'GET' && path === '/api/failover/chain') {
+    const oauthAccounts = mockAccounts.filter(a => a.kind === 'oauth_session')
+    return jsonResponse(
+      oauthAccounts.map((a, idx) => ({
+        acc_id: a.id,
+        name: a.name,
+        priority: idx + 1,
+        include_in_chain: true,
+        status: a.is_active ? 'active' : 'standby',
+        five_hour_pct: idx === 0 ? 45.2 : null,
+        seven_day_pct: idx === 0 ? 12.5 : null,
+        resets_at: null,
+      })),
+    )
+  }
+
+  // PUT /api/failover/chain
+  if (method === 'PUT' && path === '/api/failover/chain') {
+    return jsonResponse({ ok: true })
+  }
+
+  // GET /api/failover/log
+  if (method === 'GET' && path.startsWith('/api/failover/log')) {
+    const u = new URL(url, 'http://localhost')
+    const limit = parseInt(u.searchParams.get('limit') ?? '20')
+    const offset = parseInt(u.searchParams.get('offset') ?? '0')
+    const mockItems = [
+      {
+        failover_id: 'mock-fo-001',
+        occurred_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+        from_account_id: 'acc-1',
+        from_account_name: 'vietanh',
+        to_account_id: 'acc-2',
+        to_account_name: 'OAuth (Imported)',
+        trigger_reason: 'http_429',
+        result: 'success',
+        swap_latency_ms: 42,
+        next_retry_at: null,
+        retry_attempt: null,
+        error_message: null,
+      },
+      {
+        failover_id: 'mock-fo-002',
+        occurred_at: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+        from_account_id: 'acc-2',
+        from_account_name: 'OAuth (Imported)',
+        to_account_id: null,
+        to_account_name: null,
+        trigger_reason: 'quota_5h_full',
+        result: 'wait_and_retry_scheduled',
+        swap_latency_ms: null,
+        next_retry_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        retry_attempt: 1,
+        error_message: null,
+      },
+    ]
+    const sliced = mockItems.slice(offset, offset + limit)
+    return jsonResponse({ items: sliced, total: mockItems.length, count_24h: 2 })
+  }
+
+  // POST /api/failover/cancel-retry
+  if (method === 'POST' && path === '/api/failover/cancel-retry') {
+    return jsonResponse({ ok: true, cancelled: false })
   }
 
   return null // Not intercepted — pass through

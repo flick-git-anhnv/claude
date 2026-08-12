@@ -170,6 +170,16 @@ async def test_upsert_parent_fields_null_for_main_session(conn):
 
 # ── get_session_chain: roster structure ──────────────────────────────────────
 
+def _non_dispatcher_roster(result: dict) -> list:
+    """Return roster entries that are NOT the Dispatcher node (Sprint 5 FR-004).
+
+    Sprint 5 prepends a ``is_dispatcher=True`` entry to every /chain roster.
+    Sprint 4 tests were written before this change; filter it out so the
+    assertions remain valid without rewriting all test bodies.
+    """
+    return [r for r in result["roster"] if not r.get("is_dispatcher")]
+
+
 async def _seed_parent(conn, session_id: str = "parent-sess", state: str = "Running") -> str:
     await conn.execute(
         """INSERT INTO sessions
@@ -225,7 +235,7 @@ async def test_roster_basic_structure(conn):
     assert result is not None
     assert result["session_id"] == sid
     assert result["session_state"] == "Running"
-    roster = result["roster"]
+    roster = _non_dispatcher_roster(result)
     assert len(roster) == 2
     roles = [r["role"] for r in roster]
     assert roles == ["product-manager", "tech-lead"]
@@ -240,7 +250,7 @@ async def test_roster_tokens_populated(conn):
                               "Ended", "2026-08-06T10:01:00Z", 1000, 200, 300, 50)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["role"] == "senior-developer"
     assert entry["total_tokens"]["input"] == 1000
     assert entry["total_tokens"]["output"] == 200
@@ -257,7 +267,7 @@ async def test_roster_tokens_null_when_no_child(conn):
     # No child session seeded
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["role"] == "qa-engineer"
     assert entry["total_tokens"] == {"input": 0, "output": 0, "cache_creation": 0, "cache_read": 0}
     assert entry["history"][0]["tokens"] is None
@@ -276,8 +286,8 @@ async def test_roster_multiple_calls_same_role_accumulated(conn):
                               "Ended", "2026-08-06T10:10:00Z", 2000, 400, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    assert len(result["roster"]) == 1  # one entry despite two calls
-    entry = result["roster"][0]
+    assert len(_non_dispatcher_roster(result)) == 1  # one entry despite two calls
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["call_count"] == 2
     assert len(entry["history"]) == 2
     assert entry["total_tokens"]["input"] == 3000   # 1000 + 2000 accumulated
@@ -299,9 +309,10 @@ async def test_roster_mixed_roles_with_repeat(conn):
                               "Ended", "2026-08-06T10:10:00Z", 600, 120, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    roles = [r["role"] for r in result["roster"]]
+    non_disp = _non_dispatcher_roster(result)
+    roles = [r["role"] for r in non_disp]
     assert roles == ["tech-lead", "senior-developer"]  # ordered by FIRST appearance
-    tl_entry = next(r for r in result["roster"] if r["role"] == "tech-lead")
+    tl_entry = next(r for r in non_disp if r["role"] == "tech-lead")
     assert tl_entry["call_count"] == 2
     assert len(tl_entry["history"]) == 2
     assert tl_entry["total_tokens"]["input"] == 1100  # 500 + 600
@@ -318,7 +329,7 @@ async def test_roster_status_active_when_last_child_running(conn):
                               "Running", "2026-08-06T10:05:00Z", 100, 20, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "active"
     assert entry["history"][-1]["status"] == "active"
 
@@ -337,7 +348,7 @@ async def test_roster_status_active_when_last_child_idle(conn):
                               "Idle", "2026-08-06T10:05:00Z", 300, 60, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "active", (
         "Idle child session should show 'active' — agent is between LLM rounds, not done"
     )
@@ -357,7 +368,7 @@ async def test_roster_status_done_when_parent_idle(conn):
                               "Idle", "2026-08-06T10:05:00Z", 300, 60, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "done", (
         "Idle parent should show 'done' — Idle is ambiguous, use Running as active gate"
     )
@@ -378,7 +389,7 @@ async def test_roster_status_active_fallback_when_no_child_yet(conn):
     # No _add_child_session call — simulates watcher lag
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "active", (
         "Missing child session on Running parent should fallback to 'active'"
     )
@@ -393,7 +404,7 @@ async def test_roster_status_done_when_child_ended_parent_running(conn):
                               "Ended", "2026-08-06T10:05:00Z", 100, 20, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "done"
 
 
@@ -406,17 +417,17 @@ async def test_roster_status_done_when_session_ended(conn):
                               "Ended", "2026-08-06T10:05:00Z", 100, 20, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "done"
 
 
 @pytest.mark.asyncio
 async def test_roster_empty_when_no_agent_calls(conn):
-    """Session with no Agent events → roster=[]."""
+    """Session with no Agent events → non-dispatcher roster is empty (Dispatcher still present)."""
     sid = await _seed_parent(conn, "p-no-agents")
     result = await db_module.get_session_chain(conn, sid)
     assert result is not None
-    assert result["roster"] == []
+    assert _non_dispatcher_roster(result) == []
 
 
 @pytest.mark.asyncio
@@ -433,7 +444,7 @@ async def test_history_call_index_increments_per_role(conn):
     await _add_agent_event(conn, sid, "2026-08-06T10:05:00Z", "tech-lead", "Second")
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["history"][0]["call_index"] == 1
     assert entry["history"][1]["call_index"] == 2
 
@@ -456,7 +467,7 @@ async def test_roster_status_done_when_result_present_child_idle(conn):
                               "2026-08-06T10:05:00Z", 1000, 200, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "done", (
         "result_summary present → agent done, regardless of child Idle state"
     )
@@ -478,7 +489,7 @@ async def test_roster_status_done_when_result_present_child_running(conn):
                               "2026-08-06T10:05:00Z", 2000, 400, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    entry = result["roster"][0]
+    entry = _non_dispatcher_roster(result)[0]
     assert entry["status"] == "done", (
         "result_summary present → done, child Running state is stale/irrelevant"
     )
@@ -508,8 +519,10 @@ async def test_roster_only_one_active_among_multiple_roles(conn):
                               "Running", "2026-08-06T10:10:00Z", 300, 60, 0, 0)
 
     result = await db_module.get_session_chain(conn, sid)
-    active_roles = [e["role"] for e in result["roster"] if e["status"] == "active"]
-    done_roles = [e["role"] for e in result["roster"] if e["status"] == "done"]
+    # Filter dispatcher before counting active/done (Sprint 5 FR-004 prepends Dispatcher)
+    non_disp = _non_dispatcher_roster(result)
+    active_roles = [e["role"] for e in non_disp if e["status"] == "active"]
+    done_roles = [e["role"] for e in non_disp if e["status"] == "done"]
 
     assert active_roles == ["senior-developer"], (
         "Only the role without a result should be 'active'"

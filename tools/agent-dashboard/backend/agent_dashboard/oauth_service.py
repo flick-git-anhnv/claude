@@ -388,3 +388,129 @@ def check_emergency_backup(credentials_path: Path) -> Optional[Path]:
     except Exception:
         pass
     return None
+
+
+# ── Credentials File Auto-Sync ────────────────────────────────────────────────
+
+async def sync_credentials_with_store(
+    store: AccountStore,
+    credentials_path: Path,
+    refresh_lock: asyncio.Lock,
+) -> bool:
+    """Check if the tokens in .credentials.json match the active account in the store.
+
+    If not, sync the store with the file (re-login / login or logout detected).
+    Returns True if a modification was made and should be broadcasted.
+    """
+    data = {}
+    if credentials_path.exists():
+        try:
+            data = json.loads(credentials_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    oauth_block = data.get("claudeAiOauth") if data else None
+
+    # If no oauth block on disk, user logged out via CLI
+    if not oauth_block:
+        active = store.get_active()
+        if active and active.get("kind") == "oauth_session":
+            active_id = active["id"]
+            active_acc = store.get_account(active_id)
+            if active_acc and not active_acc.get("needs_relogin"):
+                store.set_needs_relogin(active_id)
+                logger.info(
+                    "sync_credentials: Active account %s marked as needing relogin because credentials file is empty/deleted",
+                    active_id,
+                )
+                return True
+        return False
+
+    # Normalize and validate oauth block from disk
+    try:
+        validate_oauth_block(oauth_block)
+    except ValueError:
+        return False
+
+    disk_access_token = oauth_block.get("accessToken", "")
+    disk_refresh_token = oauth_block.get("refreshToken", "")
+
+    async with refresh_lock:
+        active = store.get_active()
+        active_id = active.get("id") if active else None
+        active_acc = store.get_account(active_id) if active_id else None
+
+        # If active account tokens are already identical to disk, nothing to do
+        if active_acc and active_acc.get("kind") == "oauth_session":
+            acc_oauth = active_acc.get("oauth") or {}
+            if (
+                acc_oauth.get("accessToken") == disk_access_token
+                and acc_oauth.get("refreshToken") == disk_refresh_token
+            ):
+                return False
+
+        # Step 1: Check if any other stored account has these tokens
+        matched_acc_id = None
+        for acc in store._data.get("accounts", []):
+            if acc.get("kind") == "oauth_session":
+                acc_oauth = acc.get("oauth") or {}
+                if (
+                    acc_oauth.get("accessToken") == disk_access_token
+                    or acc_oauth.get("refreshToken") == disk_refresh_token
+                ):
+                    matched_acc_id = acc["id"]
+                    break
+
+        # Step 2: Swap active pointer to matched account
+        if matched_acc_id:
+            store.activate(matched_acc_id)
+            store.update_oauth_snapshot(
+                matched_acc_id,
+                oauth_block,
+                data.get("organizationUuid"),
+            )
+            logger.info(
+                "sync_credentials: Automatically switched active account to matched account %s",
+                matched_acc_id,
+            )
+            return True
+
+        # Step 3: No matching account. User logged in fresh or re-authenticated the active account.
+        if active_id and active_acc and active_acc.get("kind") == "oauth_session":
+            # If the active account needed re-login, we assume the user is re-authenticating it.
+            if active_acc.get("needs_relogin"):
+                store.update_oauth_snapshot(
+                    active_id,
+                    oauth_block,
+                    data.get("organizationUuid"),
+                )
+                logger.info(
+                    "sync_credentials: Automatically updated active account %s tokens from disk (re-login)",
+                    active_id,
+                )
+                return True
+            else:
+                # Active account was already valid, so this new token belongs to a different account.
+                # Auto-create a new account to avoid overwriting the valid active account.
+                new_id = store.add_oauth_account(
+                    "OAuth (Imported)",
+                    oauth_block,
+                    data.get("organizationUuid"),
+                )
+                store.activate(new_id)
+                logger.info(
+                    "sync_credentials: Auto-imported and activated new account %s (different account login)",
+                    new_id,
+                )
+                return True
+        else:
+            # If no active account exists, auto-create one
+            new_id = store.add_oauth_account(
+                "OAuth (Imported)",
+                oauth_block,
+                data.get("organizationUuid"),
+            )
+            store.activate(new_id)
+            logger.info("sync_credentials: Auto-imported and activated new account %s", new_id)
+            return True
+

@@ -1,7 +1,7 @@
 ---
 title: TDD — Agent Dashboard
 feature: Agent Dashboard — Dashboard Web Local Realtime Quản Lý Claude Code Agents
-version: 1.0
+version: 1.3
 created: 2026-08-05
 author: Tech Lead (KZTEK)
 prd: docs/prd/PRD-agent-dashboard.md
@@ -1086,3 +1086,459 @@ Không thêm event type mới. WS existing `agent_started` (Sprint 2, khi có Ag
 - **next_inputs:** TDD §25.4 + §26.3 endpoint schema, design spec từ Bước 6.2. Modules: `frontend/src/pages/AgentStatus.tsx`, `frontend/src/components/SessionCard.tsx` (thêm title + %context badge), `frontend/src/components/PipelineCard.tsx` (mới). Sau code: `tsc`+`vite build` → `/verify-pr` → PR.
 
 
+
+---
+
+# ADDENDUM v1.3 — Sprint 5 (2026-08-06)
+
+> Sprint 5 gộp 4 hạng mục: (A) Usage display Session 5hr% + Weekly 7day%, (B) BUG-004 (RUNNING card mất model/token), (C) FR-004 (node "Claude Dispatcher" trong Pipeline view), (D) FR-005 (toggle 2 chế độ Pipeline: session / aggregate).
+
+## 29. ASSUMPTIONS I'M MAKING (Sprint 5)
+
+1. Toàn bộ tài khoản active dashboard chạy trên **cùng máy local** — `.credentials.json` luôn accessible tại `~/.claude/.credentials.json` (Windows: `C:\Users\<user>\.claude\.credentials.json`), có `claudeAiOauth.accessToken` cho OAuth accounts. API-key accounts KHÔNG có quota Anthropic 5hr/7day → phần A trả `null`.
+2. Endpoint `GET https://api.anthropic.com/api/oauth/usage` (verified qua grep binary `claude.exe` — chuỗi `fetchUtilization: GET /api/oauth/usage` + `Mi.get("/api/oauth/usage", {timeout:5000, headers:{"Content-Type":"application/json"}, refreshOAuth:!0})`) trả JSON có các field: `five_hour`, `seven_day`, `seven_day_opus`, `seven_day_sonnet`, `seven_day_overage_included`, `resets_at`, `overageResetsAt`, `overageStatus`, `rateLimitType`. Timeout 5s ở SDK gốc → dùng 5s ở service.
+3. Chỉ cần `Authorization: Bearer <accessToken>` (OAuth) → **KHÔNG cần swap `.credentials.json`** cho account inactive (khác với refresh flow ở §17.3). Chỉ cần swap khi accessToken hết hạn — chuỗi refresh dùng lại `_do_swap_and_invoke` đã có.
+4. Session gốc (Dispatcher) = file transcript ở `~/.claude/projects/<project>/<uuid>.jsonl` (`is_subagent=False`). Session con (subagent) = file trong `subagents/<parent-uuid>/agent-*.jsonl` (`is_subagent=True`). Đã verify parser.py:61,65.
+5. FR-005 aggregate là **tool cá nhân local**, không multi-user → localStorage `pipelineMode` là đủ, không cần persist server-side.
+6. BUG-004 root cause = child transcript vừa tạo, `agent_type=NULL` + `token_*=0` cho đến khi assistant message đầu tiên được ingest (thường vài giây). Race window ngắn nhưng luôn thấy khi user mở dashboard đúng lúc agent mới spawn.
+
+→ Xác nhận lại ngay hoặc tôi sẽ tiếp tục thiết kế theo các giả định này.
+
+## 30. Phần A — Usage Display (Session 5hr% + Weekly 7day%)
+
+### 30.1 Khảo sát CLI — kết luận
+
+- **KHÔNG có CLI subcommand** dạng `claude status` / `claude usage` trả text/JSON usage. Slash `/status` và `/usage` chỉ tồn tại BÊN TRONG interactive session (verified: `claude -p "/status"` bị LLM diễn giải như prompt thường, không phải command).
+- **Nguồn dữ liệu duy nhất khả dụng non-interactive:** REST endpoint `GET https://api.anthropic.com/api/oauth/usage`. Trước đây được gọi bởi bundled CLI với OAuth bearer token → có thể gọi trực tiếp từ Python `httpx`/`requests` mà không cần subprocess `claude`.
+- **Vì vậy KHÔNG dùng subprocess** (khác pattern `oauth_service.py` §17.3 vốn dùng subprocess để refresh). Gọi HTTP trực tiếp: đơn giản, nhanh (<200ms), không tốn model call, không ảnh hưởng active account.
+
+### 30.2 `usage_service.py` design
+
+```python
+# backend/agent_dashboard/usage_service.py
+import time, httpx
+from typing import Optional, TypedDict
+
+USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
+CACHE_TTL = 60.0        # seconds — trùng khoảng ticker UI
+HTTP_TIMEOUT = 5.0      # bằng SDK gốc
+
+class UsageInfo(TypedDict, total=False):
+    account_id: str
+    five_hour_pct: Optional[float]        # 0..100 hoặc None
+    seven_day_pct: Optional[float]
+    seven_day_opus_pct: Optional[float]
+    seven_day_sonnet_pct: Optional[float]
+    resets_at: Optional[int]              # unix seconds (session window)
+    seven_day_resets_at: Optional[int]
+    rate_limit_type: Optional[str]        # "five_hour" | "seven_day" | ...
+    overage_status: Optional[str]
+    fetched_at: int                       # unix seconds cache
+    error: Optional[str]                  # "api_key" | "unauthorized" | "timeout" | "http_5xx" | "network"
+
+_cache: dict[str, tuple[float, UsageInfo]] = {}  # {account_id: (expires_at, info)}
+
+async def get_usage(account_id: str, access_token: str, *, force: bool = False) -> UsageInfo:
+    """Trả UsageInfo — dùng cache 60s trừ khi force=True."""
+    now = time.time()
+    if not force:
+        cached = _cache.get(account_id)
+        if cached and cached[0] > now:
+            return cached[1]
+    info: UsageInfo = {"account_id": account_id, "fetched_at": int(now)}
+    try:
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            r = await client.get(
+                USAGE_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+            )
+        if r.status_code == 401:
+            info["error"] = "unauthorized"          # token expired / not OAuth
+        elif r.status_code >= 500:
+            info["error"] = f"http_{r.status_code}"
+        elif r.status_code != 200:
+            info["error"] = f"http_{r.status_code}"
+        else:
+            data = r.json()
+            info["five_hour_pct"] = _pct(data.get("five_hour"))
+            info["seven_day_pct"] = _pct(data.get("seven_day"))
+            info["seven_day_opus_pct"]   = _pct(data.get("seven_day_opus"))
+            info["seven_day_sonnet_pct"] = _pct(data.get("seven_day_sonnet"))
+            info["resets_at"]            = data.get("resets_at")
+            info["seven_day_resets_at"]  = data.get("seven_day_resets_at")
+            info["rate_limit_type"]      = data.get("rate_limit_type")
+            info["overage_status"]       = data.get("overage_status")
+    except httpx.TimeoutException:
+        info["error"] = "timeout"
+    except httpx.HTTPError:
+        info["error"] = "network"
+
+    _cache[account_id] = (now + CACHE_TTL, info)
+    return info
+
+def invalidate(account_id: Optional[str] = None) -> None:
+    if account_id is None:
+        _cache.clear()
+    else:
+        _cache.pop(account_id, None)
+
+def _pct(v):
+    if v is None: return None
+    try:
+        f = float(v)
+        return round(f * 100, 1) if f <= 1.0 else round(f, 1)   # SDK có thể trả 0..1 hoặc 0..100
+    except (TypeError, ValueError):
+        return None
+```
+
+> **Note về scale:** binary claude.exe cho thấy code hiển thị `${r}%` where `r = Math.round(utilization * ...)` — cần xác minh runtime lần đầu response về 0..1 hay 0..100. `_pct` xử lý cả 2 trường hợp: nếu ≤ 1.0 coi là ratio → x100, ngược lại giữ nguyên.
+
+### 30.3 API contract
+
+```
+GET /api/accounts/{acc_id}/usage?force=false
+  → 200 UsageInfo (schema §30.2)
+  → 404 nếu account không tồn tại
+  → 200 {"error": "api_key", ...} nếu account là api_key kind (không có OAuth quota)
+  → 200 {"error": "no_oauth", ...} nếu account OAuth nhưng chưa có accessToken
+
+GET /api/accounts/usage/active
+  → 200 UsageInfo cho active account (shortcut, dùng ở AppHeader)
+```
+
+### 30.4 Lấy usage cho account KHÔNG active
+
+- **KHÔNG swap `.credentials.json`** (khác với refresh flow §17.3) — chỉ cần bearer token snapshot đã lưu trong `AccountStore` (`account["oauth"]["accessToken"]`).
+- Nếu `expiresAt < now + 60s` → token sắp/đã hết hạn → gọi `_do_swap_and_invoke(acc_id)` (có sẵn) để refresh trước → lấy accessToken mới từ AccountStore snapshot → gọi `/api/oauth/usage`.
+- Nếu response 401 sau khi refresh → `set_needs_relogin(acc_id)`, trả `error="unauthorized"`.
+
+### 30.5 WS delta
+
+- KHÔNG broadcast `usage_updated` realtime — cache 60s + polling từ frontend là đủ (không phải hot path).
+- Frontend polling: `setInterval` 60s hoặc React Query `refetchInterval: 60_000`.
+
+## 31. Phần B — BUG-004 Root Cause + Fix
+
+### 31.1 Root cause (verified)
+
+- Roster (`get_session_chain` — db.py:1058) lấy `model` và `tokens_step` từ **child session** (bảng `sessions` WHERE `parent_session_id = <parent>`).
+- Child transcript file `subagents/<parent>/agent-<uuid>.jsonl` được ingest theo thứ tự dòng. Dòng đầu thường là `user` hoặc meta (`ai-title`, `last-prompt`, ...) — không có `message.model` — parser trả `agent_type=None`.
+- `upsert_session` (db.py:452) dùng `agent_type = COALESCE(agent_type, ?)` — giữ NULL cho đến assistant line đầu tiên đến; `token_input=0, token_output=0` khi chưa có usage.
+- **Race window:** từ khi child transcript được tạo (tool_use Agent chạy) đến khi assistant line đầu tiên được flush + parse + upsert. Thường 1–5 giây. Trong khoảng này, `/chain` cho parent trả:
+  - `matched_calls[N].model = None`
+  - `matched_calls[N].tokens = {input:0, output:0, ...}`
+- Frontend `AgentRosterItem`:
+  - `modelShort = null` — nhánh model+description ẩn nếu cũng không có description (nhưng description LUÔN có vì lấy từ Agent tool_use `input.description`).
+  - `fmtTokensCompact(0) === null` — dòng tokens ẩn hoàn toàn.
+- Kết quả người dùng thấy: card ACTIVE có tên vai trò + description, nhưng KHÔNG có "model" và KHÔNG có "N tokens". Sau khi child assistant line đầu về — card active cập nhật — hiển thị. Sau khi role done — thường đã có nhiều turn — tokens hiển thị đầy đủ.
+
+### 31.2 Fix (2 lớp)
+
+**Fix 1 (backend — quan trọng nhất):** Broadcast WS `chain_updated` khi CHILD session có event mới, target parent_session_id — frontend re-fetch `/chain` cho parent kịp thời.
+
+`main.py` ingest loop, sau khi upsert child event:
+
+```python
+# Sprint 5 — BUG-004: notify parent chain when child updates
+if parsed.is_subagent and parsed.parent_session_id:
+    await _ws_manager.broadcast(make_delta("chain_updated", {
+        "session_id": parsed.parent_session_id,     # trigger parent re-fetch
+        "child_session_id": parsed.session_id,
+        "reason": "child_event",
+    }))
+```
+
+Frontend: `PipelineCard` lắng `chain_updated` — nếu `session_id === props.sessionId` — refetch `/chain`.
+
+**Fix 2 (frontend — UX fallback):** Nếu isActive && `!model` — hiển thị placeholder "đang khởi tạo…" thay vì để trống. Nếu isActive && tokens=0 — hiện "— tokens" thay vì ẩn dòng.
+
+```tsx
+// AgentRosterItem.tsx (isActive branch)
+{isActive && !modelShort && (
+  <p style={{fontSize:10, color:'#F05922', fontStyle:'italic'}}>
+    đang khởi tạo…
+  </p>
+)}
+// tokens line: khi active + 0 tokens, show "— tokens" thay vì null
+const tokensLabel = isActive && totalTokens === 0
+  ? '— tokens'
+  : (fmtTokensCompact(totalTokens) ?? null)
+```
+
+### 31.3 Test
+
+- Unit backend: `test_bug004_child_event_broadcasts_chain_updated` — mock ws_manager, insert child event — assert `chain_updated` delta gửi với parent_session_id.
+- Integration: spawn 1 subagent thật, ngay khi Agent tool_use xuất hiện ở parent, quan sát trong DevTools — `chain_updated` phải về trong ≤ 2 giây.
+
+## 32. Phần C — FR-004 Dispatcher Node
+
+### 32.1 Nhận diện session gốc (verified từ code)
+
+- Parent session = file `~/.claude/projects/<project>/<uuid>.jsonl` (parent dir NOT `subagents`) — `is_subagent = False` (parser.py:61).
+- Child session = file `<...>/<parent-uuid>/subagents/agent-<uuid>.jsonl` — `is_subagent = True`, `parent_session_id` = folder trên "subagents/" (parser.py:65).
+- Trong DB `sessions` table: parent có `is_subagent=0`, `parent_session_id=NULL`; child có `is_subagent=1`, `parent_session_id=<parent-uuid>`.
+- Parent's own model + tokens LƯU TRÊN CHÍNH ROW parent trong `sessions` (`agent_type`, `token_input`, `token_output`, `token_cache_creation`, `token_cache_read` cộng dồn qua ingest loop main.py:194).
+
+### 32.2 Inject Dispatcher node vào `/chain`
+
+Trong `get_session_chain` (db.py:1177) — sau khi build `roster`, prepend 1 entry đại diện Dispatcher (session gốc):
+
+```python
+# Sprint 5 — FR-004: Dispatcher node đầu roster
+async with conn.execute(
+    """SELECT agent_type, state, started_at, last_event_at, title,
+              token_input, token_output, token_cache_creation, token_cache_read
+         FROM sessions WHERE session_id = ?""",
+    (session_id,),
+) as cur:
+    parent_row = await cur.fetchone()
+
+dispatcher_entry = {
+    "role":               "__dispatcher__",
+    "display_name":       "Claude (Dispatcher)",
+    "is_dispatcher":      True,               # frontend dùng để render khác biệt
+    "status":             "active" if session_state == "Running" else "done",
+    "call_count":         1,
+    "latest_description": parent_row["title"] or "Phiên chính",
+    "latest_model":       parent_row["agent_type"],
+    "first_called_at":    parent_row["started_at"],
+    "last_called_at":     parent_row["last_event_at"],
+    "total_tokens": {
+        "input":          parent_row["token_input"] or 0,
+        "output":         parent_row["token_output"] or 0,
+        "cache_creation": parent_row["token_cache_creation"] or 0,
+        "cache_read":     parent_row["token_cache_read"] or 0,
+    },
+    "history":            [],       # Dispatcher không cần per-call history
+}
+
+return {
+    "session_id":    session_id,
+    "session_state": session_state,
+    "roster":        [dispatcher_entry] + roster,
+}
+```
+
+**Ghi chú token accounting:**
+- Token của Dispatcher = token của session gốc (parent). Parent's tokens KHÔNG bao gồm children's tokens (mỗi session có DB row riêng). Tổng token session tree = parent_tokens + Σ children_tokens.
+- KHÔNG cần trừ children's tokens khỏi parent — hai bên đo phần thực thi khác nhau (Dispatcher's own LLM turns vs subagent's own LLM turns).
+
+### 32.3 Frontend hiển thị Dispatcher node
+
+- `AgentRosterItem.tsx`: nếu `entry.is_dispatcher === true` — dùng style khác biệt (VD: icon 🧠 hoặc chip "Chính", border Navy #251C53 đậm hơn thay vì Cam) để phân biệt với subagent card.
+- Vị trí: LUÔN là card đầu tiên trong roster (đã được backend đặt thứ tự).
+- Không cần nút "Xem lịch sử" (Dispatcher không có history[] — call_count = 1).
+
+### 32.4 Test
+
+- Unit: `test_chain_prepends_dispatcher_node` — session có 3 subagent call — response roster có 4 entry, entry[0].is_dispatcher=True, entry[0].role="__dispatcher__".
+- Session state = Running — dispatcher.status = "active"; state = Ended — dispatcher.status = "done".
+- Frontend snapshot test: render với `is_dispatcher: true` — snapshot khác với subagent bình thường.
+
+## 33. Phần D — FR-005 Toggle Session/Aggregate
+
+### 33.1 API contract mới
+
+```
+GET /api/pipeline/aggregate?project=<optional>&window=<optional-days>
+  Query params:
+    project  (str, optional) — decoded project slug; nếu bỏ qua — tất cả project
+    window   (int, optional, default=0=all-time) — chỉ tính session có last_event_at trong N ngày gần
+  Response 200:
+  {
+    "mode": "aggregate",
+    "total_sessions": N,                   // số parent session được tính
+    "total_calls": N,                       // Σ Agent tool_use across parents
+    "roster": [
+      {
+        "role": "senior-developer",
+        "display_name": "Senior Developer",
+        "call_count": 47,                   // tổng số lần role được gọi
+        "session_count": 12,                // số parent session unique có role này
+        "latest_model": "claude-sonnet-4-6",
+        "first_called_at": "2026-08-05T...",
+        "last_called_at": "2026-08-06T...",
+        "total_tokens": {input, output, cache_creation, cache_read},
+        "status": "done",                   // aggregate không track active per role
+        "active_now": 2                     // OPTIONAL: số session đang chạy role này
+      }
+    ]
+  }
+```
+
+Không cần WS delta riêng — frontend gọi lại endpoint mỗi 30s khi ở mode aggregate.
+
+### 33.2 Implement backend (`db.py` — mới)
+
+```python
+async def get_pipeline_aggregate(
+    conn, project: Optional[str] = None, window_days: int = 0,
+) -> dict:
+    # 1. Lấy tất cả parent session (is_subagent=0) trong scope
+    filters = ["is_subagent = 0"]
+    params: list = []
+    if project:
+        filters.append("project = ?"); params.append(project)
+    if window_days > 0:
+        filters.append("last_event_at >= datetime('now', ?)")
+        params.append(f"-{window_days} days")
+    parents_sql = f"SELECT session_id FROM sessions WHERE {' AND '.join(filters)}"
+    async with conn.execute(parents_sql, params) as cur:
+        parent_ids = [r["session_id"] for r in await cur.fetchall()]
+
+    if not parent_ids:
+        return {"mode": "aggregate", "total_sessions": 0, "total_calls": 0, "roster": []}
+    placeholders = ",".join("?" * len(parent_ids))
+    # 2. Aggregate: group child sessions by attribution_agent
+    async with conn.execute(
+        f"""SELECT attribution_agent AS role,
+                   COUNT(*)                   AS call_count,
+                   COUNT(DISTINCT parent_session_id) AS session_count,
+                   SUM(token_input)           AS ti,
+                   SUM(token_output)          AS to_,
+                   SUM(token_cache_creation)  AS tcc,
+                   SUM(token_cache_read)      AS tcr,
+                   MIN(started_at)            AS first_at,
+                   MAX(last_event_at)         AS last_at,
+                   SUM(CASE state WHEN 'Running' THEN 1 ELSE 0 END) AS active_now,
+                   (SELECT agent_type FROM sessions s2
+                      WHERE s2.attribution_agent = sessions.attribution_agent
+                        AND s2.parent_session_id IN ({placeholders})
+                      ORDER BY last_event_at DESC LIMIT 1) AS latest_model
+             FROM sessions
+            WHERE parent_session_id IN ({placeholders})
+              AND attribution_agent IS NOT NULL
+            GROUP BY attribution_agent
+            ORDER BY last_at DESC""",
+        parent_ids + parent_ids,      # 2 lần cho placeholders
+    ) as cur:
+        rows = await cur.fetchall()
+
+    roster = [{
+        "role":             r["role"],
+        "display_name":     get_subagent_display_name(r["role"]),
+        "call_count":       r["call_count"],
+        "session_count":    r["session_count"],
+        "latest_model":     r["latest_model"],
+        "first_called_at":  r["first_at"],
+        "last_called_at":   r["last_at"],
+        "total_tokens": {
+            "input":          r["ti"] or 0,
+            "output":         r["to_"] or 0,
+            "cache_creation": r["tcc"] or 0,
+            "cache_read":     r["tcr"] or 0,
+        },
+        "status":     "done",
+        "active_now": r["active_now"] or 0,
+    } for r in rows]
+
+    return {
+        "mode":           "aggregate",
+        "total_sessions": len(parent_ids),
+        "total_calls":    sum(e["call_count"] for e in roster),
+        "roster":         roster,
+    }
+```
+
+### 33.3 Frontend toggle
+
+- **Vị trí toggle:** đầu `AgentStatusPage`, ngay dưới header, 2 nút segment "Theo session" | "Tổng hợp" (cùng style với toggle "Theo Agent"/"Theo Dự án" đã có Sprint 2).
+- **State:** `usePipelineMode()` hook đọc/ghi `localStorage['pipelineMode']` — default `'session'`.
+- **Aggregate mode:** thay `AgentStatusPanel` bằng `AggregatePipelineView` (component mới) — render 1 `PipelineCard`-style grid với roster từ `/api/pipeline/aggregate`.
+- **Không lưu** trên server (§29 assumption 5 — tool cá nhân).
+
+```tsx
+// hooks/usePipelineMode.ts
+export function usePipelineMode() {
+  const [mode, setMode] = useState<'session'|'aggregate'>(
+    () => (localStorage.getItem('pipelineMode') as any) || 'session'
+  )
+  useEffect(() => { localStorage.setItem('pipelineMode', mode) }, [mode])
+  return [mode, setMode] as const
+}
+```
+
+### 33.4 Aggregate view — active_now indicator
+
+Nếu `active_now > 0` cho entry — dùng style ACTIVE (viền cam pulse), nhưng ghi phụ "N đang chạy" thay cho description. Nếu `active_now === 0` — style DONE thường.
+
+### 33.5 Test
+
+- Backend: `test_pipeline_aggregate_empty` (no parents — total=0), `test_pipeline_aggregate_groups_by_role` (2 parent, 3 role, verify counts + tokens sum), `test_pipeline_aggregate_project_filter`.
+- Frontend: unit `usePipelineMode` persist localStorage; snapshot `AggregatePipelineView`.
+
+## 34. Task breakdown Sprint 5
+
+### Bước 8.3 — Senior Developer (Backend)
+
+| ID | Task | Estimate |
+|---|---|---|
+| S5-T01 | `usage_service.py` mới (§30.2) + tests | 0.75d |
+| S5-T02 | Route `/api/accounts/{id}/usage` + `/api/accounts/usage/active` + wire refresh nếu token gần hết hạn | 0.5d |
+| S5-T03 | BUG-004 fix backend — thêm `chain_updated` WS delta khi child event xuất hiện (§31.2 Fix 1) + test | 0.25d |
+| S5-T04 | FR-004 — prepend Dispatcher entry trong `get_session_chain` (§32.2) + test | 0.5d |
+| S5-T05 | FR-005 — `get_pipeline_aggregate` + route `/api/pipeline/aggregate` + test | 0.75d |
+| S5-T06 | CODE-GRAPH cập nhật (usage_service module + `/chain` shape mới) | 0.25d |
+
+**Tổng SD:** ~3.0nd
+
+### Bước 8.4 — Junior Developer (Frontend)
+
+| ID | Task | Estimate |
+|---|---|---|
+| S5-T07 | Component `UsageBar` (Session 5hr + Weekly 7day, có tooltip "resets in ...") | 0.5d |
+| S5-T08 | Gắn `UsageBar` vào `AppHeader` (active account) và `AccountCard` (mọi account) — polling 60s | 0.5d |
+| S5-T09 | BUG-004 frontend — subscribe `chain_updated` — refetch chain; placeholder "đang khởi tạo…" + "— tokens" cho active card (§31.2 Fix 2) | 0.5d |
+| S5-T10 | FR-004 — style riêng cho `AgentRosterItem` khi `is_dispatcher=true` (icon, border Navy #251C53) | 0.25d |
+| S5-T11 | FR-005 — hook `usePipelineMode`, toggle segment ở đầu `AgentStatusPage`, component `AggregatePipelineView` fetch `/api/pipeline/aggregate` | 1.0d |
+| S5-T12 | Types + mock data cho tất cả endpoint mới; regression tsc/vite build 0 errors | 0.25d |
+
+**Tổng JD:** ~3.0nd
+
+## 35. Handoff Payload — Sprint 5
+
+### 35.1 → UI/UX Designer (Bước 8.2 wireframe)
+
+- **do_not_redo:** Đã chốt schema `is_dispatcher` (§32.2), toggle 2 chế độ nằm đầu `AgentStatusPage` (§33.3), UsageBar ở AppHeader + AccountCard (§34 T08). Không cần thiết kế lại chain identification.
+- **watch_out:**
+  1. Dispatcher node LUÔN là card đầu roster, phải phân biệt visually với subagent (nhưng cùng grid, cùng size 196x100).
+  2. UsageBar 2 dòng: "5h: 42%" + "7d: 68%" — nếu ≥ 80% — cam #F05922; ≥ 95% — đỏ; < 80% — xanh lá nhẹ. Tooltip: "Resets in 2h 14m" (session) / "Resets in 4d 3h" (weekly).
+  3. Aggregate view có thể có > 50 role entry — cần scroll hoặc pagination; đề xuất filter search.
+  4. Brand: Navy #251C53 heading, Cam #F05922 accent active, không dùng đỏ tươi.
+- **next_inputs:** TDD §30–33 endpoint schema + component style guidelines.
+
+### 35.2 → Senior Developer (Bước 8.3 backend)
+
+- **do_not_redo:** Endpoint `/api/oauth/usage` đã verify từ binary claude.exe, không cần khảo sát lại; parser đã có `is_subagent`+`parent_session_id`+`attribution_agent` từ Sprint 4, KHÔNG động vào parser.
+- **watch_out:**
+  1. Bearer token dùng trực tiếp — KHÔNG swap `.credentials.json` (khác `_do_swap_and_invoke`). Chỉ swap khi expired < 60s — gọi lại `_do_swap_and_invoke` có sẵn.
+  2. `_pct` handle cả scale 0..1 và 0..100 (chưa verify được scale runtime).
+  3. `chain_updated` broadcast cho parent_session_id (KHÔNG child's session_id) — frontend subscribe theo parent.
+  4. `get_pipeline_aggregate`: bind `parent_ids` 2 lần (subquery + main WHERE); cẩn thận với danh sách rỗng — early return.
+  5. Dispatcher entry: `history=[]` — frontend không expect key thiếu, phải là empty list.
+  6. Aggregate query: `attribution_agent IS NOT NULL` — bỏ những child không attribute được (rare, nhưng có).
+- **next_inputs:** TDD §30.2 (usage_service code), §32.2 (Dispatcher prepend), §33.2 (aggregate SQL). Modules: `backend/agent_dashboard/usage_service.py` (mới), `routes/accounts.py`, `routes/sessions.py` (thêm aggregate), `db.py`, `main.py` (thêm chain_updated broadcast).
+
+### 35.3 → Junior Developer (Bước 8.4 frontend)
+
+- **do_not_redo:** Backend schema đã chốt (§30.3, §32.2, §33.1). KHÔNG tự thiết kế lại route hoặc field.
+- **watch_out:**
+  1. `chain_updated` delta có `session_id` = **parent** — subscribe theo parent, refetch `/chain` khi trùng.
+  2. `is_dispatcher: true` — render style Navy #251C53 (đậm hơn), KHÔNG dùng Cam của active state.
+  3. `usePipelineMode` default `'session'` — không tự đổi mà không có user click.
+  4. UsageBar polling 60s — không hơn (backend cache 60s, gọi thêm vô ích).
+  5. `AggregatePipelineView` roster có thể rỗng (project mới, chưa có subagent call) — hiển thị empty state, không crash.
+  6. `active_now > 0` trong aggregate — viền cam nhẹ, KHÔNG pulse (aggregate view không real-time hard).
+- **next_inputs:** TDD §30–33, wireframe từ Bước 8.2. Modules: `components/UsageBar.tsx` (mới), `components/AggregatePipelineView.tsx` (mới), `hooks/usePipelineMode.ts` (mới), `components/sessions/AgentRosterItem.tsx` (edit), `components/layout/AppHeader.tsx` (edit), `components/accounts/AccountCard.tsx` (edit), `contexts/WsContext.tsx` (edit — thêm `chain_updated`), `api/mockData.ts` (edit).
+
+## 36. Lịch sử cập nhật TDD
+
+| Ngày | Version | Nội dung |
+|---|---|---|
+| 2026-08-05 | 1.0 | TDD ban đầu (Sprint 1) |
+| 2026-08-06 | 1.1 | Addendum Sprint 2 (OAuth + agent name + 2 view mode) |
+| 2026-08-06 | 1.2 | Addendum Sprint 3 (BUG-003 + FR-001/002/003) |
+| 2026-08-06 | 1.3 | Addendum Sprint 5 (Usage display A + BUG-004 B + FR-004 Dispatcher C + FR-005 toggle D) |

@@ -141,6 +141,17 @@ async def test_get_active_sessions_excludes_subagents(conn):
     assert "sess-main-1" in ids
     assert "agent-sub-1" not in ids
 
+@pytest.mark.asyncio
+async def test_get_active_sessions_includes_subagents_when_requested(conn):
+    await _seed(conn, "sess-main-1", is_subagent=False, state="Running")
+    await _seed(conn, "agent-sub-1", is_subagent=True,  state="Running")
+
+    rows = await db_module.get_active_sessions(conn, include_subagents=True)
+    ids = {r["session_id"] for r in rows}
+    assert "sess-main-1" in ids
+    assert "agent-sub-1" in ids
+
+
 
 @pytest.mark.asyncio
 async def test_get_sessions_by_project_excludes_subagents(conn):

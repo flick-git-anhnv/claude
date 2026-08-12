@@ -7,7 +7,7 @@ import sys
 
 # ── Server ────────────────────────────────────────────────────────────────────
 DASHBOARD_PORT: int = int(os.getenv("DASHBOARD_PORT", "7770"))
-DASHBOARD_HOST: str = os.getenv("DASHBOARD_HOST", "0.0.0.0")
+DASHBOARD_HOST: str = os.getenv("DASHBOARD_HOST", "127.0.0.1")
 
 # ── State machine thresholds (seconds) ───────────────────────────────────────
 IDLE_THRESHOLD_SEC: int = int(os.getenv("IDLE_THRESHOLD_SEC", "300"))    # 5 min

@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import AppHeader from './components/layout/AppHeader'
 import SidebarNav from './components/layout/SidebarNav'
 import ToastNotification from './components/common/ToastNotification'
+import WaitRetryBanner from './components/common/WaitRetryBanner'
+import FailoverToastBridge from './components/common/FailoverToastBridge'
 import AgentStatusPage from './pages/AgentStatusPage'
 import TokenAnalyticsPage from './pages/TokenAnalyticsPage'
 import SessionHistoryPage from './pages/SessionHistoryPage'
@@ -12,6 +14,10 @@ export default function App() {
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Fixed header */}
       <AppHeader />
+
+      {/* Sprint 7: Banner toàn màn hình khi failover engine đang waiting/retrying/paused.
+          Đặt dưới AppHeader, đẩy nội dung xuống (không overlay). */}
+      <WaitRetryBanner />
 
       {/* Body: sidebar + main */}
       <div className="flex flex-1 overflow-hidden">
@@ -38,6 +44,9 @@ export default function App() {
 
       {/* Global toast overlay */}
       <ToastNotification />
+
+      {/* Sprint 7: Bridge WS failover events → ToastContext (null-rendered) */}
+      <FailoverToastBridge />
     </div>
   )
 }

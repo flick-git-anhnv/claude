@@ -11,6 +11,19 @@ import aiosqlite
 from agent_dashboard import db as db_module
 
 
+# ── Sprint 5 compatibility helper ─────────────────────────────────────────────
+
+def _non_dispatcher_roster(result: dict) -> list:
+    """Filter out the Dispatcher node (FR-004, Sprint 5) from roster.
+
+    Sprint 5 prepends a synthetic Dispatcher entry (is_dispatcher=True) to every
+    /chain roster response.  Sprint 3 tests were written before this change, so
+    they only care about the real subagent entries.  Use this helper wherever the
+    test asserts on roster length or accesses entries by index.
+    """
+    return [r for r in result["roster"] if not r.get("is_dispatcher")]
+
+
 # ── Async DB fixture (in-memory SQLite) ───────────────────────────────────────
 
 @pytest_asyncio.fixture
@@ -334,8 +347,8 @@ async def test_get_session_chain_returns_correct_roster(conn, chain_session):
     assert result is not None
     assert result["session_id"] == chain_session
     assert result["session_state"] == "Running"
-    # 2 distinct roles → 2 roster entries
-    roster = result["roster"]
+    # 2 distinct roles → 2 roster entries (filter Sprint 5 Dispatcher node)
+    roster = _non_dispatcher_roster(result)
     assert len(roster) == 2
 
 
@@ -343,7 +356,8 @@ async def test_get_session_chain_returns_correct_roster(conn, chain_session):
 async def test_get_session_chain_roster_fields(conn, chain_session):
     """Roster entries have required fields; roles ordered by first appearance."""
     result = await db_module.get_session_chain(conn, chain_session)
-    roster = result["roster"]
+    # Filter Dispatcher node prepended by Sprint 5 FR-004
+    roster = _non_dispatcher_roster(result)
     # First role called = product-manager
     assert roster[0]["role"] == "product-manager"
     assert roster[0]["display_name"] == "Product Manager"
@@ -399,7 +413,8 @@ async def test_get_session_chain_empty_roster_for_no_agent_calls(conn):
 
     result = await db_module.get_session_chain(conn, "no-agent")
     assert result is not None
-    assert result["roster"] == []
+    # Sprint 5 FR-004: Dispatcher node is always present; only subagent entries should be empty
+    assert _non_dispatcher_roster(result) == []
 
 
 @pytest.mark.asyncio
