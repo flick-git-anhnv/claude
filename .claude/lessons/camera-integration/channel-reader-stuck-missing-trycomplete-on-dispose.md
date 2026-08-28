@@ -1,9 +1,9 @@
 ---
 category: camera-integration
-tags: [channel, async, dispose, freeze, winforms, ffmpeg, reconnect]
+tags: [channel, async, dispose, freeze, winforms, ffmpeg, reconnect, regression]
 severity: high
 created: 2026-07-22
-updated: 2026-07-22
+updated: 2026-08-25
 project-origin: Kztek.Camera BaseLIB (WinForms, 1.Source/Kztek.Cameras)
 ---
 
@@ -101,6 +101,33 @@ Sau khi `TryComplete()`:
   `ChannelClosedException` thay vì tự động thoát — `ReadAllAsync` xử lý điều này trong vòng lặp.
 - ⚠️ Pattern này đặc biệt dễ bị bỏ sót khi channel được khởi tạo trong constructor (không phải
   trong `Start()`/`Connect()`) → developer hay quên không "pair" TryComplete trong Dispose.
+
+## CẬP NHẬT (2026-08-25) — Fix bị mất trong `Dispose()`, tái phát y hệt triệu chứng cũ
+
+User báo lại đúng triệu chứng: "camera thỉnh thoảng vẫn bị đứng hình nhưng hàm `GetCurrentImage`/
+`getCurrentImage` vẫn trả về hình ảnh mới". Đọc `VideoStreamDecoderIntptr.Dispose()` hiện tại
+(`parking-v8-app`, `libs/Camera` submodule) thì phát hiện 3 dòng `FrameChannel.Writer.TryComplete()`
+/ `MdChannel.Writer.TryComplete()` / `AiChannel.Writer.TryComplete()` mà lesson này đã đề xuất **KHÔNG
+CÒN Ở ĐẦU `Dispose()`** — có khả năng bị rơi mất khi refactor thêm cơ chế `WriteToChannelSafely`
+(DropOldest) hoặc khi merge nhánh song song, giống hệt cơ chế lesson `kztek-cameras-disposes-event-frame-after-invoke.md`
+mô tả (fix ownership dễ mất khi có nhánh sửa song song không biết hợp đồng vừa đổi).
+
+Bằng chứng gián tiếp khớp 100% với lesson `anvplayer-lastframe-dead-field-watchdog-false-stop.md` +
+lesson này cộng lại: `GetCurrentImage()` (dùng cho snapshot sự kiện — ảnh vào/ra) đọc qua
+`GetFullCurrentFrame()` → `_latestFullFrameWrapper` (cập nhật ATOMIC mỗi frame decode, hoàn toàn tách
+biệt khỏi UI) nên luôn trả ảnh MỚI dù pipeline hiển thị (đi qua `FrameChannel` → `ConsumerDisplayFrameAsync`
+→ `BeginInvoke/Invalidate`) đã kẹt vĩnh viễn ở `ReadAllAsync` của channel decoder CŨ sau lần
+reconnect gần nhất. Đã thêm lại đúng 3 dòng `TryComplete()` vào đầu `Dispose()`.
+
+**Bài học bổ sung (quan trọng nhất):** Một fix `Dispose()`/lifecycle đã ghi lesson trước đó **có thể bị
+âm thầm rơi mất** ở lần refactor sau (không ai cố ý xoá, chỉ là method bị viết lại/merge từ nhánh khác
+không mang theo fix) — không có exception, không có warning build, triệu chứng y hệt lần trước. Khi
+gặp lại đúng triệu chứng đã có lesson, **luôn Grep lại chính đoạn code fix cũ trong file hiện tại trước
+khi kết luận "chưa từng sửa"** — đừng giả định lesson cũ vẫn còn hiệu lực chỉ vì đã có lesson ghi nhận.
+- **Dấu hiệu phân biệt hai lớp bug này khi debug:** nếu `GetCurrentImage()`/snapshot vẫn ra ảnh MỚI mà
+  live-view đứng hình → nghi ngay consumer/channel phía display bị kẹt (bug này), KHÔNG PHẢI do
+  `_lastFrame`/`_latestFullFrameWrapper` chưa được populate (đó là lesson kia, biểu hiện NGƯỢC LẠI:
+  cả snapshot lẫn hiển thị đều trả null/đứng hình cùng lúc).
 
 ## Tham chiếu
 
